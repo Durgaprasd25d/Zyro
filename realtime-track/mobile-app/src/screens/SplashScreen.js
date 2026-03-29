@@ -13,117 +13,21 @@ import Animated, {
 } from 'react-native-reanimated';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS } from '../constants/theme';
-import Logo from '../components/Logo';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Feather } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('window');
 
-// Fan Character Component
-const FanCharacter = ({ fanY, bladeRotation, bladeScale, fanOpacity }) => {
-    const fanStyle = useAnimatedStyle(() => ({
-        transform: [{ translateY: fanY.value }],
-        opacity: fanOpacity.value
-    }));
-
-    const bladeStyle = useAnimatedStyle(() => ({
-        transform: [
-            { rotate: `${bladeRotation.value}deg` },
-            { scale: bladeScale.value }
-        ]
-    }));
-
-    return (
-        <Animated.View style={[styles.fanBody, fanStyle]}>
-            <View style={styles.fanBase} />
-            <Animated.View style={[styles.fanBlades, bladeStyle]}>
-                {[0, 90, 180, 270].map(deg => (
-                    <View key={deg} style={[styles.fanBlade, { transform: [{ rotate: `${deg}deg` }] }]} />
-                ))}
-            </Animated.View>
-        </Animated.View>
-    );
-};
-
-// Physics Letter Component
-const PhysicsLetter = ({ letter, index, totalLetters }) => {
-    const x = useSharedValue(-200 - (Math.random() * 200));
-    const y = useSharedValue(index % 2 === 0 ? -height / 2 : height / 2);
-    const rotate = useSharedValue(Math.random() * 1080 - 540);
-    const opacity = useSharedValue(0);
-    const scale = useSharedValue(1.5);
-
-    const FINAL_X_GAP = 35;
-    const startX = -((totalLetters - 1) * FINAL_X_GAP) / 2;
-    const targetX = startX + index * FINAL_X_GAP;
-
-    const animatedStyle = useAnimatedStyle(() => ({
-        position: 'absolute',
-        opacity: opacity.value,
-        transform: [
-            { translateX: x.value },
-            { translateY: y.value },
-            { rotate: `${rotate.value}deg` },
-            { scale: scale.value }
-        ]
-    }));
-
-    useEffect(() => {
-        const initialDelay = 1800 + index * 50;
-        opacity.value = withDelay(initialDelay, withTiming(1, { duration: 50 }));
-
-        const burstDuration = 1200 + Math.random() * 600;
-
-        // Phase 1: The Chaotic Gust
-        x.value = withDelay(initialDelay, withSpring(targetX + (Math.random() * 120 - 60), {
-            damping: 5,
-            stiffness: 30,
-            mass: 1 + Math.random()
-        }));
-
-        y.value = withDelay(initialDelay, withSpring(Math.random() * 100 - 50, {
-            damping: 5,
-            stiffness: 30,
-            mass: 1 + Math.random()
-        }));
-
-        // Individual behaviors: Cartwheels vs Wobbles
-        if (index % 3 === 0) {
-            rotate.value = withDelay(initialDelay, withTiming(rotate.value + 720, { duration: burstDuration }));
-        } else {
-            rotate.value = withDelay(initialDelay, withSequence(
-                withTiming(rotate.value + 120, { duration: 400 }),
-                withTiming(rotate.value - 180, { duration: 500 }),
-                withTiming(rotate.value + 60, { duration: 400 })
-            ));
-        }
-
-        scale.value = withDelay(initialDelay, withTiming(1, { duration: 800 }));
-
-        // Phase 2: Magnetic Alignment
-        setTimeout(() => {
-            x.value = withSpring(targetX, { damping: 20, stiffness: 100 });
-            y.value = withSpring(0, { damping: 20, stiffness: 100 });
-            rotate.value = withSpring(0, { damping: 15, stiffness: 90 });
-        }, 4500 + index * 100);
-    }, []);
-
-    return (
-        <Animated.View style={animatedStyle}>
-            <Text style={styles.letterText}>{letter}</Text>
-        </Animated.View>
-    );
-};
+const AnimatedFeather = Animated.createAnimatedComponent(Feather);
 
 export default function SplashScreen({ navigation }) {
-    const bgFade = useSharedValue(0);
-    const fanY = useSharedValue(height);
-    const fanOpacity = useSharedValue(1);
-    const bladeRotation = useSharedValue(0);
-    const bladeScale = useSharedValue(1);
-    const finalWordmarkOpacity = useSharedValue(0);
-    const finalLogoScale = useSharedValue(0.5);
-
-    const letters = ["Z", "Y", "R", "O", "-", "A", "C"];
+    const bgOpacity = useSharedValue(0);
+    const textOpacity = useSharedValue(0);
+    const textScale = useSharedValue(0.9);
+    const globeOpacity = useSharedValue(0);
+    const globeScale = useSharedValue(0.5);
+    const globeRotate = useSharedValue(0);
+    const pulseScale = useSharedValue(1);
 
     const onFinish = async () => {
         const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
@@ -135,59 +39,98 @@ export default function SplashScreen({ navigation }) {
     };
 
     useEffect(() => {
-        bgFade.value = withTiming(1, { duration: 800 });
-        fanY.value = withDelay(600, withSpring(height / 2 - 100, { damping: 12, stiffness: 60 }));
+        // 1. Background Fade In
+        bgOpacity.value = withTiming(1, { duration: 1000 });
 
-        // Rev up
-        bladeRotation.value = withDelay(1200, withTiming(1440, {
-            duration: 1000,
-            easing: Easing.bezier(0.4, 0, 0.2, 1)
-        }));
+        // 2. Globe Reveal & Rotation
+        globeOpacity.value = withDelay(400, withTiming(1, { duration: 800 }));
+        globeScale.value = withDelay(400, withSpring(1, { damping: 12 }));
+        globeRotate.value = withRepeat(
+            withTiming(360, { duration: 20000, easing: Easing.linear }),
+            -1,
+            false
+        );
 
-        // Cleanup and Exit
+        // 3. Globe Pulse Animation
+        pulseScale.value = withRepeat(
+            withSequence(
+                withTiming(1.2, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+                withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) })
+            ),
+            -1,
+            true
+        );
+
+        // 4. Text Animation
+        textOpacity.value = withDelay(1000, withTiming(1, { duration: 1000 }));
+        textScale.value = withDelay(1000, withSpring(1, { damping: 15 }));
+
+        // 5. Completion transition
         setTimeout(() => {
-            bladeRotation.value = withTiming(bladeRotation.value + 360, { duration: 1500, easing: Easing.out(Easing.quad) });
-            bladeScale.value = withTiming(0, { duration: 800 });
-            fanY.value = withTiming(height, { duration: 1000 });
-
-            finalWordmarkOpacity.value = withTiming(1, { duration: 1000 });
-            finalLogoScale.value = withSpring(1, { damping: 12 });
-
-            setTimeout(() => {
-                bgFade.value = withTiming(0, { duration: 800 }, (f) => {
-                    if (f) runOnJS(onFinish)();
-                });
-            }, 3000);
-        }, 6000);
+            bgOpacity.value = withTiming(0, { duration: 1000 }, (finished) => {
+                if (finished) runOnJS(onFinish)();
+            });
+        }, 5000);
     }, []);
 
-    const wordmarkStyle = useAnimatedStyle(() => ({
-        opacity: finalWordmarkOpacity.value,
-        transform: [{ scale: finalLogoScale.value }],
-        alignItems: 'center'
+    const backgroundStyle = useAnimatedStyle(() => ({
+        ...StyleSheet.absoluteFillObject,
+        opacity: bgOpacity.value,
+        backgroundColor: '#0F172A', // Deep Slate / Obsidian
+    }));
+
+    const globeStyle = useAnimatedStyle(() => ({
+        opacity: globeOpacity.value,
+        transform: [
+            { scale: globeScale.value },
+            { rotate: `${globeRotate.value}deg` }
+        ],
+    }));
+
+    const pulseStyle = useAnimatedStyle(() => ({
+        position: 'absolute',
+        width: 140,
+        height: 140,
+        borderRadius: 70,
+        borderWidth: 2,
+        borderColor: 'rgba(56, 189, 248, 0.3)', // Electric Blue
+        transform: [{ scale: pulseScale.value }],
+        opacity: withRepeat(withTiming(0, { duration: 1500 }), -1, false),
+    }));
+
+    const textStyle = useAnimatedStyle(() => ({
+        opacity: textOpacity.value,
+        transform: [{ scale: textScale.value }],
+        marginTop: 40,
+        alignItems: 'center',
     }));
 
     return (
         <View style={styles.container}>
-            <StatusBar hidden />
-            <Animated.View style={[StyleSheet.absoluteFill, { opacity: bgFade.value, backgroundColor: COLORS.roseGold }]} />
+            <StatusBar style="light" hidden />
+            <Animated.View style={backgroundStyle} />
 
-            <View style={styles.stage}>
-                {letters.map((char, i) => (
-                    <PhysicsLetter key={i} letter={char} index={i} totalLetters={letters.length} />
-                ))}
+            <View style={styles.content}>
+                <View style={styles.globeContainer}>
+                    <Animated.View style={pulseStyle} />
+                    <Animated.View style={globeStyle}>
+                        <AnimatedFeather 
+                            name="globe" 
+                            size={100} 
+                            color="#38BDF8" // Electric Blue
+                        />
+                    </Animated.View>
+                </View>
+
+                <Animated.View style={textStyle}>
+                    <Text style={styles.brandName}>REALTIME</Text>
+                    <Text style={styles.brandSub}>TRACK</Text>
+                    <View style={styles.loaderBarContainer}>
+                        <Animated.View style={styles.loaderBar} />
+                    </View>
+                    <Text style={styles.loadingText}>ESTABLISHING SECURE LINK...</Text>
+                </Animated.View>
             </View>
-
-            <FanCharacter
-                fanY={fanY}
-                bladeRotation={bladeRotation}
-                bladeScale={bladeScale}
-                fanOpacity={fanOpacity}
-            />
-
-            <Animated.View style={[styles.finalBranding, wordmarkStyle]}>
-                <Logo size={100} />
-            </Animated.View>
         </View>
     );
 }
@@ -195,56 +138,51 @@ export default function SplashScreen({ navigation }) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: COLORS.roseGold,
+        backgroundColor: '#0F172A',
         justifyContent: 'center',
         alignItems: 'center',
     },
-    stage: {
-        position: 'absolute',
-        width: '100%',
-        height: '100%',
+    content: {
+        alignItems: 'center',
+    },
+    globeContainer: {
         justifyContent: 'center',
         alignItems: 'center',
+        height: 150,
+        width: 150,
     },
-    fanBody: {
-        position: 'absolute',
-        width: 60,
-        height: 80,
-        alignItems: 'center',
-    },
-    fanBase: {
-        width: 32,
-        height: 50,
-        backgroundColor: 'rgba(255, 255, 255, 0.3)',
-        borderRadius: 8,
-        position: 'absolute',
-        bottom: 0,
-    },
-    fanBlades: {
-        width: 90,
-        height: 90,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    fanBlade: {
-        position: 'absolute',
-        width: 10,
-        height: 45,
-        backgroundColor: '#FFF',
-        borderRadius: 5,
-        top: 0,
-    },
-    letterText: {
-        color: '#FFF',
-        fontSize: 52,
+    brandName: {
+        fontSize: 42,
         fontWeight: '900',
-        letterSpacing: 2,
-        textShadowColor: 'rgba(0, 0, 0, 0.15)',
-        textShadowOffset: { width: 0, height: 4 },
-        textShadowRadius: 10,
+        color: '#FFFFFF',
+        letterSpacing: 8,
     },
-    finalBranding: {
+    brandSub: {
+        fontSize: 18,
+        fontWeight: '300',
+        color: '#38BDF8',
+        letterSpacing: 12,
+        marginTop: -5,
+    },
+    loaderBarContainer: {
+        width: 180,
+        height: 2,
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        marginTop: 40,
+        borderRadius: 1,
+        overflow: 'hidden',
+    },
+    loaderBar: {
+        width: '40%',
+        height: '100%',
+        backgroundColor: '#38BDF8',
         position: 'absolute',
-        bottom: 120,
+    },
+    loadingText: {
+        color: 'rgba(255, 255, 255, 0.4)',
+        fontSize: 10,
+        marginTop: 15,
+        letterSpacing: 2,
+        fontWeight: '600',
     }
 });

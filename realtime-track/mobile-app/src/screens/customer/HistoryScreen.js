@@ -7,51 +7,64 @@ import {
     TouchableOpacity,
     ActivityIndicator,
     StatusBar,
-    Platform,
+    ScrollView,
     Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import rideService from '../../services/rideService';
-import { COLORS, SPACING, SHADOWS } from '../../constants/theme';
 
 const { width } = Dimensions.get('window');
 
-const PREMIUM_COLORS = {
-    slate: '#0f172a',
-    indigo: '#4f46e5',
-    violet: '#7c3aed',
-    background: '#f8fafc',
+const COLORS = {
+    black: '#000000',
     white: '#ffffff',
-    textMain: '#1e293b',
-    textMuted: '#64748b',
-    border: '#e2e8f0',
+    background: '#f7f7f7',
+    textPrimary: '#000000',
+    textSecondary: '#545454',
+    textTertiary: '#8a8a8a',
+    border: '#e0e0e0',
+    accent: '#06c167',
+    blue: '#276ef1',
+    card: '#ffffff',
+    red: '#e11d48',
+    orange: '#f59e0b',
 };
 
 const STATUS_CONFIG = {
-    'REQUESTED': { label: 'Requested', color: '#3b82f6', bg: '#eff6ff', icon: 'time-outline' },
-    'ACCEPTED': { label: 'Assigned', color: '#4f46e5', bg: '#eef2ff', icon: 'person-outline' },
-    'ARRIVED': { label: 'Arrived', color: '#7c3aed', bg: '#f5f3ff', icon: 'location-outline' },
-    'IN_PROGRESS': { label: 'In Progress', color: '#0ea5e9', bg: '#f0f9ff', icon: 'construct-outline' },
-    'COMPLETED': { label: 'Completed', color: '#22c55e', bg: '#f0fdf4', icon: 'checkmark-circle-outline' },
-    'CANCELLED': { label: 'Cancelled', color: '#ef4444', bg: '#fef2f2', icon: 'close-circle-outline' },
+    'ALL': { label: 'All', color: COLORS.black, icon: 'list-outline' },
+    'REQUESTED': { label: 'Requested', color: COLORS.blue, icon: 'time-outline' },
+    'ACCEPTED': { label: 'Assigned', color: COLORS.blue, icon: 'person-outline' },
+    'ARRIVED': { label: 'Arrived', color: COLORS.orange, icon: 'location-outline' },
+    'IN_PROGRESS': { label: 'In Progress', color: COLORS.blue, icon: 'construct-outline' },
+    'COMPLETED': { label: 'Completed', color: COLORS.accent, icon: 'checkmark-circle-outline' },
+    'CANCELLED': { label: 'Cancelled', color: COLORS.red, icon: 'close-circle-outline' },
 };
 
 export default function HistoryScreen({ navigation }) {
     const [history, setHistory] = useState([]);
+    const [filteredHistory, setFilteredHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [selectedFilter, setSelectedFilter] = useState('ALL');
 
     useEffect(() => {
         fetchHistory();
-    }, []);
+        const unsubscribe = navigation.addListener('focus', () => {
+            fetchHistory();
+        });
+        return unsubscribe;
+    }, [navigation]);
+
+    useEffect(() => {
+        filterHistory();
+    }, [selectedFilter, history]);
 
     const fetchHistory = async () => {
         setLoading(true);
         const result = await rideService.getJobHistory(null, 'customer');
         if (result.success) {
-            setHistory(result.data);
+            setHistory(result.data || []);
         }
         setLoading(false);
     };
@@ -60,119 +73,162 @@ export default function HistoryScreen({ navigation }) {
         setRefreshing(true);
         const result = await rideService.getJobHistory(null, 'customer');
         if (result.success) {
-            setHistory(result.data);
+            setHistory(result.data || []);
         }
         setRefreshing(false);
     };
 
-    const renderItem = ({ item }) => {
-        const status = STATUS_CONFIG[item.status] || STATUS_CONFIG['REQUESTED'];
-        const isNotCancelled = item.status !== 'CANCELLED';
+    const filterHistory = () => {
+        if (selectedFilter === 'ALL') {
+            setFilteredHistory(history);
+        } else {
+            setFilteredHistory(history.filter(item => item.status === selectedFilter));
+        }
+    };
+
+    const renderFilterChip = (statusKey) => {
+        const status = STATUS_CONFIG[statusKey];
+        const isSelected = selectedFilter === statusKey;
 
         return (
             <TouchableOpacity
-                style={styles.historyCard}
-                activeOpacity={0.9}
-                onPress={() => {
-                    if (item.status !== 'COMPLETED' && item.status !== 'CANCELLED') {
-                        navigation.navigate('Customer', { rideId: item.rideId });
-                    } else if (item.status === 'COMPLETED') {
-                        navigation.navigate('Receipt', { rideId: item.rideId });
-                    }
-                }}
+                key={statusKey}
+                style={[
+                    styles.filterChip,
+                    isSelected && styles.filterChipSelected
+                ]}
+                onPress={() => setSelectedFilter(statusKey)}
+                activeOpacity={0.8}
             >
-                <View style={styles.cardHeader}>
-                    <View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
-                        <Ionicons name={status.icon} size={14} color={status.color} />
-                        <Text style={[styles.statusText, { color: status.color }]}>{status.label}</Text>
-                    </View>
-                    <Text style={styles.dateText}>
-                        {new Date(item.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
-                    </Text>
-                </View>
-
-                <View style={styles.cardBody}>
-                    <View style={styles.serviceIconWrap}>
-                        <Ionicons name="construct" size={24} color={PREMIUM_COLORS.indigo} />
-                    </View>
-                    <View style={styles.serviceInfo}>
-                        <Text style={styles.serviceType}>{item.serviceType?.toUpperCase()} SERVICE</Text>
-                        <Text style={styles.addressText} numberOfLines={1}>{item.pickup?.address}</Text>
-                    </View>
-                    <View style={styles.priceInfo}>
-                        <Text style={styles.priceText}>₹{item.price || '899'}</Text>
-                        <Text style={styles.idText}>#{item.rideId?.substring(4, 10).toUpperCase()}</Text>
-                    </View>
-                </View>
-
-                {isNotCancelled && (
-                    <View style={styles.cardFooter}>
-                        <View style={styles.footerAction}>
-                            <Text style={styles.actionText}>
-                                {item.status === 'COMPLETED' ? 'View Receipt' : 'Track Booking'}
-                            </Text>
-                            <Ionicons name="chevron-forward" size={14} color={PREMIUM_COLORS.indigo} />
-                        </View>
-                    </View>
-                )}
+                <Text style={[
+                    styles.filterText,
+                    isSelected && styles.filterTextSelected
+                ]}>
+                    {status.label}
+                </Text>
             </TouchableOpacity>
         );
     };
 
+    const renderItem = ({ item }) => {
+        const status = STATUS_CONFIG[item.status] || STATUS_CONFIG['REQUESTED'];
+        const date = new Date(item.createdAt);
+
+        return (
+            <TouchableOpacity
+                style={styles.card}
+                activeOpacity={0.8}
+                onPress={() => {
+                    if (item.status === 'COMPLETED') {
+                        navigation.navigate('Receipt', { rideId: item.rideId });
+                    } else if (item.status !== 'CANCELLED') {
+                        navigation.navigate('ServiceStatus', { rideId: item.rideId });
+                    }
+                }}
+            >
+                <View style={styles.cardTop}>
+                    <View style={styles.serviceBox}>
+                        <View style={[styles.iconBox, { backgroundColor: `${status.color}10` }]}>
+                            <Ionicons name="construct" size={20} color={status.color} />
+                        </View>
+                        <View>
+                            <Text style={styles.serviceType}>
+                                {item.serviceType || 'Cooling Expert'}
+                            </Text>
+                            <Text style={styles.cardDate}>
+                                {date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })} • {date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                            </Text>
+                        </View>
+                    </View>
+                    <View style={styles.priceBox}>
+                        <Text style={styles.cardPrice}>₹{Math.round(item.price || 0)}</Text>
+                        <View style={[styles.miniStatus, { backgroundColor: `${status.color}15` }]}>
+                            <Text style={[styles.miniStatusText, { color: status.color }]}>{status.label}</Text>
+                        </View>
+                    </View>
+                </View>
+
+                <View style={styles.addressBox}>
+                    <View style={styles.addressLine}>
+                        <View style={styles.addressDot} />
+                        <Text style={styles.addressText} numberOfLines={1}>
+                            {item.pickup?.address || 'Service Location'}
+                        </Text>
+                    </View>
+                </View>
+
+                <View style={styles.cardFooter}>
+                    <View style={styles.bookingIdBox}>
+                        <Text style={styles.idLabel}>ID:</Text>
+                        <Text style={styles.idText}>{item.rideId?.substring(0, 8).toUpperCase()}</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color={COLORS.textTertiary} />
+                </View>
+            </TouchableOpacity>
+        );
+    };
+
+    if (loading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <StatusBar barStyle="dark-content" />
+                <ActivityIndicator size="large" color={COLORS.black} />
+            </View>
+        );
+    }
+
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="light-content" />
+            <StatusBar barStyle="dark-content" />
 
-            <LinearGradient
-                colors={[PREMIUM_COLORS.slate, '#1e293b']}
-                style={styles.header}
-            >
-                <SafeAreaView edges={['top']}>
-                    <View style={styles.headerContent}>
-                        <TouchableOpacity
-                            style={styles.backBtn}
-                            onPress={() => navigation.canGoBack() && navigation.goBack()}
-                        >
-                            <Ionicons name="arrow-back" size={24} color="#fff" />
-                        </TouchableOpacity>
-                        <View style={styles.headerTitleWrap}>
-                            <Text style={styles.headerTitle}>Activity</Text>
-                            <Text style={styles.headerSub}>All your bookings</Text>
-                        </View>
-                        <View style={{ width: 44 }} />
+            <SafeAreaView edges={['top']} style={styles.header}>
+                <View style={styles.headerContent}>
+                    <Text style={styles.headerTitle}>Activity</Text>
+                    <TouchableOpacity
+                        style={styles.refreshBadge}
+                        onPress={handleRefresh}
+                    >
+                        <Ionicons name="refresh" size={16} color={COLORS.black} />
+                        <Text style={styles.refreshText}>Updated Just Now</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* Filter Chips Layer */}
+                <View style={styles.filterWrapper}>
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.filterContent}
+                    >
+                        {Object.keys(STATUS_CONFIG).map(renderFilterChip)}
+                    </ScrollView>
+                </View>
+            </SafeAreaView>
+
+            {/* List Content */}
+            {filteredHistory.length === 0 ? (
+                <View style={styles.emptyState}>
+                    <View style={styles.emptyIconBox}>
+                        <Ionicons name="receipt-outline" size={48} color={COLORS.textTertiary} />
                     </View>
-                </SafeAreaView>
-            </LinearGradient>
-
-            {loading && !refreshing ? (
-                <View style={styles.loaderContainer}>
-                    <ActivityIndicator size="large" color={PREMIUM_COLORS.indigo} />
-                    <Text style={styles.loaderText}>Fetching activity...</Text>
+                    <Text style={styles.emptyTitle}>No Activity Yet</Text>
+                    <Text style={styles.emptySubtitle}>
+                        {selectedFilter === 'ALL'
+                            ? 'Bookings and services you request will appear here.'
+                            : `You don't have any ${STATUS_CONFIG[selectedFilter].label.toLowerCase()} services.`
+                        }
+                    </Text>
                 </View>
             ) : (
                 <FlatList
-                    data={history}
-                    keyExtractor={(item, index) => item._id || item.id || index.toString()}
+                    data={filteredHistory}
                     renderItem={renderItem}
+                    keyExtractor={(item) => item.rideId || item._id}
                     contentContainerStyle={styles.listContent}
-                    showsVerticalScrollIndicator={false}
-                    onRefresh={handleRefresh}
                     refreshing={refreshing}
-                    ListEmptyComponent={
-                        <View style={styles.emptyView}>
-                            <View style={styles.emptyIconCircle}>
-                                <Ionicons name="calendar-outline" size={60} color={PREMIUM_COLORS.textMuted} />
-                            </View>
-                            <Text style={styles.emptyTitle}>No activity yet</Text>
-                            <Text style={styles.emptySubtitle}>Your booked services will appear here.</Text>
-                            <TouchableOpacity
-                                style={styles.startBtn}
-                                onPress={() => navigation.navigate('Home')}
-                            >
-                                <Text style={styles.startBtnText}>Explore Services</Text>
-                            </TouchableOpacity>
-                        </View>
-                    }
+                    onRefresh={handleRefresh}
+                    showsVerticalScrollIndicator={false}
+                    ItemSeparatorComponent={() => <View style={styles.listSeparator} />}
                 />
             )}
         </View>
@@ -182,186 +238,213 @@ export default function HistoryScreen({ navigation }) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: PREMIUM_COLORS.background,
+        backgroundColor: COLORS.background,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: COLORS.white,
     },
     header: {
-        paddingBottom: 25,
-        borderBottomLeftRadius: 32,
-        borderBottomRightRadius: 32,
-        ...SHADOWS.medium,
+        backgroundColor: COLORS.white,
     },
     headerContent: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between',
         paddingHorizontal: 20,
-        marginTop: 10,
-    },
-    backBtn: {
-        width: 44,
-        height: 44,
-        borderRadius: 12,
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    headerTitleWrap: {
-        flex: 1,
-        alignItems: 'center',
+        paddingTop: 16,
+        paddingBottom: 12,
     },
     headerTitle: {
-        color: '#fff',
-        fontSize: 20,
-        fontWeight: '900',
+        fontSize: 32,
+        fontWeight: '700',
+        color: COLORS.black,
+        letterSpacing: -0.5,
     },
-    headerSub: {
-        color: 'rgba(255,255,255,0.6)',
-        fontSize: 12,
+    refreshBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
+        backgroundColor: COLORS.background,
+    },
+    refreshText: {
+        fontSize: 11,
         fontWeight: '600',
+        color: COLORS.textSecondary,
+    },
+    filterWrapper: {
+        backgroundColor: COLORS.white,
+        paddingTop: 16,
+        paddingBottom: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.border,
+    },
+    filterContent: {
+        paddingHorizontal: 20,
+        gap: 10,
+    },
+    filterChip: {
+        paddingHorizontal: 18,
+        paddingVertical: 10,
+        borderRadius: 24,
+        backgroundColor: COLORS.background,
+        marginRight: 8,
+    },
+    filterChipSelected: {
+        backgroundColor: COLORS.black,
+    },
+    filterText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: COLORS.textPrimary,
+    },
+    filterTextSelected: {
+        color: COLORS.white,
     },
     listContent: {
         padding: 20,
-        paddingBottom: 100,
     },
-    historyCard: {
-        backgroundColor: '#fff',
-        borderRadius: 24,
+    listSeparator: {
+        height: 12,
+    },
+    card: {
+        backgroundColor: COLORS.white,
+        borderRadius: 16,
         padding: 16,
-        marginBottom: 16,
-        ...SHADOWS.light,
         borderWidth: 1,
-        borderColor: PREMIUM_COLORS.border,
+        borderColor: COLORS.border,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+        elevation: 2,
     },
-    cardHeader: {
+    cardTop: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: 12,
+    },
+    serviceBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        flex: 1,
+    },
+    iconBox: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    serviceType: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: COLORS.black,
+        marginBottom: 4,
+    },
+    cardDate: {
+        fontSize: 12,
+        color: COLORS.textSecondary,
+        fontWeight: '500',
+    },
+    priceBox: {
+        alignItems: 'flex-end',
+        gap: 6,
+    },
+    cardPrice: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: COLORS.black,
+    },
+    miniStatus: {
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 6,
+    },
+    miniStatusText: {
+        fontSize: 10,
+        fontWeight: '700',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    addressBox: {
+        marginBottom: 12,
+        paddingLeft: 4,
+    },
+    addressLine: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+    addressDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: COLORS.textTertiary,
+    },
+    addressText: {
+        flex: 1,
+        fontSize: 13,
+        color: COLORS.textSecondary,
+        lineHeight: 18,
+    },
+    cardFooter: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 16,
-    },
-    statusBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 10,
-        paddingVertical: 6,
-        borderRadius: 10,
-        gap: 6,
-    },
-    statusText: {
-        fontSize: 11,
-        fontWeight: '800',
-        textTransform: 'uppercase',
-    },
-    dateText: {
-        fontSize: 13,
-        color: PREMIUM_COLORS.textMuted,
-        fontWeight: '600',
-    },
-    cardBody: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    serviceIconWrap: {
-        width: 48,
-        height: 48,
-        borderRadius: 14,
-        backgroundColor: '#f1f5f9',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
-    },
-    serviceInfo: {
-        flex: 1,
-    },
-    serviceType: {
-        fontSize: 14,
-        fontWeight: '800',
-        color: PREMIUM_COLORS.textMain,
-        letterSpacing: 1,
-    },
-    addressText: {
-        fontSize: 13,
-        color: PREMIUM_COLORS.textMuted,
-        marginTop: 2,
-    },
-    priceInfo: {
-        alignItems: 'flex-end',
-    },
-    priceText: {
-        fontSize: 16,
-        fontWeight: '900',
-        color: PREMIUM_COLORS.textMain,
-    },
-    idText: {
-        fontSize: 10,
-        color: PREMIUM_COLORS.textMuted,
-        marginTop: 2,
-        fontWeight: '700',
-    },
-    cardFooter: {
-        marginTop: 16,
         paddingTop: 12,
         borderTopWidth: 1,
-        borderTopColor: '#f1f5f9',
+        borderTopColor: COLORS.border,
     },
-    footerAction: {
+    bookingIdBox: {
         flexDirection: 'row',
-        justifyContent: 'flex-end',
         alignItems: 'center',
         gap: 4,
     },
-    actionText: {
-        fontSize: 13,
-        fontWeight: '700',
-        color: PREMIUM_COLORS.indigo,
+    idLabel: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: COLORS.textTertiary,
+        textTransform: 'uppercase',
     },
-    loaderContainer: {
+    idText: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: COLORS.black,
+        fontFamily: 'monospace',
+    },
+    emptyState: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        paddingHorizontal: 40,
     },
-    loaderText: {
-        marginTop: 12,
-        color: PREMIUM_COLORS.textMuted,
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    emptyView: {
-        alignItems: 'center',
-        marginTop: 80,
-    },
-    emptyIconCircle: {
-        width: 120,
-        height: 120,
-        borderRadius: 60,
-        backgroundColor: '#fff',
+    emptyIconBox: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: COLORS.background,
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 20,
-        ...SHADOWS.light,
     },
     emptyTitle: {
-        fontSize: 20,
-        fontWeight: '900',
-        color: PREMIUM_COLORS.textMain,
+        fontSize: 22,
+        fontWeight: '700',
+        color: COLORS.black,
         marginBottom: 8,
     },
     emptySubtitle: {
-        fontSize: 15,
-        color: PREMIUM_COLORS.textMuted,
+        fontSize: 14,
+        color: COLORS.textSecondary,
         textAlign: 'center',
-        paddingHorizontal: 40,
-        marginBottom: 24,
-    },
-    startBtn: {
-        backgroundColor: PREMIUM_COLORS.indigo,
-        paddingHorizontal: 24,
-        paddingVertical: 14,
-        borderRadius: 16,
-        ...SHADOWS.medium,
-    },
-    startBtnText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: 'bold',
+        lineHeight: 20,
     },
 });
-

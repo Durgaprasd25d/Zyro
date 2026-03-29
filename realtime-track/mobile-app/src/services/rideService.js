@@ -8,7 +8,7 @@ const rideService = {
     /**
      * Request an AC service job
      */
-    requestRide: async (pickup, destination, serviceType = 'service', paymentMethod = 'ONLINE', paymentTiming = 'PREPAID') => {
+    requestRide: async (pickup, destination, serviceType = 'service', paymentMethod = 'ONLINE', paymentTiming = 'PREPAID', pricing = {}) => {
         try {
             const user = await authService.getUser();
             const customerId = user?.id || user?.mobile || 'demo_user';
@@ -19,7 +19,8 @@ const rideService = {
                 serviceType,
                 customerId,
                 paymentMethod,
-                paymentTiming // PREPAID or POSTPAID
+                paymentTiming, // PREPAID or POSTPAID
+                ...pricing
             });
             return response.data;
         } catch (error) {
@@ -205,6 +206,24 @@ const rideService = {
     },
 
     /**
+     * Get all jobs categorized (pending, accepted, inProgress, completed)
+     */
+    getAllJobs: async (technicianId) => {
+        try {
+            const response = await axios.get(`${API_URL}/all-jobs`, {
+                params: { technicianId }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching all jobs:', error);
+            return {
+                success: false,
+                error: error.response?.data?.error || 'Failed to fetch jobs'
+            };
+        }
+    },
+
+    /**
      * Cancel job by technician (triggers re-assignment)
      */
     cancelByTechnician: async (rideId, technicianId, reason) => {
@@ -220,6 +239,29 @@ const rideService = {
             return {
                 success: false,
                 error: error.response?.data?.error || 'Failed to cancel job'
+            };
+        }
+    },
+
+    /**
+     * Cancel ride by customer
+     */
+    cancelRide: async (rideId, reason = 'Customer cancelled') => {
+        try {
+            const user = await authService.getUser();
+            const customerId = user?.id || user?.mobile || 'demo_user';
+
+            const response = await axios.post(`${API_URL}/cancel`, {
+                rideId,
+                customerId,
+                reason
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error cancelling ride:', error);
+            return {
+                success: false,
+                error: error.response?.data?.error || 'Failed to cancel booking'
             };
         }
     }

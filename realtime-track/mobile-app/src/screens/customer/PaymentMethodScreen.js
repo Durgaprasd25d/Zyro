@@ -1,29 +1,48 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Alert, StatusBar, Platform } from 'react-native';
+import {
+    View,
+    Text,
+    StyleSheet,
+    TouchableOpacity,
+    Dimensions,
+    Alert,
+    StatusBar,
+    Platform
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SPACING, SHADOWS } from '../../constants/theme';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import rideService from '../../services/rideService';
 
 const { width } = Dimensions.get('window');
+
+// Uber-Inspired Clean Palette
+const COLORS = {
+    black: '#000000',
+    white: '#ffffff',
+    background: '#f7f7f7',
+    textPrimary: '#000000',
+    textSecondary: '#545454',
+    textTertiary: '#8a8a8a',
+    border: '#e0e0e0',
+    accent: '#06c167',
+    blue: '#276ef1',
+    card: '#ffffff',
+};
 
 const METHODS = [
     {
         id: 'prepaid',
         name: 'Instant Checkout',
-        icon: 'flash',
-        desc: 'Unlock special priority service with prepaid booking.',
+        icon: 'card-outline',
+        desc: 'Fastest service with prepaid booking.',
         timing: 'PREPAID',
-        accent: COLORS.indigo
     },
     {
         id: 'postpaid',
         name: 'Pay After Service',
-        icon: 'time',
-        desc: 'Review the job and pay online once completed.',
+        icon: 'time-outline',
+        desc: 'Pay online once the job is completed.',
         timing: 'POSTPAID',
-        accent: '#7c3aed'
     },
 ];
 
@@ -61,26 +80,31 @@ export default function PaymentMethodScreen({ route, navigation }) {
                 { address: 'Technician Hub', lat: 0, lng: 0 },
                 mappedServiceType,
                 'ONLINE',
-                paymentTiming
+                paymentTiming,
+                route.params.pricing
             );
 
             if (response.success) {
                 const jobId = response.rideId || response.data?.rideId || 'UNKNOWN';
                 if (paymentTiming === 'PREPAID') {
+                    // Prepaid: Go to payment first, then waiting screen
                     navigation.navigate('CustomerRazorpayCheckout', {
                         rideId: jobId,
                         amount: total,
                         paymentTiming: 'PREPAID',
                         service,
-                        address
+                        address,
+                        pricing: route.params.pricing
                     });
                 } else {
-                    navigation.navigate('PaymentStatus', {
-                        status: 'success',
+                    // Postpaid: Go to search screen
+                    navigation.navigate('TechnicianWaiting', {
                         rideId: jobId,
                         total,
-                        paymentMethod: 'online',
-                        paymentTiming: 'POSTPAID'
+                        service,
+                        address,
+                        paymentTiming: 'POSTPAID',
+                        pricing: route.params.pricing
                     });
                 }
             } else {
@@ -95,41 +119,30 @@ export default function PaymentMethodScreen({ route, navigation }) {
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="light-content" />
+            <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
 
-            <LinearGradient
-                colors={[COLORS.slate, COLORS.slateLight]}
-                style={styles.header}
-            >
-                <SafeAreaView edges={['top']}>
-                    <View style={styles.headerContent}>
-                        <TouchableOpacity
-                            style={styles.backBtn}
-                            onPress={() => navigation.goBack()}
-                        >
-                            <Ionicons name="arrow-back" size={24} color="#fff" />
-                        </TouchableOpacity>
-                        <Text style={styles.headerTitle}>Secure Checkout</Text>
-                        <View style={{ width: 44 }} />
-                    </View>
-                </SafeAreaView>
-            </LinearGradient>
+            {/* Header */}
+            <SafeAreaView edges={['top']} style={styles.header}>
+                <View style={styles.headerContent}>
+                    <TouchableOpacity
+                        style={styles.backButton}
+                        onPress={() => navigation.goBack()}
+                    >
+                        <Ionicons name="arrow-back" size={24} color={COLORS.black} />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Select Payment</Text>
+                    <View style={{ width: 40 }} />
+                </View>
+            </SafeAreaView>
 
             <View style={styles.content}>
-                <View style={styles.summaryCard}>
-                    <View style={styles.summaryLeft}>
-                        <Text style={styles.summaryLabel}>Final Amount</Text>
-                        <View style={styles.amountBox}>
-                            <Text style={styles.currency}>₹</Text>
-                            <Text style={styles.amount}>{total.toFixed(2)}</Text>
-                        </View>
-                    </View>
-                    <View style={styles.summaryRight}>
-                        <Ionicons name="shield-checkmark" size={40} color="rgba(255,255,255,0.3)" />
-                    </View>
+                {/* Total Info */}
+                <View style={styles.totalCard}>
+                    <Text style={styles.totalLabel}>Amount to Pay</Text>
+                    <Text style={styles.totalValue}>₹{total.toFixed(2)}</Text>
                 </View>
 
-                <Text style={styles.sectionTitle}>Preferred Payment Timing</Text>
+                <Text style={styles.sectionTitle}>Payment Timing</Text>
 
                 <View style={styles.methodList}>
                     {METHODS.map((method) => {
@@ -137,28 +150,25 @@ export default function PaymentMethodScreen({ route, navigation }) {
                         return (
                             <TouchableOpacity
                                 key={method.id}
-                                activeOpacity={0.9}
+                                activeOpacity={0.7}
                                 style={[
                                     styles.methodCard,
-                                    isActive && { borderColor: method.accent, borderWidth: 2 }
+                                    isActive && styles.methodCardActive
                                 ]}
                                 onPress={() => setSelectedMethod(method.id)}
                             >
-                                <View style={[
-                                    styles.methodIconBox,
-                                    { backgroundColor: isActive ? method.accent : '#f8fafc' }
-                                ]}>
+                                <View style={styles.methodIcon}>
                                     <Ionicons
                                         name={method.icon}
                                         size={24}
-                                        color={isActive ? '#fff' : COLORS.textMuted}
+                                        color={isActive ? COLORS.black : COLORS.textTertiary}
                                     />
                                 </View>
 
-                                <View style={styles.methodInfo}>
+                                <View style={styles.methodDetails}>
                                     <Text style={[
                                         styles.methodName,
-                                        isActive && { color: method.accent }
+                                        isActive && styles.methodNameActive
                                     ]}>
                                         {method.name}
                                     </Text>
@@ -167,11 +177,9 @@ export default function PaymentMethodScreen({ route, navigation }) {
 
                                 <View style={[
                                     styles.radioCircle,
-                                    isActive && { borderColor: method.accent }
+                                    isActive && styles.radioCircleActive
                                 ]}>
-                                    {isActive && (
-                                        <View style={[styles.radioDot, { backgroundColor: method.accent }]} />
-                                    )}
+                                    {isActive && <View style={styles.radioDot} />}
                                 </View>
                             </TouchableOpacity>
                         );
@@ -179,35 +187,26 @@ export default function PaymentMethodScreen({ route, navigation }) {
                 </View>
 
                 <View style={styles.securityBox}>
-                    <Ionicons name="lock-closed" size={16} color={COLORS.textMuted} />
+                    <Ionicons name="shield-checkmark-outline" size={16} color={COLORS.textTertiary} />
                     <Text style={styles.securityText}>
-                        Encryption protocols ensure your data is 100% private.
+                        Your transaction is encrypted and secured.
                     </Text>
                 </View>
             </View>
 
-            <View style={styles.footer}>
+            <SafeAreaView edges={['bottom']} style={styles.footer}>
                 <TouchableOpacity
-                    style={styles.bookBtn}
+                    style={[styles.confirmButton, loading && styles.confirmButtonDisabled]}
                     activeOpacity={0.8}
                     onPress={handlePayment}
                     disabled={loading}
                 >
-                    <LinearGradient
-                        colors={[COLORS.indigo, '#3730a3']}
-                        style={styles.bookBtnGradient}
-                    >
-                        {loading ? (
-                            <Text style={styles.bookBtnText}>Securing Booking...</Text>
-                        ) : (
-                            <>
-                                <Text style={styles.bookBtnText}>Confirm Booking</Text>
-                                <Ionicons name="chevron-forward" size={18} color="#fff" />
-                            </>
-                        )}
-                    </LinearGradient>
+                    <Text style={styles.confirmButtonText}>
+                        {loading ? 'Processing...' : 'Confirm Booking'}
+                    </Text>
+                    {!loading && <Ionicons name="chevron-forward" size={20} color={COLORS.white} />}
                 </TouchableOpacity>
-            </View>
+            </SafeAreaView>
         </View>
     );
 }
@@ -215,168 +214,157 @@ export default function PaymentMethodScreen({ route, navigation }) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: COLORS.premiumBg
+        backgroundColor: COLORS.background,
     },
     header: {
-        paddingBottom: 20,
-        borderBottomLeftRadius: 24,
-        borderBottomRightRadius: 24,
-        ...SHADOWS.medium,
+        backgroundColor: COLORS.white,
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.border,
     },
     headerContent: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        paddingTop: 10,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
     },
-    backBtn: {
-        width: 44,
-        height: 44,
-        borderRadius: 12,
-        backgroundColor: 'rgba(255,255,255,0.15)',
+    backButton: {
+        width: 40,
+        height: 40,
         justifyContent: 'center',
-        alignItems: 'center',
     },
     headerTitle: {
-        color: '#fff',
-        fontSize: 18,
-        fontWeight: 'bold',
+        fontSize: 17,
+        fontWeight: '600',
+        color: COLORS.black,
     },
     content: {
         flex: 1,
-        padding: 24,
-        paddingTop: 30,
+        padding: 16,
     },
-    summaryCard: {
-        backgroundColor: COLORS.slate,
-        borderRadius: 28,
+    totalCard: {
+        backgroundColor: COLORS.white,
+        borderRadius: 12,
         padding: 24,
-        flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 35,
-        ...SHADOWS.heavy
+        marginBottom: 32,
+        borderWidth: 1,
+        borderColor: COLORS.border,
     },
-    summaryLabel: {
-        fontSize: 13,
-        color: 'rgba(255,255,255,0.6)',
-        fontWeight: '700',
+    totalLabel: {
+        fontSize: 12,
+        color: COLORS.textSecondary,
         textTransform: 'uppercase',
         letterSpacing: 1,
         marginBottom: 8,
     },
-    amountBox: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-    },
-    currency: {
-        fontSize: 18,
+    totalValue: {
+        fontSize: 32,
         fontWeight: '700',
-        color: '#fff',
-        marginTop: 6,
-        marginRight: 4,
-    },
-    amount: {
-        fontSize: 36,
-        fontWeight: '900',
-        color: '#fff'
+        color: COLORS.black,
     },
     sectionTitle: {
-        fontSize: 17,
-        fontWeight: '900',
-        color: COLORS.textMain,
-        marginBottom: 20,
+        fontSize: 14,
+        fontWeight: '700',
+        color: COLORS.black,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+        marginBottom: 16,
         marginLeft: 4,
     },
     methodList: {
-        gap: 16
+        gap: 12,
     },
     methodCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 20,
-        borderRadius: 24,
-        backgroundColor: '#fff',
-        borderWidth: 1.5,
-        borderColor: COLORS.borderLight,
-        ...SHADOWS.light,
+        padding: 16,
+        borderRadius: 12,
+        backgroundColor: COLORS.white,
+        borderWidth: 1,
+        borderColor: COLORS.border,
     },
-    methodIconBox: {
-        width: 52,
-        height: 52,
-        borderRadius: 16,
+    methodCardActive: {
+        borderColor: COLORS.black,
+        borderWidth: 2,
+    },
+    methodIcon: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: COLORS.background,
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: 16
+        marginRight: 16,
     },
-    methodInfo: {
-        flex: 1
+    methodDetails: {
+        flex: 1,
     },
     methodName: {
         fontSize: 16,
-        fontWeight: '800',
-        color: COLORS.textMain
+        fontWeight: '600',
+        color: COLORS.textPrimary,
+    },
+    methodNameActive: {
+        color: COLORS.black,
     },
     methodDesc: {
         fontSize: 12,
-        color: COLORS.textMuted,
-        marginTop: 4,
-        lineHeight: 18,
+        color: COLORS.textSecondary,
+        marginTop: 2,
     },
     radioCircle: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
+        width: 22,
+        height: 22,
+        borderRadius: 11,
         borderWidth: 2,
-        borderColor: '#e2e8f0',
+        borderColor: COLORS.border,
         justifyContent: 'center',
         alignItems: 'center',
-        marginLeft: 10,
+    },
+    radioCircleActive: {
+        borderColor: COLORS.black,
     },
     radioDot: {
         width: 12,
         height: 12,
         borderRadius: 6,
+        backgroundColor: COLORS.black,
     },
     securityBox: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
-        marginTop: 30,
-        paddingHorizontal: 20,
+        marginTop: 32,
     },
     securityText: {
         fontSize: 12,
-        color: COLORS.textMuted,
-        fontWeight: '500',
-        textAlign: 'center',
+        color: COLORS.textTertiary,
     },
     footer: {
-        padding: 24,
-        paddingBottom: Platform.OS === 'ios' ? 40 : 24,
-        backgroundColor: '#fff',
+        backgroundColor: COLORS.white,
         borderTopWidth: 1,
-        borderColor: COLORS.borderLight,
+        borderTopColor: COLORS.border,
+        paddingHorizontal: 16,
+        paddingTop: 12,
+        paddingBottom: 12,
     },
-    bookBtn: {
-        height: 60,
-        borderRadius: 18,
-        overflow: 'hidden',
-        ...SHADOWS.medium
-    },
-    bookBtnGradient: {
-        flex: 1,
+    confirmButton: {
+        backgroundColor: COLORS.black,
+        paddingVertical: 16,
+        borderRadius: 10,
         flexDirection: 'row',
-        justifyContent: 'center',
         alignItems: 'center',
-        gap: 10,
+        justifyContent: 'center',
+        gap: 8,
     },
-    bookBtnText: {
-        color: '#fff',
-        fontSize: 18,
-        fontWeight: '800'
+    confirmButtonDisabled: {
+        opacity: 0.7,
+    },
+    confirmButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: COLORS.white,
     },
 });
-

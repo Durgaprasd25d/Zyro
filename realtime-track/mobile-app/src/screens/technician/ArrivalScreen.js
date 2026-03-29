@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { COLORS, SPACING, SHADOWS } from '../../constants/theme';
 import technicianService from '../../services/technicianService';
 
@@ -14,7 +14,7 @@ export default function ArrivalScreen({ route, navigation }) {
         const result = await technicianService.updateJobStatus(job.id, 'in_progress');
 
         if (result.success) {
-            navigation.navigate('ServiceProgress', { job });
+            navigation.navigate('TechnicianServiceProgress', { job });
         } else {
             setStarting(false);
             // Optionally, show an error message to the user

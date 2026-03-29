@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Modal, Dimensions, ScrollView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { COLORS, SPACING, SHADOWS } from '../constants/theme';
 import config from '../constants/config';
 
@@ -30,7 +30,13 @@ export default function ServicesListSheet({ visible, onClose, technicianId, onAc
             );
             const result = await response.json();
             if (result.success) {
-                setJobs(result.data);
+                // Backend now returns pending, accepted, etc. at top level (not nested in data)
+                setJobs({
+                    pending: result.pending || [],
+                    accepted: result.accepted || [],
+                    inProgress: result.inProgress || [],
+                    completed: result.completed || []
+                });
             }
         } catch (error) {
             console.error('Failed to fetch jobs:', error);
@@ -89,17 +95,17 @@ export default function ServicesListSheet({ visible, onClose, technicianId, onAc
                 <View style={styles.jobHeader}>
                     <View style={styles.jobTypeContainer}>
                         <Ionicons name="construct" size={18} color={COLORS.roseGold} />
-                        <Text style={styles.jobType}>{item.serviceType.toUpperCase()}</Text>
+                        <Text style={styles.jobType}>{(item?.serviceType || 'Service').toUpperCase()}</Text>
                     </View>
                     <View style={styles.priceContainer}>
-                        <Text style={styles.price}>₹{item.price}</Text>
+                        <Text style={styles.price}>₹{item?.price || '0'}</Text>
                     </View>
                 </View>
 
                 <View style={styles.locationRow}>
                     <Ionicons name="location" size={16} color={COLORS.grey} />
                     <Text style={styles.location} numberOfLines={2}>
-                        {item.pickup?.address || 'Location not available'}
+                        {item?.pickup?.address || 'Address not provided'}
                     </Text>
                 </View>
 

@@ -5,14 +5,16 @@ A production-ready real-time driver tracking system built with **React Native + 
 ## 🎯 Features
 
 ### Driver App
+
 - ✅ High-accuracy GPS tracking
-- ✅ Background location updates  
+- ✅ Background location updates
 - ✅ Real-time location broadcasting via WebSocket
 - ✅ Distance-based throttling (battery optimized)
 - ✅ Connection status monitoring
 - ✅ Live speed & accuracy display
 
 ### Customer App
+
 - ✅ Real-time driver tracking on Google Maps
 - ✅ Smooth marker animation (no jumping/flickering)
 - ✅ Automatic bearing rotation based on movement
@@ -22,6 +24,7 @@ A production-ready real-time driver tracking system built with **React Native + 
 - ✅ Connection status indicators
 
 ### Backend
+
 - ✅ REST API for location updates
 - ✅ Socket.IO real-time broadcasting
 - ✅ In-memory location storage (Redis-ready)
@@ -81,6 +84,7 @@ Realtime Track/
 ## 🚀 Setup Instructions
 
 ### Prerequisites
+
 - **Node.js** (v16 or higher)
 - **npm** or **yarn**
 - **Expo CLI** (`npm install -g expo-cli`)
@@ -92,21 +96,25 @@ Realtime Track/
 ### Backend Setup
 
 1. **Navigate to backend directory:**
+
    ```bash
    cd "Realtime Track/backend"
    ```
 
 2. **Install dependencies:**
+
    ```bash
    npm install
    ```
 
 3. **Create environment file:**
+
    ```bash
    cp .env.example .env
    ```
 
 4. **Edit `.env` file** (optional - defaults work fine):
+
    ```env
    PORT=3000
    NODE_ENV=development
@@ -114,6 +122,7 @@ Realtime Track/
    ```
 
 5. **Start the server:**
+
    ```bash
    npm start
    ```
@@ -125,11 +134,13 @@ Realtime Track/
 ### Mobile App Setup
 
 1. **Navigate to mobile app directory:**
+
    ```bash
    cd "Realtime Track/mobile-app"
    ```
 
 2. **Install dependencies:**
+
    ```bash
    npm install
    ```
@@ -149,19 +160,21 @@ Create a `.env` file in the `mobile-app/` directory:
 EXPO_PUBLIC_BACKEND_URL=http://<YOUR_IP>:3000
 
 # Your Google Maps API Key
-EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyBnA5Sw2GQC-Jt0rjH40qaGOx3vkALKWKA
+EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyAQCa64PcTvWMOJ7anLefPuW9FQC5DcHzw
 ```
 
-   > **Finding your IP:**
-   > - Windows: `ipconfig` (look for IPv4 Address)
-   > - Mac/Linux: `ifconfig` or `ip addr`
-   > - Don't use `localhost` - use your actual local network IP!
+> **Finding your IP:**
+>
+> - Windows: `ipconfig` (look for IPv4 Address)
+> - Mac/Linux: `ifconfig` or `ip addr`
+> - Don't use `localhost` - use your actual local network IP!
 
 5. **Update `app.json` with Google Maps API Key:**
    - Open `app.json`
    - Replace `YOUR_GOOGLE_MAPS_API_KEY` in both `ios.config.googleMapsApiKey` and `android.config.googleMaps.apiKey`
 
 6. **Start Expo:**
+
    ```bash
    npx expo start
    ```
@@ -178,12 +191,14 @@ EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyBnA5Sw2GQC-Jt0rjH40qaGOx3vkALKWKA
 ### Testing the System
 
 1. **Start Backend:**
+
    ```bash
    cd backend
    npm start
    ```
 
 2. **Start Mobile App:**
+
    ```bash
    cd mobile-app
    npx expo start
@@ -212,10 +227,12 @@ EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyBnA5Sw2GQC-Jt0rjH40qaGOx3vkALKWKA
 ## 🔧 Configuration
 
 ### Backend Configuration (`backend/.env`)
+
 - `PORT`: Server port (default: 3000)
 - `LOCATION_STALE_TIMEOUT`: Max age for location data (default: 30000ms)
 
 ### Mobile App Configuration (`mobile-app/src/constants/config.js`)
+
 - `DRIVER_LOCATION_INTERVAL`: Location update frequency (2000ms)
 - `DRIVER_DISTANCE_FILTER`: Minimum distance between updates (10m)
 - `POLLING_INTERVAL`: Fallback polling frequency (5000ms)
@@ -229,9 +246,11 @@ EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyBnA5Sw2GQC-Jt0rjH40qaGOx3vkALKWKA
 ### REST API
 
 #### POST `/api/driver/location`
+
 Send driver location update.
 
 **Request:**
+
 ```json
 {
   "rideId": "ride123",
@@ -244,6 +263,7 @@ Send driver location update.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -252,9 +272,11 @@ Send driver location update.
 ```
 
 #### GET `/api/driver/location/:rideId`
+
 Get latest driver location.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -272,12 +294,14 @@ Get latest driver location.
 ### WebSocket Events
 
 #### Driver Events
+
 - `driver:join` - Join ride room
 - `driver:location:update` - Send location
 - `driver:joined` - Join confirmation
 - `driver:location:ack` - Location acknowledged
 
 #### Customer Events
+
 - `customer:join` - Join ride room
 - `customer:location:update` - Receive location updates
 - `customer:joined` - Join confirmation
@@ -290,6 +314,7 @@ Get latest driver location.
 ### Backend Issues
 
 **Server won't start:**
+
 - Check if port 3000 is already in use
 - Try changing `PORT` in `.env`
 - Run: `lsof -i :3000` (Mac/Linux) or `netstat -ano | findstr :3000` (Windows)
@@ -297,21 +322,25 @@ Get latest driver location.
 ### Mobile App Issues
 
 **Map not showing:**
+
 - Verify Google Maps API Key is correct
 - Enable Maps SDK for Android/iOS in Google Cloud Console
 - Check API key restrictions
 
 **No location updates:**
+
 - Verify `BACKEND_URL` uses your computer's IP (not localhost)
 - Ensure backend server is running
 - Check firewall settings
 - Both devices must be on same network
 
 **Location permission denied:**
+
 - Manually grant permissions in device settings
 - Restart the app after granting permissions
 
 **Marker not moving smoothly:**
+
 - Check GPS signal strength
 - Increase `GPS_NOISE_THRESHOLD` if too sensitive
 - Verify location updates are being received (check backend logs)
@@ -321,16 +350,20 @@ Get latest driver location.
 ## 🎨 Customization
 
 ### Change Marker Icon
+
 Replace `mobile-app/src/assets/car-icon.png` with your custom icon (recommended size: 40x40px).
 
 ### Adjust Animation Speed
+
 Edit `mobile-app/src/constants/config.js`:
+
 ```javascript
 MARKER_ANIMATION_DURATION: 1500, // Slower (1.5 seconds)
 CAMERA_ANIMATION_DURATION: 300,  // Faster (0.3 seconds)
 ```
 
 ### Enable Redis (Production)
+
 1. Install Redis: `npm install ioredis`
 2. Uncomment Redis code in `backend/services/locationStore.js`
 3. Add `REDIS_URL=redis://localhost:6379` to `.env`
@@ -340,6 +373,7 @@ CAMERA_ANIMATION_DURATION: 300,  // Faster (0.3 seconds)
 ## 📦 Production Deployment
 
 ### Backend
+
 1. Set `NODE_ENV=production` in `.env`
 2. Deploy to hosting service (Heroku, AWS, DigitalOcean, etc.)
 3. Use Redis for scalability
@@ -347,6 +381,7 @@ CAMERA_ANIMATION_DURATION: 300,  // Faster (0.3 seconds)
 5. Configure CORS for your mobile app domain
 
 ### Mobile App
+
 1. Update `BACKEND_URL` to production server
 2. Build for iOS/Android:
    ```bash
@@ -366,6 +401,7 @@ MIT License - Feel free to use for personal or commercial projects.
 ## 🙏 Credits
 
 Built with:
+
 - **React Native + Expo** - Mobile framework
 - **Socket.IO** - Real-time WebSocket communication
 - **Google Maps** - Map rendering
@@ -377,6 +413,7 @@ Built with:
 ## 📞 Support
 
 For issues or questions:
+
 1. Check the Troubleshooting section above
 2. Review backend/mobile app logs
 3. Ensure all dependencies are installed

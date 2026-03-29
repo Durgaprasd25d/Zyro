@@ -17,6 +17,7 @@ class CustomerSocketService {
         this.onConnectionChange = null;
         this.onRideCompleted = null;
         this.onRideCancelled = null;
+        this.onRideAccepted = null; // Callback for when technician accepts ride
     }
 
     /**
@@ -112,6 +113,11 @@ class CustomerSocketService {
             if (this.onRideCompleted) this.onRideCompleted(data);
         });
 
+        this.socket.on('ride:accepted', (data) => {
+            console.log('✅ Technician accepted ride:', data);
+            if (this.onRideAccepted) this.onRideAccepted(data);
+        });
+
         this.socket.on('ride:cancelled', (data) => {
             console.log('Ride cancelled:', data);
             this.notifyListeners({ type: 'ride:cancelled', data });
@@ -195,6 +201,14 @@ class CustomerSocketService {
         if (this.onConnectionChange) {
             this.onConnectionChange(status);
         }
+    }
+
+    /**
+     * Set callback for when technician accepts ride
+     * @param {function} callback - Callback function
+     */
+    setOnRideAccepted(callback) {
+        this.onRideAccepted = callback;
     }
 
     /**

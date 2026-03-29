@@ -34,6 +34,7 @@ router.get('/dashboard', async (req, res) => {
                     serviceType: activeRide.serviceType,
                     pickup: activeRide.pickup,
                     status: activeRide.status,
+                    price: activeRide.price || 1000,
                     earnings: Math.round((activeRide.price || 1000) * 0.8) // 80% to technician
                 } : null,
                 isOnline: technician.isOnline,
@@ -307,6 +308,7 @@ router.get('/history', async (req, res) => {
             serviceType: ride.serviceType,
             location: ride.pickup.address,
             status: ride.status,
+            price: ride.price || 1000,
             earnings: Math.round((ride.price || 1000) * 0.8),
             date: new Date(ride.updatedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
         }));

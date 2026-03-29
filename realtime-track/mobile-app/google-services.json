@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:586224586992:android:b98af0c933db61b14f7235",
         "android_client_info": {
-          "package_name": "com.zyroac.app"
+          "package_name": "com.realtime.track"
         }
       },
       "oauth_client": [
@@ -17,8 +17,8 @@
           "client_id": "586224586992-4lqa4lppekl15p3m1jdi3sisbst6ledu.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.zyroac.app",
-            "certificate_hash": "8d52ea73f9dcee0911166db9a73a3f51145b5a9d"
+            "package_name": "com.realtime.track",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
           }
         },
         {

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, ActivityIndicator, StatusBar, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SHADOWS } from '../../constants/theme';
 import config from '../../constants/config';
@@ -88,13 +88,20 @@ export default function CustomerRazorpayCheckoutScreen({ route, navigation }) {
                 });
 
                 if (verifyResult.success) {
-                    navigation.replace('PaymentStatus', {
-                        status: 'success',
-                        rideId: rideId,
-                        total: amount,
-                        paymentMethod: 'online',
-                        paymentTiming: paymentTiming
-                    });
+                    if (paymentTiming === 'POSTPAID') {
+                        // For postpaid, return to tracking screen to show completion code
+                        navigation.replace('ServiceStatus', { rideId });
+                    } else {
+                        // After prepaid payment, go to search/waiting screen
+                        navigation.replace('TechnicianWaiting', {
+                            rideId: rideId,
+                            total: amount,
+                            service: route.params.service,
+                            address: route.params.address,
+                            paymentTiming: 'PREPAID',
+                            pricing: route.params.pricing
+                        });
+                    }
                 } else {
                     alert('Payment verification failed: ' + verifyResult.error);
                     navigation.goBack();

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { COLORS, SPACING, SHADOWS } from '../../constants/theme';
 
 export default function JobDetailsScreen({ route, navigation }) {
@@ -42,8 +42,12 @@ export default function JobDetailsScreen({ route, navigation }) {
                         <Text style={styles.infoValue}>{job?.distance || '4.5 km away'}</Text>
                     </View>
                     <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Est. Time</Text>
-                        <Text style={styles.infoValue}>{job?.eta || '20 mins'}</Text>
+                        <Text style={styles.infoLabel}>Service Price</Text>
+                        <Text style={styles.infoValue}>₹{job?.price || '1,000'}</Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>Est. Earnings</Text>
+                        <Text style={[styles.infoValue, { color: COLORS.earningsGreen }]}>₹{job?.earnings || '800'}</Text>
                     </View>
                 </View>
 

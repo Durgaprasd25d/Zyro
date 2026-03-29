@@ -188,4 +188,45 @@ router.put('/update-profile', async (req, res) => {
     }
 });
 
+// Get Addresses
+router.get('/addresses/:userId', async (req, res) => {
+    try {
+        const user = await User.findById(req.params.userId);
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+        res.json({ success: true, addresses: user.addresses || [] });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// Add Address
+router.post('/add-address', async (req, res) => {
+    try {
+        const { userId, label, address, lat, lng } = req.body;
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+        user.addresses.push({ label, address, lat, lng });
+        await user.save();
+        res.json({ success: true, addresses: user.addresses });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// Delete Address
+router.delete('/delete-address/:userId/:addressId', async (req, res) => {
+    try {
+        const { userId, addressId } = req.params;
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+        user.addresses = user.addresses.filter(addr => addr._id.toString() !== addressId);
+        await user.save();
+        res.json({ success: true, addresses: user.addresses });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
 module.exports = router;

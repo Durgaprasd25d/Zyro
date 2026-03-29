@@ -28,7 +28,17 @@ const UserSchema = new mongoose.Schema({
     fcmToken: {
         type: String,
         default: null
-    }
+    },
+    addresses: [{
+        label: String, // Home, Work, etc.
+        address: String,
+        lat: Number,
+        lng: Number,
+        isDefault: {
+            type: Boolean,
+            default: false
+        }
+    }]
 }, {
     timestamps: true
 });

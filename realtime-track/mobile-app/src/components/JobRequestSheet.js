@@ -10,7 +10,7 @@ import {
     Platform,
 } from 'react-native';
 import * as Location from 'expo-location';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { COLORS, SPACING, SHADOWS } from '../constants/theme';
 
 const { width, height } = Dimensions.get('window');
@@ -221,8 +221,8 @@ export default function JobRequestSheet({ visible, jobData, onAccept, onReject }
                             <Text style={styles.infoValue}>{jobData.serviceType || 'AC Service'}</Text>
                         </View>
                         <View style={styles.infoBox}>
-                            <Text style={styles.infoLabel}>EST. EARNING</Text>
-                            <Text style={[styles.infoValue, { color: '#2E7D32' }]}>₹{jobData.price || '850'}</Text>
+                            <Text style={styles.infoLabel}>SERVICE PRICE</Text>
+                            <Text style={[styles.infoValue, { color: '#2E7D32' }]}>₹{jobData.price || '1,000'}</Text>
                         </View>
                     </View>
 

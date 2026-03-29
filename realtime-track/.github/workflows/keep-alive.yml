@@ -1,0 +1,21 @@
+name: Backend Keep-Alive
+
+on:
+  schedule:
+    - cron: '*/13 * * * *' # Runs every 13 minutes
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Backend
+        run: |
+          # Use the BACKEND_URL secret or a fallback if the user hasn't set it yet
+          URL="${{ secrets.BACKEND_URL }}"
+          if [ -z "$URL" ]; then
+            echo "Error: BACKEND_URL secret is not set."
+            exit 1
+          fi
+          echo "Pinging $URL/health..."
+          curl -s -f "$URL/health" || curl -s -f "$URL/keepalive" || echo "Ping failed but continuing..."

@@ -1,12 +1,12 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Animated, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { COLORS, SPACING, SHADOWS } from '../../constants/theme';
 
 export default function WalletUpdateScreen({ route, navigation }) {
     const { amount, earnings, commission } = route?.params || {};
-    const displayAmount = amount || 1200;
+    const displayAmount = amount || 1000;
     const displayCommission = commission || (displayAmount * 0.20).toFixed(0);
     const netEarnings = earnings || (displayAmount - displayCommission).toFixed(0);
 

@@ -37,11 +37,14 @@ npx expo start
 ---
 
 ### 3. Configure Environment
+
 Create a `.env` file in the `mobile-app/` directory:
+
 ```env
 EXPO_PUBLIC_BACKEND_URL=http://<YOUR_COMPUTER_IP>:3000
-EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyBnA5Sw2GQC-Jt0rjH40qaGOx3vkALKWKA
+EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyAQCa64PcTvWMOJ7anLefPuW9FQC5DcHzw
 ```
+
 > [!IMPORTANT]
 > Use your local network IP (e.g., 192.168.1.50). You can find it by running `hostname -I` on Linux/Mac.
 
@@ -59,20 +62,24 @@ EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyBnA5Sw2GQC-Jt0rjH40qaGOx3vkALKWKA
 ### Test Locally (2 devices/simulators)
 
 **Device 1 - Driver:**
+
 1. Enter Ride ID: `test123`
 2. Select **Driver**
 3. Press **Start Tracking**
 4. Grant location permissions
 
 **Device 2 - Customer:**
+
 1. Enter Ride ID: `test123` (same ID!)
 2. Select **Customer**
 3. Watch the driver marker appear and move
 
 ### Simulate Movement (iOS Simulator)
+
 - Features → Location → **Freeway Drive**
 
 ### Simulate Movement (Android Emulator)
+
 - Extended Controls (⋮) → Location → **Routes** → Play
 
 ---
@@ -91,15 +98,18 @@ EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyBnA5Sw2GQC-Jt0rjH40qaGOx3vkALKWKA
 ## 🐛 Common Issues & Fixes
 
 ### "Cannot connect to server"
+
 - ✅ Use your IP address, NOT `localhost`
 - ✅ Ensure devices are on same WiFi network
 - ✅ Check backend server is running
 
 ### "Map not loading"
+
 - ✅ Add Google Maps API Key to `.env`
 - ✅ Enable Maps SDK in Google Cloud Console
 
 ### "Location permission denied"
+
 - ✅ Go to device Settings → App → Permissions
 - ✅ Grant Location permission
 - ✅ Restart the app
@@ -137,6 +147,7 @@ Once everything works:
 ## 📚 Full Documentation
 
 See [README.md](README.md) for:
+
 - Complete API documentation
 - Advanced configuration
 - Production deployment

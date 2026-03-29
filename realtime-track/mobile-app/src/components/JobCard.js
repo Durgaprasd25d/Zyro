@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { COLORS, SPACING, SHADOWS } from '../constants/theme';
 
 export default function JobCard({ job, onPress, style }) {
@@ -30,10 +30,16 @@ export default function JobCard({ job, onPress, style }) {
                     <Ionicons name="time-outline" size={16} color={COLORS.grey} />
                     <Text style={styles.detailText}>{job.duration || '1 hr'}</Text>
                 </View>
+                {job.price && (
+                    <View style={[styles.detailRow, { marginTop: 4 }]}>
+                        <Ionicons name="pricetag-outline" size={16} color={COLORS.blue} />
+                        <Text style={[styles.detailText, { color: COLORS.blue, fontWeight: '700' }]}>Price: ₹{Math.round(job.price || 0)}</Text>
+                    </View>
+                )}
                 {job.earnings && (
                     <View style={styles.earningsRow}>
                         <Ionicons name="cash-outline" size={16} color={COLORS.earningsGreen} />
-                        <Text style={styles.earningsText}>₹{job.earnings}</Text>
+                        <Text style={styles.earningsText}>Earnings: ₹{Math.round(job.earnings || 0)}</Text>
                     </View>
                 )}
             </View>

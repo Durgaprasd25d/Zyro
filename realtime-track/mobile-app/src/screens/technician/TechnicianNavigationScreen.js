@@ -1,629 +1,525 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, Platform } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet } from "react-native";
-import { Ionicons } from '@expo/vector-icons';
-import MapView, { PROVIDER_GOOGLE, Marker } from 'react-native-maps';
-import MapViewDirections from 'react-native-maps-directions';
-import * as Location from 'expo-location';
-import driverLocationService from '../../services/driverLocationService';
-import driverSocketService from '../../services/driverSocketService';
-import { COLORS, SPACING, SHADOWS } from '../../constants/theme';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  SafeAreaView,
+  Linking,
+  Alert,
+  Platform,
+  Dimensions,
+  Modal,
+  TextInput,
+  ActivityIndicator,
+  StatusBar
+} from 'react-native';
+import MapboxGL from '@rnmapbox/maps';
+import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import config from '../../constants/config';
-import { Modal, TextInput, Alert, ActivityIndicator } from 'react-native';
+import driverLocationService from '../../services/driverLocationService';
+import technicianSocketService from '../../services/technicianSocketService';
+import rideService from '../../services/rideService';
+import { COLORS } from '../../constants/theme';
 
+const { width, height } = Dimensions.get('window');
 
-export default function TechnicianNavigationScreen({ route, navigation }) {
-    const { rideId, destination } = route.params;
-    const mapRef = useRef(null);
+// Set Access Token
+MapboxGL.setAccessToken(config.MAPBOX_ACCESS_TOKEN);
 
-    const [currentLocation, setCurrentLocation] = useState(null);
-    const [heading, setHeading] = useState(0);
-    const [speed, setSpeed] = useState(0);
-    const [distance, setDistance] = useState(null);
-    const [duration, setDuration] = useState(null);
-    const [isNavigating, setIsNavigating] = useState(false);
-    const [rideStatus, setRideStatus] = useState('ACCEPTED');
-    const [otp, setOtp] = useState('');
-    const [showOtpModal, setShowOtpModal] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [otpType, setOtpType] = useState('ENTRANCE'); // ENTRANCE or COMPLETION
-    const [paymentStatus, setPaymentStatus] = useState('UNPAID');
-    const [showCancelModal, setShowCancelModal] = useState(false);
-    const [cancelReason, setCancelReason] = useState('');
-    const [cancelling, setCancelling] = useState(false);
+const TechnicianNavigationScreen = ({ route, navigation }) => {
+  const { job: initialJob, rideId: initialRideId } = route?.params || {};
+  const [job, setJob] = useState(initialJob);
+  const rideId = initialRideId || job?.id || job?.rideId;
+  const destination = job?.pickup;
+  
+  const [currentLocation, setCurrentLocation] = useState(null);
+  const [status, setStatus] = useState(job?.status?.toLowerCase() || 'accepted');
+  const [isReady, setIsReady] = useState(false);
+  const [loading, setLoading] = useState(!destination?.lat);
+  const [otp, setOtp] = useState('');
+  const [otpModalVisible, setOtpModalVisible] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  
+  const mapRef = useRef(null);
 
-    const CANCEL_REASONS = [
-        "Customer not at location",
-        "Unable to reach destination",
-        "Vehicle breakdown",
-        "Emergency situation",
-        "Other urgent matter",
-        "Other"
-    ];
-
-    const watchSubscriptionRef = useRef(null);
-    const lastSentLocationRef = useRef(null);
-    const hasInitialFitRef = useRef(false); // Prevent multiple fits
-
-    useEffect(() => {
-        if (!rideId) return;
-
-        console.log('🚗 Technician Navigation - Ride:', rideId);
-        connectSocket();
-        startTracking();
-        fetchRoute();
-        fetchRideStatus();
-
-        return () => {
-            stopTracking();
-            console.log('Keeping socket alive');
-        };
-    }, [rideId]);
-
-    const handleRideCancelled = (data) => {
-        console.log('❌ Ride cancelled while navigating:', data);
-        Alert.alert(
-            'Booking Cancelled',
-            'The customer has cancelled this booking.',
-            [{ text: 'OK', onPress: () => navigation.navigate('TechnicianDashboard') }]
-        );
-    };
-
-    const connectSocket = () => {
-        driverSocketService.connect(rideId, (status) => {
-            if (status === 'connected') {
-                setTimeout(() => {
-                    const socket = driverSocketService.getSocket();
-                    if (socket?.connected) {
-                        socket.emit('driver:join', { rideId });
-                        console.log('✅ Driver joined ride room');
-
-                        // Listen for payment verification
-                        socket.on('payment:verified', (data) => {
-                            console.log('💰 Payment verified via socket:', data);
-                            setPaymentStatus('PAID');
-                            Alert.alert('Payment Received', 'The customer has successfully paid. You can now verify the completion code.');
-                        });
-                    }
-                }, 500);
-            }
-        }, handleRideCancelled);
-    };
-
-    const fetchRoute = async () => {
-        try {
-            const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-            const orig = `${pos.coords.latitude},${pos.coords.longitude}`;
-            const dest = `${destination.lat || destination.latitude},${destination.lng || destination.longitude}`;
-
-            const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${orig}&destination=${dest}&mode=driving&key=${config.GOOGLE_MAPS_API_KEY}`;
-            const response = await fetch(url);
-            const data = await response.json();
-
-            if (data.routes?.[0]?.legs?.[0]) {
-                const leg = data.routes[0].legs[0];
-                setDistance(leg.distance.value / 1000);
-                setDuration(leg.duration.value / 60);
-                console.log('📍 Route:', leg.distance.text, '-', leg.duration.text);
-            }
-        } catch (error) {
-            console.error('Route error:', error);
-        }
-    };
-
-    const handleCancelJob = async () => {
-        if (!cancelReason) {
-            Alert.alert('Required', 'Please select a reason for cancellation');
-            return;
-        }
-
-        setCancelling(true);
-        try {
-            const user = await require('../../services/authService').default.getUser();
-            const response = await require('../../services/rideService').default.cancelByTechnician(
-                rideId,
-                user.id,
-                cancelReason
-            );
-
-            setCancelling(false);
-
-            if (response.success) {
-                setShowCancelModal(false);
-                Alert.alert(
-                    'Job Cancelled',
-                    'The job has been cancelled and reassigned to other technicians.',
-                    [{ text: 'OK', onPress: () => navigation.navigate('TechnicianDashboard') }]
-                );
-            } else {
-                Alert.alert('Error', response.error || 'Failed to cancel job');
-            }
-        } catch (error) {
-            setCancelling(false);
-            Alert.alert('Error', 'Failed to cancel job. Please try again.');
-        }
-    };
-
-    const startTracking = async () => {
-        try {
-            console.log('🚀 Using driverLocationService...');
-            await driverLocationService.startTracking(handleLocationUpdate);
-            await driverLocationService.startBackgroundTracking().catch(() => console.warn('BG tracking unavailable'));
-            setIsNavigating(true);
-            console.log('✅ Location service active!');
-        } catch (error) {
-            console.error('❌ Tracking error:', error.message);
-            alert('GPS Error: ' + error.message);
-        }
-    };
-
-    const stopTracking = async () => {
-        await driverLocationService.stopTracking();
-    };
-
-    const handleLocationUpdate = (locationData) => {
-        const newLoc = { latitude: locationData.lat, longitude: locationData.lng };
-        console.log('💚 [TECH SCREEN UPDATE]:', locationData.lat.toFixed(6), locationData.lng.toFixed(6), 'Socket Active:', driverSocketService.isConnected);
-
-        setCurrentLocation(newLoc);
-        setHeading(locationData.bearing);
-        setSpeed(locationData.speed);
-
-        const sent = driverSocketService.sendLocation(locationData);
-        if (!sent) console.warn('🚨 Failed to send location to socket');
-
-        mapRef.current?.animateCamera({
-            center: newLoc,
-            heading: locationData.bearing,
-            pitch: 60,
-            zoom: 18,
-        }, { duration: 1000 });
-    };
-    const fetchRideStatus = async () => {
-        try {
-            const response = await fetch(`${config.BACKEND_URL}/api/ride/${rideId}`);
-            const result = await response.json();
-            if (result.success) setRideStatus(result.data.status);
-        } catch (e) { console.error(e); }
-    };
-
-    const handleVerifyOtp = async () => {
-        if (!otp || otp.length < 4) return;
+  // Fetch job details if missing coordinates
+  useEffect(() => {
+    const fetchJobDetails = async () => {
+      if (!destination?.lat && rideId) {
         setLoading(true);
         try {
-            const endpoint = otpType === 'ENTRANCE' ? 'verify-arrival' : 'complete';
-            const response = await fetch(`${config.BACKEND_URL}/api/ride/${endpoint}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ rideId, otp })
-            });
-            if (response.status === 402) {
-                Alert.alert('Payment Pending', 'The customer has not completed the payment yet. Please ask them to pay first.');
-                return;
-            }
-
-            const result = await response.json();
-
-            if (result.success) {
-                setShowOtpModal(false);
-                setOtp('');
-                if (otpType === 'ENTRANCE') {
-                    setRideStatus('ARRIVED');
-                    Alert.alert('Success', 'Entrance verified! You can now start the service.');
-                } else {
-                    setRideStatus('COMPLETED');
-                    Alert.alert('Success', 'Job completed successfully!');
-                    navigation.navigate('TechnicianDashboard');
-                }
-
-            } else {
-                Alert.alert('Error', result.error || 'Invalid OTP');
-            }
-        } catch (e) {
-            Alert.alert('Error', 'Verification failed');
+          const response = await rideService.getRideDetails(rideId);
+          if (response.success) {
+            setJob(response.data);
+            setStatus(response.data.status?.toLowerCase() || 'accepted');
+          }
+        } catch (err) {
+          console.error("Fetch job error:", err);
         } finally {
-            setLoading(false);
+          setLoading(false);
         }
+      }
+    };
+    fetchJobDetails();
+  }, [rideId]);
+
+  useEffect(() => {
+    const initTracking = async () => {
+      try {
+        await driverLocationService.startTracking((loc) => {
+          const newPos = { latitude: loc.lat, longitude: loc.lng };
+          setCurrentLocation(newPos);
+          
+          // Broadcast location to customer via socket
+          technicianSocketService.sendLocation(rideId, loc);
+        });
+        setIsReady(true);
+      } catch (error) {
+        console.error('Tracking Error:', error);
+        Alert.alert('Error', 'Failed to start location tracking');
+      }
     };
 
-    const handleStartService = async () => {
-        try {
-            const response = await fetch(`${config.BACKEND_URL}/api/ride/start-service`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ rideId })
-            });
-            if ((await response.json()).success) setRideStatus('IN_PROGRESS');
-        } catch (e) { Alert.alert('Error', 'Could not start service'); }
+    initTracking();
+
+    return () => {
+      driverLocationService.stopTracking();
     };
+  }, [rideId]);
 
-    const handleEndService = async () => {
-        try {
-            const response = await fetch(`${config.BACKEND_URL}/api/ride/end-service`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ rideId })
-            });
-            const result = await response.json();
-            if (result.success) {
-                setOtpType('COMPLETION');
-                setPaymentStatus(result.data.paymentStatus || 'UNPAID');
-                setShowOtpModal(true);
-            }
-        } catch (e) { Alert.alert('Error', 'Could not end service'); }
-    };
+  const handleLaunchGoogleMaps = () => {
+    const lat = destination?.lat || destination?.latitude;
+    const lng = destination?.lng || destination?.longitude;
+    
+    if (!lat || !lng) {
+      Alert.alert('Error', 'Destination coordinates are missing');
+      return;
+    }
 
-    const formatSpeed = (mps) => Math.round((mps || 0) * 3.6);
-    const formatDistance = (km) => !km ? '--' : km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`;
-    const formatDuration = (mins) => !mins ? '--' : mins >= 60 ? `${Math.floor(mins / 60)}h ${Math.round(mins % 60)}m` : `${Math.round(mins)} min`;
+    const url = Platform.select({
+      ios: `comgooglemaps://?daddr=${lat},${lng}&directionsmode=driving`,
+      android: `google.navigation:q=${lat},${lng}&mode=d`
+    });
 
+    Linking.canOpenURL(url).then(supported => {
+      if (supported) {
+        Linking.openURL(url);
+      } else {
+        // Fallback to browser/web maps if app not installed
+        const webUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+        Linking.openURL(webUrl);
+      }
+    });
+  };
+
+  const handleStatusUpdate = async (newStatus) => {
+    if (newStatus === 'arrived') {
+      setOtpModalVisible(true);
+      return;
+    }
+
+    if (newStatus === 'started') {
+      try {
+        const result = await rideService.startService(rideId);
+        if (result.success) {
+          setStatus('started');
+          technicianSocketService.updateStatus(rideId, 'started');
+        } else {
+          Alert.alert('Error', result.error || 'Failed to start service');
+        }
+      } catch (error) {
+        Alert.alert('Error', 'Connection failed');
+      }
+      return;
+    }
+
+    if (newStatus === 'completed') {
+      try {
+        const result = await rideService.endService(rideId);
+        if (result.success) {
+          // Emit service_ended to trigger customer payment
+          technicianSocketService.updateStatus(rideId, 'service_ended', result.data);
+          // Navigate to COD Collection with updated price/data
+          navigation.navigate('CODCollection', { job: { ...job, ...result.data } });
+        } else {
+          Alert.alert('Error', result.error || 'Failed to end service');
+        }
+      } catch (error) {
+        Alert.alert('Error', 'Connection failed');
+      }
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    if (otp.length !== 4) return;
+    
+    setVerifying(true);
+    try {
+      const result = await rideService.verifyArrival(rideId, otp);
+      if (result.success) {
+        setOtpModalVisible(false);
+        setStatus('arrived');
+        setOtp('');
+        // Broadcast arrival to customer
+        technicianSocketService.updateStatus(rideId, 'arrived');
+        Alert.alert('Success', 'Arrival verified! You can now start the service.');
+      } else {
+        Alert.alert('Error', result.error || 'Invalid OTP');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Verification failed');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const renderMap = () => {
+    const destLat = Number(destination?.lat || destination?.latitude);
+    const destLng = Number(destination?.lng || destination?.longitude);
+
+    if (isNaN(destLat) || isNaN(destLng)) {
+      return (
+        <View style={styles.errorContainer}>
+          <ActivityIndicator size="large" color={COLORS.roseGold} />
+          <Text style={styles.errorText}>Loading service coordinates...</Text>
+        </View>
+      );
+    }
 
     return (
-        <View style={styles.container}>
-            <StatusBar style="dark" />
-            <MapView
-                ref={mapRef}
-                provider={PROVIDER_GOOGLE}
-                style={styles.map}
-                showsUserLocation={false}
-                initialRegion={{
-                    latitude: currentLocation?.latitude || 20.2961,
-                    longitude: currentLocation?.longitude || 85.8245,
-                    latitudeDelta: 0.01,
-                    longitudeDelta: 0.01,
-                }}
+      <MapboxGL.MapView 
+        style={styles.map} 
+        styleURL={MapboxGL.StyleURL.Dark}
+        logoEnabled={false}
+      >
+        <MapboxGL.Camera
+          zoomLevel={12}
+          centerCoordinate={currentLocation ? [currentLocation.longitude, currentLocation.latitude] : [destLng, destLat]}
+          followUserLocation={true}
+          followUserMode="course"
+        />
+
+        {/* Current Location Marker */}
+        {currentLocation && (
+          <MapboxGL.PointAnnotation
+            id="currentLocation"
+            coordinate={[currentLocation.longitude, currentLocation.latitude]}
+          >
+            <View style={styles.userMarkerContainer}>
+              <View style={styles.userMarkerInner} />
+            </View>
+          </MapboxGL.PointAnnotation>
+        )}
+
+        {/* Destination Marker */}
+        <MapboxGL.PointAnnotation
+          id="destination"
+          coordinate={[destLng, destLat]}
+        >
+          <View style={styles.destMarkerContainer}>
+            <MaterialCommunityIcons name="map-marker-check" size={32} color={COLORS.roseGold} />
+          </View>
+        </MapboxGL.PointAnnotation>
+      </MapboxGL.MapView>
+    );
+  };
+
+  const renderOTPModal = () => (
+    <Modal
+      visible={otpModalVisible}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={() => setOtpModalVisible(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Verify Arrival</Text>
+          <Text style={styles.modalSubtitle}>Enter the 4-digit OTP provided by the customer</Text>
+          
+          <TextInput
+            style={styles.otpInput}
+            value={otp}
+            onChangeText={setOtp}
+            keyboardType="number-pad"
+            maxLength={4}
+            placeholder="0000"
+            placeholderTextColor="#666"
+            autoFocus={true}
+          />
+          
+          <View style={styles.modalButtons}>
+            <TouchableOpacity 
+              style={[styles.modalButton, styles.cancelButton]} 
+              onPress={() => {
+                setOtpModalVisible(false);
+                setOtp('');
+              }}
             >
-                {currentLocation && (
-                    <Marker coordinate={currentLocation} anchor={{ x: 0.5, y: 0.5 }}>
-                        <View style={[styles.carMarker, { transform: [{ rotate: `${heading}deg` }] }]}>
-                            <Ionicons name="navigate" size={32} color={COLORS.technicianPrimary} />
-                        </View>
-                    </Marker>
-                )}
-                {destination && (
-                    <Marker coordinate={{ latitude: destination.lat || destination.latitude, longitude: destination.lng || destination.longitude }}>
-                        <View style={styles.destMarker}>
-                            <Ionicons name="location" size={28} color={COLORS.error} />
-                        </View>
-                    </Marker>
-                )}
-                {/* Route Path - Like Google Maps */}
-                {currentLocation && destination && rideStatus === 'ACCEPTED' && (
-                    <MapViewDirections
-                        key={rideId}
-                        origin={currentLocation}
-                        destination={{
-                            latitude: destination.lat || destination.latitude,
-                            longitude: destination.lng || destination.longitude
-                        }}
-                        apikey={config.GOOGLE_MAPS_API_KEY}
-                        strokeWidth={5}
-                        strokeColor={COLORS.technicianPrimary}
-                        precision="high"
-                        mode="DRIVING"
-                        onReady={(result) => {
-                            console.log("🗺️ Route ready");
-                            if (!hasInitialFitRef.current && mapRef.current) {
-                                hasInitialFitRef.current = true;
-                                mapRef.current.fitToCoordinates(result.coordinates, {
-                                    edgePadding: { top: 100, right: 50, bottom: 300, left: 50 },
-                                    animated: true
-                                });
-                            }
-                        }}
-                        onError={(error) => console.error("Route error:", error)}
-                    />
-                )}
-            </MapView>
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.modalButton, styles.verifyButton, otp.length !== 4 && styles.disabledButton]} 
+              onPress={handleVerifyOTP}
+              disabled={otp.length !== 4 || verifying}
+            >
+              {verifying ? (
+                <ActivityIndicator color="white" size="small" />
+              ) : (
+                <Text style={styles.verifyButtonText}>Verify</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
 
-            <View style={styles.speedContainer}>
-                <Text style={styles.speedValue}>{formatSpeed(speed)}</Text>
-                <Text style={styles.speedLabel}>km/h</Text>
-                <Text style={{ fontSize: 8, color: COLORS.grey, marginTop: 4 }}>
-                    GPS: {currentLocation?.latitude.toFixed(4)}, {currentLocation?.longitude.toFixed(4)}
-                </Text>
-            </View>
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" />
+      {renderOTPModal()}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={28} color="white" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Navigation</Text>
+        <View style={{ width: 40 }} />
+      </View>
 
-            <View style={styles.etaCard}>
-                <View style={styles.etaRow}>
-                    <Ionicons name="time-outline" size={16} color={COLORS.technicianPrimary} />
-                    <Text style={styles.etaValue}>{formatDuration(duration)}</Text>
-                </View>
-                <Text style={styles.etaLabel}>{formatDistance(distance)}</Text>
-            </View>
+      <View style={styles.mapContainer}>
+        {renderMap()}
+        
+        {/* Quick Launch Floating Button */}
+        <TouchableOpacity 
+          style={styles.launchButton}
+          onPress={handleLaunchGoogleMaps}
+        >
+          <MaterialCommunityIcons name="google-maps" size={24} color="white" />
+          <Text style={styles.launchButtonText}>Launch Google Maps</Text>
+        </TouchableOpacity>
+      </View>
 
-            <View style={styles.bottomSheet}>
-                {rideStatus === 'ACCEPTED' && (
-                    <TouchableOpacity
-                        style={[styles.btn, styles.primaryBtn]}
-                        onPress={() => {
-                            setOtpType('ENTRANCE');
-                            setShowOtpModal(true);
-                        }}
-                    >
-                        <Ionicons name="home" size={20} color={COLORS.white} />
-                        <Text style={styles.btnText}>I'VE ARRIVED</Text>
-                    </TouchableOpacity>
-                )}
-
-                {rideStatus === 'ARRIVED' && (
-                    <TouchableOpacity style={[styles.btn, styles.successBtn]} onPress={handleStartService}>
-                        <Ionicons name="play" size={20} color={COLORS.white} />
-                        <Text style={styles.btnText}>START SERVICE</Text>
-                    </TouchableOpacity>
-                )}
-                {(rideStatus === 'ARRIVED' || rideStatus === 'IN_PROGRESS') && (
-                    <TouchableOpacity
-                        style={[styles.btn, styles.secondaryBtn]}
-                        onPress={handleEndService}
-                    >
-                        <Ionicons name="checkmark-done" size={20} color={COLORS.white} />
-                        <Text style={styles.btnText}>END SERVICE</Text>
-                    </TouchableOpacity>
-                )}
-
-                {/* Cancel Job Button - Only show for ACCEPTED or ARRIVED status */}
-                {(rideStatus === 'ACCEPTED' || rideStatus === 'ARRIVED') && (
-                    <TouchableOpacity
-                        style={[styles.btn, styles.dangerBtn]}
-                        onPress={() => setShowCancelModal(true)}
-                    >
-                        <Ionicons name="close-circle-outline" size={20} color="#fff" />
-                        <Text style={styles.btnText}>CANCEL JOB</Text>
-                    </TouchableOpacity>
-                )}
-
-                {rideStatus === 'COMPLETED' && (
-                    <TouchableOpacity style={[styles.btn, styles.primaryBtn]} onPress={() => navigation.navigate('TechnicianDashboard')}>
-                        <Text style={styles.btnText}>BACK TO DASHBOARD</Text>
-                    </TouchableOpacity>
-                )}
-
-                <TouchableOpacity style={styles.recenterBtn} onPress={() => mapRef.current?.animateCamera({ center: currentLocation, heading, pitch: 60, zoom: 18 })}>
-                    <Ionicons name="locate" size={24} color={COLORS.technicianPrimary} />
-                </TouchableOpacity>
-            </View>
-
-            {/* OTP Verification Modal */}
-            <Modal visible={showOtpModal} transparent animationType="fade">
-                <View style={styles.modalBg}>
-                    <View style={styles.modalCard}>
-                        <Text style={styles.modalTitle}>{otpType === 'ENTRANCE' ? 'Entrance Verification' : 'Job Completion'}</Text>
-                        <Text style={styles.modalSub}>
-                            {otpType === 'ENTRANCE'
-                                ? 'Enter 4-digit code provided by customer'
-                                : paymentStatus === 'PAID'
-                                    ? 'Enter 5-digit completion code provided by customer'
-                                    : 'Awaiting Payment... Code will be available on customer screen after payment.'}
-                        </Text>
-
-                        <TextInput
-                            style={styles.otpInput}
-                            placeholder="XXXXX"
-                            keyboardType="number-pad"
-                            maxLength={otpType === 'ENTRANCE' ? 4 : 5}
-                            value={otp}
-                            onChangeText={setOtp}
-                        />
-
-                        <TouchableOpacity
-                            style={styles.verifyBtn}
-                            onPress={handleVerifyOtp}
-                            disabled={loading}
-                        >
-                            {loading ? <ActivityIndicator color={COLORS.white} /> : <Text style={styles.verifyBtnText}>VERIFY CODE</Text>}
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowOtpModal(false)}>
-                            <Text style={styles.cancelBtnText}>CANCEL</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
-
-            {/* Cancel Job Modal */}
-            <Modal visible={showCancelModal} transparent animationType="slide">
-                <View style={styles.modalBg}>
-                    <View style={styles.modalCard}>
-                        <Text style={styles.modalTitle}>Cancel This Job?</Text>
-                        <Text style={styles.modalSub}>Please select a reason for cancellation:</Text>
-
-                        {CANCEL_REASONS.map((reason, index) => (
-                            <TouchableOpacity
-                                key={index}
-                                style={[
-                                    styles.reasonOption,
-                                    cancelReason === reason && styles.reasonOptionSelected
-                                ]}
-                                onPress={() => setCancelReason(reason)}
-                            >
-                                <View style={styles.radioCircle}>
-                                    {cancelReason === reason && <View style={styles.radioInner} />}
-                                </View>
-                                <Text style={[
-                                    styles.reasonText,
-                                    cancelReason === reason && styles.reasonTextSelected
-                                ]}>{reason}</Text>
-                            </TouchableOpacity>
-                        ))}
-
-                        <TouchableOpacity
-                            style={[styles.verifyBtn, { backgroundColor: '#ef4444' }]}
-                            onPress={handleCancelJob}
-                            disabled={cancelling}
-                        >
-                            {cancelling ? (
-                                <ActivityIndicator color={COLORS.white} />
-                            ) : (
-                                <Text style={styles.verifyBtnText}>CONFIRM CANCELLATION</Text>
-                            )}
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={styles.cancelBtn}
-                            onPress={() => {
-                                setShowCancelModal(false);
-                                setCancelReason('');
-                            }}
-                        >
-                            <Text style={styles.cancelBtnText}>KEEP JOB</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
+      <View style={styles.bottomBar}>
+        <View style={styles.jobInfo}>
+          <Text style={styles.destLabel}>Destination</Text>
+          <Text style={styles.destAddress} numberOfLines={1}>
+            {destination?.address || 'Service Location'}
+          </Text>
         </View>
 
-    );
-}
+        {status === 'accepted' && (
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={() => handleStatusUpdate('arrived')}
+          >
+            <Text style={styles.actionButtonText}>Verify Arrival</Text>
+          </TouchableOpacity>
+        )}
+
+        {status === 'arrived' && (
+          <TouchableOpacity 
+            style={[styles.actionButton, { backgroundColor: '#4CAF50' }]}
+            onPress={() => handleStatusUpdate('started')}
+          >
+            <Text style={styles.actionButtonText}>Start Service</Text>
+          </TouchableOpacity>
+        )}
+
+        {status === 'started' && (
+          <TouchableOpacity 
+            style={[styles.actionButton, { backgroundColor: '#F44336' }]}
+            onPress={() => handleStatusUpdate('completed')}
+          >
+            <Text style={styles.actionButtonText}>End Service</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </SafeAreaView>
+  );
+};
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.black },
-    map: { flex: 1 },
-    carMarker: { width: 48, height: 48, backgroundColor: COLORS.white, borderRadius: 24, justifyContent: 'center', alignItems: 'center', ...SHADOWS.large, borderWidth: 3, borderColor: COLORS.technicianPrimary },
-    destMarker: { backgroundColor: COLORS.white, padding: 8, borderRadius: 20, ...SHADOWS.medium },
-    speedContainer: { position: 'absolute', top: Platform.OS === 'ios' ? 60 : 40, left: 20, backgroundColor: COLORS.white, borderRadius: 16, padding: SPACING.md, alignItems: 'center', minWidth: 80, ...SHADOWS.medium },
-    speedValue: { fontSize: 32, fontWeight: '900', color: COLORS.technicianPrimary },
-    speedLabel: { fontSize: 12, color: COLORS.grey, marginTop: 2 },
-    etaCard: { position: 'absolute', top: Platform.OS === 'ios' ? 60 : 40, right: 20, backgroundColor: COLORS.white, borderRadius: 16, padding: SPACING.md, ...SHADOWS.medium },
-    etaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
-    etaValue: { fontSize: 18, fontWeight: 'bold', color: COLORS.technicianPrimary },
-    etaLabel: { fontSize: 12, color: COLORS.grey },
-    bottomSheet: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: COLORS.white,
-        borderTopLeftRadius: 30,
-        borderTopRightRadius: 30,
-        padding: SPACING.xl,
-        flexDirection: 'row',
-        gap: SPACING.md,
-        ...SHADOWS.large,
-    },
-    btn: {
-        flex: 1,
-        height: 56,
-        borderRadius: 16,
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 8,
-        ...SHADOWS.medium,
-    },
-    primaryBtn: { backgroundColor: COLORS.technicianPrimary },
-    successBtn: { backgroundColor: '#2E7D32' }, // Dark green
-    endServiceBtn: { backgroundColor: COLORS.error },
-    btnText: { fontSize: 16, fontWeight: 'bold', color: COLORS.white },
-    recenterBtn: {
-        width: 56,
-        height: 56,
-        borderRadius: 16,
-        backgroundColor: COLORS.technicianBg,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: COLORS.technicianAccent,
-    },
-
-    // Modal Styles
-    modalBg: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.7)',
-        justifyContent: 'center',
-        padding: SPACING.xl,
-    },
-    modalCard: {
-        backgroundColor: COLORS.white,
-        borderRadius: 24,
-        padding: SPACING.xl,
-        alignItems: 'center',
-    },
-    modalTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: COLORS.black,
-        marginBottom: 8,
-    },
-    modalSub: {
-        fontSize: 14,
-        color: COLORS.grey,
-        textAlign: 'center',
-        marginBottom: SPACING.xl,
-    },
-    otpInput: {
-        width: '100%',
-        backgroundColor: '#F5F5F5',
-        borderRadius: 12,
-        padding: SPACING.md,
-        fontSize: 24,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        letterSpacing: 10,
-        marginBottom: SPACING.xl,
-        color: COLORS.technicianPrimary,
-    },
-    verifyBtn: {
-        backgroundColor: COLORS.technicianPrimary,
-        width: '100%',
-        height: 56,
-        borderRadius: 16,
-        justifyContent: 'center',
-        alignItems: 'center',
-        ...SHADOWS.medium,
-    },
-    verifyBtnText: {
-        color: COLORS.white,
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    cancelBtn: {
-        marginTop: SPACING.md,
-        padding: SPACING.md,
-    },
-    cancelBtnText: { fontSize: 14, color: COLORS.grey, fontWeight: '600' },
-
-    // Cancel Job Styles
-    dangerBtn: { backgroundColor: '#ef4444' },
-    secondaryBtn: { backgroundColor: '#6b7280' },
-    reasonOption: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: SPACING.md,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: '#e5e7eb',
-        marginBottom: SPACING.sm,
-    },
-    reasonOptionSelected: {
-        backgroundColor: '#eff6ff',
-        borderColor: COLORS.technicianPrimary,
-    },
-    radioCircle: {
-        width: 20,
-        height: 20,
-        borderRadius: 10,
-        borderWidth: 2,
-        borderColor: '#d1d5db',
-        marginRight: SPACING.md,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    radioInner: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-        backgroundColor: COLORS.technicianPrimary,
-    },
-    reasonText: {
-        fontSize: 14,
-        color: COLORS.textMain,
-        flex: 1,
-    },
-    reasonTextSelected: {
-        fontWeight: '600',
-        color: COLORS.technicianPrimary,
-    },
-
+  container: {
+    flex: 1,
+    backgroundColor: '#121212',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    backgroundColor: '#1A1A1A',
+  },
+  headerTitle: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  backButton: {
+    padding: 5,
+  },
+  mapContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+  map: {
+    flex: 1,
+  },
+  launchButton: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    backgroundColor: '#4285F4', // Google Blue
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 25,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+  },
+  launchButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  bottomBar: {
+    backgroundColor: '#1A1A1A',
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#333',
+  },
+  jobInfo: {
+    marginBottom: 15,
+  },
+  destLabel: {
+    color: '#888',
+    fontSize: 12,
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  destAddress: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  actionButton: {
+    backgroundColor: COLORS.roseGold || '#B76E79',
+    height: 55,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  userMarkerContainer: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(66, 133, 244, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  userMarkerInner: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#4285F4',
+    borderWidth: 2,
+    borderColor: 'white',
+  },
+  destMarkerContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: width * 0.85,
+    backgroundColor: '#1E1E1E',
+    borderRadius: 20,
+    padding: 25,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 10,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#AAA',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  otpInput: {
+    width: '100%',
+    backgroundColor: '#333',
+    borderRadius: 12,
+    padding: 15,
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: 'white',
+    textAlign: 'center',
+    letterSpacing: 10,
+    marginBottom: 25,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 15,
+  },
+  modalButton: {
+    flex: 1,
+    height: 50,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#333',
+  },
+  verifyButton: {
+    backgroundColor: COLORS.roseGold || '#B76E79',
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  cancelButtonText: {
+    color: 'white',
+    fontWeight: '600',
+  },
+  verifyButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#121212',
+  },
+  errorText: {
+    color: '#888',
+    marginTop: 10,
+    fontSize: 14,
+  }
 });
+
+export default TechnicianNavigationScreen;

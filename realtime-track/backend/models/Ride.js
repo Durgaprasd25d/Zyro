@@ -54,6 +54,18 @@ const RideSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    basePrice: {
+        type: Number,
+        default: 0
+    },
+    platformFee: {
+        type: Number,
+        default: 0
+    },
+    gst: {
+        type: Number,
+        default: 0
+    },
     paymentMethod: {
         type: String,
         // enum: ['COD', 'ONLINE'], // COD DISABLED - Online only for MVP

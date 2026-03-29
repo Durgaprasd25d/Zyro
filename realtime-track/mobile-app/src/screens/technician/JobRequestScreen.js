@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { COLORS, SPACING, SHADOWS } from '../../constants/theme';
 import technicianService from '../../services/technicianService';
 
@@ -74,9 +74,14 @@ export default function JobRequestScreen({ route, navigation }) {
                         <Text style={styles.detailValue}>{job?.duration || '1.5 hrs'}</Text>
                     </View>
                     <View style={styles.detailRow}>
+                        <Ionicons name="pricetag-outline" size={20} color={COLORS.blue} />
+                        <Text style={styles.detailLabel}>Service Price</Text>
+                        <Text style={styles.detailValue}>₹{job?.price || '1,000'}</Text>
+                    </View>
+                    <View style={styles.detailRow}>
                         <Ionicons name="cash-outline" size={20} color={COLORS.earningsGreen} />
-                        <Text style={styles.detailLabel}>Earnings</Text>
-                        <Text style={[styles.detailValue, { color: COLORS.earningsGreen, fontWeight: 'bold' }]}>₹{job?.earnings || '1200'}</Text>
+                        <Text style={styles.detailLabel}>Est. Earnings</Text>
+                        <Text style={[styles.detailValue, { color: COLORS.earningsGreen, fontWeight: 'bold' }]}>₹{job?.earnings || '800'}</Text>
                     </View>
                 </View>
 

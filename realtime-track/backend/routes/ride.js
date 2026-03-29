@@ -10,8 +10,25 @@ const { sendToUser, sendPushNotification } = require('../services/notificationSe
 // Request a ride (Job)
 router.post('/request', async (req, res) => {
     try {
-        const { pickup, destination, serviceType, customerId, paymentMethod, paymentTiming } = req.body;
+        const {
+            pickup,
+            destination,
+            serviceType,
+            customerId,
+            paymentMethod,
+            paymentTiming,
+            price,
+            basePrice,
+            platformFee,
+            gst
+        } = req.body;
         const rideId = `job_${Date.now()}`;
+
+        // Ensure all monetary values are rounded integers
+        const roundedPrice = Math.round(price || 0);
+        const roundedBasePrice = Math.round(basePrice || 0);
+        const roundedPlatformFee = Math.round(platformFee || 0);
+        const roundedGst = Math.round(gst || 0);
 
         const ride = new Ride({
             rideId,
@@ -20,11 +37,39 @@ router.post('/request', async (req, res) => {
             serviceType: serviceType || 'service',
             customerId,
             status: 'REQUESTED',
-            paymentMethod: paymentMethod || 'ONLINE', // COD disabled - Online only
-            paymentTiming: paymentTiming || 'PREPAID' // Default to prepaid
+            paymentMethod: paymentMethod || 'ONLINE',
+            paymentTiming: paymentTiming || 'POSTPAID',
+            price: roundedPrice,
+            basePrice: roundedBasePrice,
+            platformFee: roundedPlatformFee,
+            gst: roundedGst
         });
 
         await ride.save();
+
+        // Auto-save address to User profile if it's new
+        try {
+            const user = await User.findById(customerId);
+            if (user) {
+                const addressExists = user.addresses.some(addr => 
+                    addr.address.toLowerCase() === pickup.address.toLowerCase()
+                );
+                
+                if (!addressExists) {
+                    user.addresses.push({
+                        label: pickup.address.split(',')[0].substring(0, 15) || 'Recent',
+                        address: pickup.address,
+                        lat: pickup.lat,
+                        lng: pickup.lng
+                    });
+                    await user.save();
+                    console.log(`📍 Auto-saved new address for user ${customerId}`);
+                }
+            }
+        } catch (addrErr) {
+            console.error('Error auto-saving address:', addrErr);
+            // Don't fail the ride request if address saving fails
+        }
 
         const io = req.app.get('io');
 
@@ -37,7 +82,8 @@ router.post('/request', async (req, res) => {
                 destination,
                 serviceType: ride.serviceType,
                 paymentMethod: ride.paymentMethod,
-                paymentTiming: ride.paymentTiming
+                paymentTiming: ride.paymentTiming,
+                price: ride.price || 1000
             });
 
             // Push Notification to all Technicians
@@ -59,46 +105,7 @@ router.post('/request', async (req, res) => {
     }
 });
 
-// Get a single ride by rideId
-router.get('/:rideId', async (req, res) => {
-    try {
-        const { rideId } = req.params;
-        const ride = await Ride.findOne({ rideId }).populate('driverId');
-
-        if (!ride) {
-            return res.status(404).json({ success: false, error: 'Ride not found' });
-        }
-
-        // Fetch technician profile if assigned
-        let technicianData = null;
-        if (ride.driverId) {
-            const technician = await Technician.findOne({ userId: ride.driverId._id });
-            technicianData = {
-                id: ride.driverId._id,
-                name: ride.driverId.name,
-                phone: ride.driverId.mobile,
-                rating: technician?.stats?.rating || 4.5,
-                location: technician?.currentLocation ? {
-                    lat: technician.currentLocation.lat,
-                    lng: technician.currentLocation.lng
-                } : null
-            };
-        }
-
-        res.json({
-            success: true,
-            data: {
-                ...ride.toObject(),
-                technician: technicianData
-            }
-        });
-    } catch (error) {
-        console.error('Fetch ride error:', error);
-        res.status(500).json({ success: false, error: 'Server error' });
-    }
-});
-
-// Get pending jobs (for technicians)
+// Get pending jobs (for technicians) - MUST come before /:rideId
 router.get('/pending', async (req, res) => {
     try {
         // Only show jobs that are either POSTPAID or PREPAID-AND-PAID
@@ -115,7 +122,7 @@ router.get('/pending', async (req, res) => {
     }
 });
 
-// Get all jobs grouped by status (for technician services list)
+// Get all jobs grouped by status (for technician services list) - MUST come before /:rideId
 router.get('/all-jobs', async (req, res) => {
     try {
         const { technicianId } = req.query;
@@ -148,44 +155,88 @@ router.get('/all-jobs', async (req, res) => {
 
         res.json({
             success: true,
-            data: {
-                pending: pending.map(r => ({
-                    rideId: r.rideId,
-                    serviceType: r.serviceType,
-                    pickup: r.pickup,
-                    price: r.price || 1000,
-                    paymentMethod: r.paymentMethod,
-                    paymentTiming: r.paymentTiming,
-                    createdAt: r.createdAt
-                })),
-                accepted: accepted.map(r => ({
-                    rideId: r.rideId,
-                    serviceType: r.serviceType,
-                    pickup: r.pickup,
-                    price: r.price || 1000,
-                    status: r.status,
-                    createdAt: r.createdAt
-                })),
-                inProgress: inProgress.map(r => ({
-                    rideId: r.rideId,
-                    serviceType: r.serviceType,
-                    pickup: r.pickup,
-                    price: r.price || 1000,
-                    status: r.status,
-                    createdAt: r.createdAt
-                })),
-                completed: completed.map(r => ({
-                    rideId: r.rideId,
-                    serviceType: r.serviceType,
-                    pickup: r.pickup,
-                    price: r.price || 1000,
-                    completedAt: r.timestamp,
-                    createdAt: r.createdAt
-                }))
-            }
+            pending: pending.map(r => ({
+                rideId: r.rideId,
+                serviceType: r.serviceType,
+                pickup: r.pickup,
+                price: r.price || 1000,
+                paymentMethod: r.paymentMethod,
+                paymentTiming: r.paymentTiming,
+                createdAt: r.createdAt
+            })),
+            accepted: accepted.map(r => ({
+                rideId: r.rideId,
+                serviceType: r.serviceType,
+                pickup: r.pickup,
+                price: r.price || 1000,
+                status: r.status,
+                createdAt: r.createdAt
+            })),
+            inProgress: inProgress.map(r => ({
+                rideId: r.rideId,
+                serviceType: r.serviceType,
+                pickup: r.pickup,
+                price: r.price || 1000,
+                status: r.status,
+                createdAt: r.createdAt
+            })),
+            completed: completed.map(r => ({
+                rideId: r.rideId,
+                serviceType: r.serviceType,
+                pickup: r.pickup,
+                price: r.price || 1000,
+                completedAt: r.timestamp,
+                createdAt: r.createdAt
+            }))
         });
     } catch (error) {
         console.error('Get all jobs error:', error);
+        res.status(500).json({ success: false, error: 'Server error' });
+    }
+});
+
+// Get a single ride by rideId - Parameterized route MUST come AFTER specific routes
+router.get('/:rideId', async (req, res) => {
+    try {
+        const { rideId } = req.params;
+        const ride = await Ride.findOne({ rideId }).populate('driverId');
+
+        if (!ride) {
+            return res.status(404).json({ success: false, error: 'Ride not found' });
+        }
+
+        // Fetch technician profile if assigned
+        let technicianData = null;
+        if (ride.driverId) {
+            const technician = await Technician.findOne({ userId: ride.driverId._id });
+            technicianData = {
+                id: ride.driverId._id,
+                name: ride.driverId.name,
+                phone: ride.driverId.mobile,
+                rating: technician?.stats?.rating || 4.5,
+                location: technician?.currentLocation ? {
+                    lat: technician.currentLocation.lat,
+                    lng: technician.currentLocation.lng
+                } : null
+            };
+        }
+
+        const rideObj = ride.toObject();
+        // Security Masking: Only show completionOtp if paid (for Postpaid)
+        // Prepaid is always paid by the time it reaches tracking
+        if (rideObj.paymentTiming === 'POSTPAID' && rideObj.paymentStatus !== 'PAID') {
+            delete rideObj.completionOtp;
+        }
+
+        res.json({
+            success: true,
+            data: {
+                ...rideObj,
+                technician: technicianData
+            }
+        });
+    } catch (error) {
+        console.error('Fetch ride error:', error);
         res.status(500).json({ success: false, error: 'Server error' });
     }
 });
@@ -291,10 +342,27 @@ router.post('/start-service', async (req, res) => {
         if (!ride) return res.status(404).json({ success: false, error: 'Ride not found' });
 
         ride.status = 'IN_PROGRESS';
+
+        // Generate 5-digit Completion OTP early (especially for Prepaid)
+        if (!ride.completionOtp) {
+            ride.completionOtp = Math.floor(10000 + Math.random() * 90000).toString();
+        }
+
         await ride.save();
 
         const io = req.app.get('io');
-        io.to(`ride:${rideId}`).emit('ride:in_progress', { rideId });
+        io.to(`ride:${rideId}`).emit('ride:in_progress', {
+            rideId,
+            completionOtp: ride.paymentStatus === 'PAID' ? ride.completionOtp : null
+        });
+
+        // If already paid, notify customer specifically about the completion OTP
+        if (ride.paymentStatus === 'PAID') {
+            io.to(`user:${ride.customerId}`).emit('payment:success', {
+                rideId,
+                completionOtp: ride.completionOtp
+            });
+        }
 
         res.json({ success: true, data: ride });
     } catch (error) {
@@ -328,9 +396,10 @@ router.post('/end-service', async (req, res) => {
         const ride = await Ride.findOne({ rideId });
         if (!ride) return res.status(404).json({ success: false, error: 'Ride not found' });
 
-        // Generate 5-digit Main OTP for completion
-        const completionOtp = Math.floor(10000 + Math.random() * 90000).toString();
-        ride.completionOtp = completionOtp;
+        // Generate 5-digit Main OTP for completion (if not already generated)
+        if (!ride.completionOtp) {
+            ride.completionOtp = Math.floor(10000 + Math.random() * 90000).toString();
+        }
 
         // ONLINE ONLY: OTP remains hidden until payment is verified
         await ride.save();
@@ -353,9 +422,28 @@ router.post('/end-service', async (req, res) => {
         const rideData = ride.toObject();
         delete rideData.completionOtp;
 
-        res.json({ success: true, data: rideData });
+        res.json({ success: true, data: rideData, technician: technicianData });
     } catch (error) {
-        res.status(500).json({ success: false, error: 'Server error' });
+        res.status(500).json({ success: false, error: 'Database error' });
+    }
+});
+
+// Get current active ride for a technician
+router.get('/current-technician/:technicianId', async (req, res) => {
+    try {
+        const { technicianId } = req.params;
+        const ride = await Ride.findOne({
+            driverId: technicianId,
+            status: { $in: ['ACCEPTED', 'ARRIVED', 'IN_PROGRESS'] }
+        }).populate('customerId');
+
+        if (!ride) {
+            return res.json({ success: true, data: null });
+        }
+
+        res.json({ success: true, data: ride });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Database error' });
     }
 });
 
@@ -379,7 +467,8 @@ router.post('/payment-success', async (req, res) => {
                 destination: ride.destination,
                 serviceType: ride.serviceType,
                 paymentMethod: ride.paymentMethod,
-                paymentTiming: ride.paymentTiming
+                paymentTiming: ride.paymentTiming,
+                price: ride.price || 1000
             });
         }
 
@@ -548,10 +637,16 @@ router.get('/current/:customerId', async (req, res) => {
             };
         }
 
+        const rideObj = ride.toObject();
+        // Security Masking: Only show completionOtp if paid (for Postpaid)
+        if (rideObj.paymentTiming === 'POSTPAID' && rideObj.paymentStatus !== 'PAID') {
+            delete rideObj.completionOtp;
+        }
+
         res.json({
             success: true,
             data: {
-                ...ride.toObject(),
+                ...rideObj,
                 technician: technicianData
             }
         });
@@ -574,10 +669,10 @@ router.get('/receipt/:rideId', async (req, res) => {
         }
 
         // Calculate billing breakdown
-        const serviceCharge = ride.price || 0;
+        const serviceCharge = Math.round(ride.price || 0);
         const platformFee = Math.round(serviceCharge * 0.05); // 5% platform fee
         const gst = Math.round((serviceCharge + platformFee) * 0.18); // 18% GST
-        const totalAmount = serviceCharge + platformFee + gst;
+        const totalAmount = Math.round(serviceCharge + platformFee + gst);
 
         // Fetch technician details if available
         let technicianInfo = null;
@@ -695,7 +790,8 @@ router.post('/cancel-by-technician', async (req, res) => {
                 destination: ride.destination,
                 serviceType: ride.serviceType,
                 paymentMethod: ride.paymentMethod,
-                paymentTiming: ride.paymentTiming
+                paymentTiming: ride.paymentTiming,
+                price: ride.price || 1000
             });
 
             // Send push notifications to technicians

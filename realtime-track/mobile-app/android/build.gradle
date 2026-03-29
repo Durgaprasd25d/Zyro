@@ -1,0 +1,94 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+buildscript {
+  repositories {
+    google()
+    mavenCentral()
+  }
+  dependencies {
+        classpath 'com.google.gms:google-services:4.4.1'
+    classpath('com.android.tools.build:gradle')
+    classpath('com.facebook.react:react-native-gradle-plugin')
+    classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')
+  }
+}
+
+allprojects {
+  repositories {
+    google()
+    mavenCentral()
+    maven { url 'https://www.jitpack.io' }
+    maven {
+      url 'https://api.mapbox.com/downloads/v2/releases/maven'
+      authentication {
+        basic(BasicAuthentication)
+      }
+      credentials {
+        // Do not change the username ==> 'mapbox' is correct
+        username = 'mapbox'
+        // Use the secret token you stored in gradle.properties as the password
+        password = project.findProperty('MAPBOX_DOWNLOADS_TOKEN') ?: ""
+      }
+    }
+  }
+}
+
+apply plugin: "expo-root-project"
+apply plugin: "com.facebook.react.rootproject"
+
+subprojects {
+    configurations.all {
+        resolutionStrategy {
+            force 'com.mapbox.maps:android-ndk27:11.16.2'
+            force 'com.mapbox.maps:base-ndk27:11.16.2'
+            force 'com.mapbox.plugin:maps-animation-ndk27:11.16.2'
+            force 'com.mapbox.plugin:maps-annotation-ndk27:11.16.2'
+            force 'com.mapbox.plugin:maps-attribution-ndk27:11.16.2'
+            force 'com.mapbox.plugin:maps-compass-ndk27:11.16.2'
+            force 'com.mapbox.plugin:maps-gestures-ndk27:11.16.2'
+            force 'com.mapbox.plugin:maps-lifecycle-ndk27:11.16.2'
+            force 'com.mapbox.plugin:maps-locationcomponent-ndk27:11.16.2'
+            force 'com.mapbox.plugin:maps-logo-ndk27:11.16.2'
+            force 'com.mapbox.plugin:maps-overlay-ndk27:11.16.2'
+            force 'com.mapbox.plugin:maps-scalebar-ndk27:11.16.2'
+            force 'com.mapbox.plugin:maps-viewport-ndk27:11.16.2'
+            
+            force 'com.mapbox.common:common-ndk27:24.16.2'
+            force 'com.mapbox.navigationcore:android-ndk27:3.11.0'
+            force 'com.mapbox.navigationcore:ui-components-ndk27:3.11.0'
+
+            eachDependency { details ->
+                if (details.requested.group == 'com.mapbox.common' && details.requested.name == 'common') {
+                    details.useTarget("com.mapbox.common:common-ndk27:24.16.2")
+                }
+                if (details.requested.group == 'com.mapbox.maps' && details.requested.name == 'android') {
+                    details.useTarget("com.mapbox.maps:android-ndk27:11.16.2")
+                }
+                if (details.requested.group == 'com.mapbox.navigationcore' && details.requested.name == 'android') {
+                    details.useTarget("com.mapbox.navigationcore:android-ndk27:3.11.0")
+                }
+                if (details.requested.group == 'com.mapbox.navigationcore' && details.requested.name == 'ui-components') {
+                    details.useTarget("com.mapbox.navigationcore:ui-components-ndk27:3.11.0")
+                }
+            }
+        }
+        
+        exclude group: 'com.mapbox.maps', module: 'android'
+        exclude group: 'com.mapbox.maps', module: 'base'
+        exclude group: 'com.mapbox.plugin', module: 'maps-animation'
+        exclude group: 'com.mapbox.plugin', module: 'maps-annotation'
+        exclude group: 'com.mapbox.plugin', module: 'maps-attribution'
+        exclude group: 'com.mapbox.plugin', module: 'maps-compass'
+        exclude group: 'com.mapbox.plugin', module: 'maps-gestures'
+        exclude group: 'com.mapbox.plugin', module: 'maps-lifecycle'
+        exclude group: 'com.mapbox.plugin', module: 'maps-locationcomponent'
+        exclude group: 'com.mapbox.plugin', module: 'maps-logo'
+        exclude group: 'com.mapbox.plugin', module: 'maps-overlay'
+        exclude group: 'com.mapbox.plugin', module: 'maps-scalebar'
+        exclude group: 'com.mapbox.plugin', module: 'maps-viewport'
+        
+        exclude group: 'com.mapbox.common', module: 'common'
+        exclude group: 'com.mapbox.navigationcore', module: 'android'
+        exclude group: 'com.mapbox.navigationcore', module: 'ui-components'
+    }
+}

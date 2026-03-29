@@ -108,13 +108,40 @@ class TechnicianSocketService {
 
     /**
      * Emit technician location update
+     * @param {string} rideId - Ride ID
+     * @param {object} location - { lat, lng, bearing, etc. }
      */
     sendLocation(rideId, location) {
-        if (this.socket && this.isConnected) {
-            this.socket.emit('driver:location', {
+        if (this.socket && this.isConnected && rideId) {
+            this.socket.emit('driver:location:update', {
                 rideId,
                 ...location
             });
+        }
+    }
+
+    /**
+     * Update job status via socket
+     * @param {string} rideId - Ride ID
+     * @param {string} status - New status (arrived, started, completed)
+     */
+    updateStatus(rideId, status, extraData = {}) {
+        if (!this.socket || !this.isConnected || !rideId) return;
+
+        console.log(`📤 Emitting status update: ${status} for ride ${rideId}`);
+
+        // Map internal status to socket events expected by customer/backend
+        const eventMap = {
+            'arrived': 'ride:arrived',
+            'started': 'ride:in_progress',
+            'completed': 'ride:completed',
+            'cancelled': 'ride:cancelled',
+            'service_ended': 'ride:service_ended'
+        };
+
+        const event = eventMap[status];
+        if (event) {
+            this.socket.emit(event, { rideId, status, ...extraData });
         }
     }
 

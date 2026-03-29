@@ -1,130 +1,159 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, StatusBar, Platform } from 'react-native';
+import {
+    View,
+    Text,
+    StyleSheet,
+    ScrollView,
+    TouchableOpacity,
+    StatusBar,
+    Platform,
+    Dimensions
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SPACING, SHADOWS } from '../../constants/theme';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+
+const { width } = Dimensions.get('window');
+
+// Uber-Inspired Clean Palette
+const COLORS = {
+    black: '#000000',
+    white: '#ffffff',
+    background: '#f7f7f7',
+    textPrimary: '#000000',
+    textSecondary: '#545454',
+    textTertiary: '#8a8a8a',
+    border: '#e0e0e0',
+    accent: '#06c167',
+    blue: '#276ef1',
+    card: '#ffffff',
+};
 
 export default function BookingSummaryScreen({ route, navigation }) {
     const { service, date, time, address } = route.params;
 
-    const tax = service.price * 0.18;
-    const total = service.price + tax;
+    const basePrice = Math.round(parseFloat(service.price));
+    const platformFee = 49; // Platform fee
+    const tax = Math.round((basePrice + platformFee) * 0.18); // 18% GST
+    const total = Math.round(basePrice + platformFee + tax);
+
+    const pricing = {
+        basePrice,
+        platformFee,
+        gst: tax,
+        price: total
+    };
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="light-content" />
+            <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
 
-            <LinearGradient
-                colors={[COLORS.slate, COLORS.slateLight]}
-                style={styles.header}
-            >
-                <SafeAreaView edges={['top']}>
-                    <View style={styles.headerContent}>
-                        <TouchableOpacity
-                            style={styles.backBtn}
-                            onPress={() => navigation.goBack()}
-                        >
-                            <Ionicons name="arrow-back" size={24} color="#fff" />
-                        </TouchableOpacity>
-                        <Text style={styles.headerTitle}>Booking Summary</Text>
-                        <View style={{ width: 44 }} />
-                    </View>
-                </SafeAreaView>
-            </LinearGradient>
+            {/* Header */}
+            <SafeAreaView edges={['top']} style={styles.header}>
+                <View style={styles.headerContent}>
+                    <TouchableOpacity
+                        style={styles.backButton}
+                        onPress={() => navigation.goBack()}
+                    >
+                        <Ionicons name="arrow-back" size={24} color={COLORS.black} />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Review Booking</Text>
+                    <View style={{ width: 40 }} />
+                </View>
+            </SafeAreaView>
 
             <ScrollView
+                style={styles.scrollView}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
             >
                 {/* Service Details Card */}
                 <View style={styles.card}>
-                    <View style={styles.cardHeader}>
+                    <View style={styles.serviceHeader}>
                         <View style={styles.iconContainer}>
-                            <Ionicons name="construct" size={24} color={COLORS.indigo} />
+                            <Ionicons name="construct-outline" size={24} color={COLORS.black} />
                         </View>
-                        <View style={styles.serviceMain}>
+                        <View style={styles.serviceInfo}>
+                            <Text style={styles.serviceLabel}>Selected Service</Text>
                             <Text style={styles.serviceName}>{service.name}</Text>
-                            <Text style={styles.serviceCategory}>Premium Service Package</Text>
                         </View>
-                        <Text style={styles.basePrice}>₹{service.price}</Text>
                     </View>
                 </View>
 
                 {/* Logistics Section */}
-                <Text style={styles.sectionTitle}>Service Logistics</Text>
-                <View style={styles.logisticsCard}>
-                    <View style={styles.logisticsItem}>
-                        <View style={[styles.logisticsIcon, { backgroundColor: '#eff6ff' }]}>
-                            <Ionicons name="calendar" size={20} color={COLORS.indigo} />
+                <Text style={styles.sectionTitle}>Booking Details</Text>
+                <View style={styles.card}>
+                    <View style={styles.infoRow}>
+                        <View style={styles.infoIcon}>
+                            <Ionicons name="calendar-outline" size={20} color={COLORS.black} />
                         </View>
-                        <View style={styles.logisticsInfo}>
-                            <Text style={styles.logisticsLabel}>Date & Time</Text>
-                            <Text style={styles.logisticsValue}>{date} October 2025 • {time}</Text>
+                        <View style={styles.infoContent}>
+                            <Text style={styles.infoLabel}>Date & Time</Text>
+                            <Text style={styles.infoValue}>{date} • {time}</Text>
                         </View>
                     </View>
 
-                    <View style={styles.itemDivider} />
+                    <View style={styles.divider} />
 
-                    <View style={styles.logisticsItem}>
-                        <View style={[styles.logisticsIcon, { backgroundColor: '#fdf2f8' }]}>
-                            <Ionicons name="location" size={20} color="#db2777" />
+                    <View style={styles.infoRow}>
+                        <View style={styles.infoIcon}>
+                            <Ionicons name="location-outline" size={20} color={COLORS.black} />
                         </View>
-                        <View style={styles.logisticsInfo}>
-                            <Text style={styles.logisticsLabel}>Service Location</Text>
-                            <Text style={styles.logisticsValue} numberOfLines={2}>{address.description}</Text>
+                        <View style={styles.infoContent}>
+                            <Text style={styles.infoLabel}>Service Address</Text>
+                            <Text style={styles.infoValue} numberOfLines={3}>
+                                {address?.description || 'No address provided'}
+                            </Text>
                         </View>
                     </View>
                 </View>
 
-                {/* Payment Breakdown */}
+                {/* Price Breakdown */}
                 <Text style={styles.sectionTitle}>Price Breakdown</Text>
-                <View style={styles.priceCard}>
+                <View style={styles.card}>
                     <View style={styles.priceRow}>
                         <Text style={styles.priceLabel}>Base Service Fee</Text>
-                        <Text style={styles.priceAmount}>₹{service.price}</Text>
-                    </View>
-                    <View style={styles.priceRow}>
-                        <Text style={styles.priceLabel}>GST (18% Digital Service Tax)</Text>
-                        <Text style={styles.priceAmount}>₹{tax.toFixed(2)}</Text>
-                    </View>
-                    <View style={styles.priceRow}>
-                        <Text style={styles.priceLabel}>Platform Convenience Fee</Text>
-                        <Text style={[styles.priceAmount, { color: '#22c55e' }]}>FREE</Text>
+                        <Text style={styles.priceValue}>₹{basePrice}</Text>
                     </View>
 
-                    <View style={styles.totalDivider} />
+                    <View style={styles.priceRow}>
+                        <Text style={styles.priceLabel}>Platform Fee</Text>
+                        <Text style={styles.priceValue}>₹{platformFee}</Text>
+                    </View>
+
+                    <View style={styles.priceRow}>
+                        <Text style={styles.priceLabel}>GST (18%)</Text>
+                        <Text style={styles.priceValue}>₹{tax}</Text>
+                    </View>
+
+                    <View style={styles.priceDivider} />
 
                     <View style={styles.totalRow}>
-                        <View>
-                            <Text style={styles.totalLabel}>Total Payable</Text>
-                            <Text style={styles.inclusiveText}>Inclusive of all taxes</Text>
-                        </View>
-                        <Text style={styles.totalAmount}>₹{total.toFixed(2)}</Text>
+                        <Text style={styles.totalLabel}>Total Amount</Text>
+                        <Text style={[styles.totalValue, { color: COLORS.blue }]}>₹{total}</Text>
                     </View>
                 </View>
 
-                <View style={styles.guaranteeBox}>
-                    <Ionicons name="shield-checkmark" size={20} color={COLORS.indigo} />
-                    <Text style={styles.guaranteeText}>Secure payment protected by industry-standard encryption.</Text>
+                <View style={styles.guaranteeRow}>
+                    <Ionicons name="shield-checkmark" size={16} color={COLORS.textTertiary} />
+                    <Text style={styles.guaranteeText}>
+                        ZyroAC handles all payments securely.
+                    </Text>
                 </View>
+
+                <View style={{ height: 120 }} />
             </ScrollView>
 
-            <View style={styles.footer}>
+            {/* Bottom CTA */}
+            <SafeAreaView edges={['bottom']} style={styles.footer}>
                 <TouchableOpacity
-                    style={styles.payBtn}
+                    style={styles.confirmButton}
                     activeOpacity={0.8}
-                    onPress={() => navigation.navigate('PaymentMethod', { total, service, address, time, date })}
+                    onPress={() => navigation.navigate('PaymentMethod', { total, service, address, time, date, pricing })}
                 >
-                    <LinearGradient
-                        colors={[COLORS.indigo, '#3730a3']}
-                        style={styles.payBtnGradient}
-                    >
-                        <Text style={styles.payBtnText}>Proceed to Payment</Text>
-                        <Ionicons name="arrow-forward" size={18} color="#fff" />
-                    </LinearGradient>
+                    <Text style={styles.confirmButtonText}>Select Payment Method</Text>
+                    <Ionicons name="arrow-forward" size={20} color={COLORS.white} />
                 </TouchableOpacity>
-            </View>
+            </SafeAreaView>
         </View>
     );
 }
@@ -132,212 +161,192 @@ export default function BookingSummaryScreen({ route, navigation }) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: COLORS.premiumBg
+        backgroundColor: COLORS.background,
     },
     header: {
-        paddingBottom: 20,
-        borderBottomLeftRadius: 24,
-        borderBottomRightRadius: 24,
+        backgroundColor: COLORS.white,
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.border,
     },
     headerContent: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        paddingTop: 10,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
     },
-    backBtn: {
-        width: 44,
-        height: 44,
-        borderRadius: 12,
-        backgroundColor: 'rgba(255,255,255,0.15)',
+    backButton: {
+        width: 40,
+        height: 40,
         justifyContent: 'center',
-        alignItems: 'center',
     },
     headerTitle: {
-        color: '#fff',
-        fontSize: 18,
-        fontWeight: 'bold',
+        fontSize: 17,
+        fontWeight: '600',
+        color: COLORS.black,
+    },
+    scrollView: {
+        flex: 1,
     },
     scrollContent: {
-        padding: 20,
-        paddingTop: 25,
+        padding: 16,
     },
     card: {
-        backgroundColor: '#fff',
-        borderRadius: 24,
-        padding: 20,
-        ...SHADOWS.medium,
+        backgroundColor: COLORS.white,
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 24,
         borderWidth: 1,
-        borderColor: COLORS.borderLight,
-        marginBottom: 25
+        borderColor: COLORS.border,
     },
-    cardHeader: {
+    serviceHeader: {
         flexDirection: 'row',
         alignItems: 'center',
     },
     iconContainer: {
-        width: 52,
-        height: 52,
-        borderRadius: 16,
-        backgroundColor: '#eff6ff',
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: COLORS.background,
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
+        marginRight: 16,
     },
-    serviceMain: {
+    serviceInfo: {
         flex: 1,
-        marginLeft: 16,
+    },
+    serviceLabel: {
+        fontSize: 12,
+        color: COLORS.textSecondary,
+        marginBottom: 2,
     },
     serviceName: {
-        fontSize: 18,
-        fontWeight: '900',
-        color: COLORS.textMain
-    },
-    serviceCategory: {
-        fontSize: 12,
-        color: COLORS.textMuted,
+        fontSize: 16,
         fontWeight: '600',
-        marginTop: 2,
-    },
-    basePrice: {
-        fontSize: 18,
-        fontWeight: '900',
-        color: COLORS.textMain
+        color: COLORS.black,
     },
     sectionTitle: {
-        fontSize: 16,
-        fontWeight: '800',
-        color: COLORS.textMain,
-        marginBottom: 16,
+        fontSize: 14,
+        fontWeight: '700',
+        color: COLORS.black,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+        marginBottom: 12,
         marginLeft: 4,
     },
-    logisticsCard: {
-        backgroundColor: '#fff',
-        borderRadius: 24,
-        padding: 20,
-        borderWidth: 1,
-        borderColor: COLORS.borderLight,
-        marginBottom: 25,
-        ...SHADOWS.light,
-    },
-    logisticsItem: {
+    infoRow: {
         flexDirection: 'row',
-        alignItems: 'center',
+        alignItems: 'flex-start',
     },
-    logisticsIcon: {
-        width: 44,
-        height: 44,
-        borderRadius: 12,
+    infoIcon: {
+        width: 32,
+        height: 32,
         justifyContent: 'center',
         alignItems: 'center',
+        marginRight: 12,
     },
-    logisticsInfo: {
-        marginLeft: 16,
+    infoContent: {
         flex: 1,
     },
-    logisticsLabel: {
+    infoLabel: {
         fontSize: 12,
-        fontWeight: '700',
-        color: COLORS.textMuted,
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
+        color: COLORS.textSecondary,
+        marginBottom: 2,
     },
-    logisticsValue: {
+    infoValue: {
         fontSize: 15,
-        fontWeight: '600',
-        color: COLORS.textMain,
-        marginTop: 2,
+        fontWeight: '500',
+        color: COLORS.black,
+        lineHeight: 20,
     },
-    itemDivider: {
+    divider: {
         height: 1,
-        backgroundColor: COLORS.borderLight,
+        backgroundColor: COLORS.border,
         marginVertical: 16,
-    },
-    priceCard: {
-        backgroundColor: COLORS.slate,
-        borderRadius: 24,
-        padding: 24,
-        marginBottom: 20,
-        ...SHADOWS.heavy,
+        marginLeft: 44,
     },
     priceRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 14
+        marginBottom: 12,
     },
     priceLabel: {
-        fontSize: 13,
-        color: 'rgba(255,255,255,0.7)',
-        fontWeight: '600',
-    },
-    priceAmount: {
         fontSize: 14,
-        color: '#fff',
-        fontWeight: '700'
+        color: COLORS.textSecondary,
     },
-    totalDivider: {
+    priceValue: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: COLORS.black,
+    },
+    priceDivider: {
         height: 1,
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        marginVertical: 16
+        backgroundColor: COLORS.border,
+        marginVertical: 12,
     },
     totalRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center'
+        alignItems: 'center',
+        marginTop: 4,
     },
     totalLabel: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: COLORS.black,
+    },
+    totalValue: {
         fontSize: 18,
-        fontWeight: '900',
-        color: '#fff'
+        fontWeight: '700',
+        color: COLORS.blue,
     },
-    inclusiveText: {
-        fontSize: 11,
-        color: 'rgba(255,255,255,0.5)',
-        fontWeight: '600',
-    },
-    totalAmount: {
-        fontSize: 24,
-        fontWeight: '900',
-        color: '#fff'
-    },
-    guaranteeBox: {
+    badge: {
         flexDirection: 'row',
         alignItems: 'center',
+        backgroundColor: '#f0f0f0',
         paddingHorizontal: 10,
-        gap: 10,
-        marginBottom: 30,
+        paddingVertical: 4,
+        borderRadius: 20,
+        gap: 6,
+    },
+    badgeText: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: COLORS.accent,
+    },
+    guaranteeRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        marginTop: -8,
+        marginBottom: 24,
     },
     guaranteeText: {
         fontSize: 12,
-        color: COLORS.textMuted,
-        fontWeight: '500',
-        flex: 1,
+        color: COLORS.textTertiary,
     },
     footer: {
-        padding: 24,
-        paddingBottom: Platform.OS === 'ios' ? 34 : 24,
+        backgroundColor: COLORS.white,
         borderTopWidth: 1,
-        borderTopColor: COLORS.borderLight,
-        backgroundColor: '#fff',
+        borderTopColor: COLORS.border,
+        paddingHorizontal: 16,
+        paddingTop: 12,
+        paddingBottom: 12,
     },
-    payBtn: {
-        height: 60,
-        borderRadius: 18,
-        overflow: 'hidden',
-        ...SHADOWS.medium,
-    },
-    payBtnGradient: {
-        flex: 1,
+    confirmButton: {
+        backgroundColor: COLORS.black,
+        paddingVertical: 16,
+        borderRadius: 10,
         flexDirection: 'row',
-        justifyContent: 'center',
         alignItems: 'center',
-        gap: 12,
+        justifyContent: 'center',
+        gap: 8,
     },
-    payBtnText: {
-        color: '#fff',
-        fontSize: 18,
-        fontWeight: '800'
+    confirmButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: COLORS.white,
     },
 });
-

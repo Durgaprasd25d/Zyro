@@ -1,0 +1,256 @@
+> Task :gradle-plugin:settings-plugin:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :expo-gradle-plugin:expo-autolinking-settings-plugin:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :expo-gradle-plugin:expo-autolinking-plugin-shared:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :gradle-plugin:settings-plugin:pluginDescriptors UP-TO-DATE
+> Task :expo-gradle-plugin:expo-autolinking-settings-plugin:pluginDescriptors UP-TO-DATE
+> Task :expo-gradle-plugin:expo-autolinking-settings-plugin:processResources UP-TO-DATE
+> Task :gradle-plugin:shared:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :gradle-plugin:settings-plugin:processResources UP-TO-DATE
+> Task :gradle-plugin:shared:compileKotlin UP-TO-DATE
+> Task :gradle-plugin:shared:compileJava NO-SOURCE
+> Task :expo-gradle-plugin:expo-autolinking-plugin-shared:compileKotlin UP-TO-DATE
+> Task :gradle-plugin:shared:processResources NO-SOURCE
+> Task :gradle-plugin:shared:classes UP-TO-DATE
+> Task :expo-gradle-plugin:expo-autolinking-plugin-shared:compileJava NO-SOURCE
+> Task :gradle-plugin:shared:jar UP-TO-DATE
+> Task :expo-gradle-plugin:expo-autolinking-plugin-shared:processResources NO-SOURCE
+> Task :expo-gradle-plugin:expo-autolinking-plugin-shared:classes UP-TO-DATE
+> Task :expo-gradle-plugin:expo-autolinking-plugin-shared:jar UP-TO-DATE
+> Task :gradle-plugin:settings-plugin:compileKotlin UP-TO-DATE
+> Task :gradle-plugin:settings-plugin:compileJava NO-SOURCE
+> Task :gradle-plugin:settings-plugin:classes UP-TO-DATE
+> Task :expo-gradle-plugin:expo-autolinking-settings-plugin:compileKotlin UP-TO-DATE
+> Task :expo-gradle-plugin:expo-autolinking-settings-plugin:compileJava NO-SOURCE
+> Task :expo-gradle-plugin:expo-autolinking-settings-plugin:classes UP-TO-DATE
+> Task :gradle-plugin:settings-plugin:jar UP-TO-DATE
+> Task :expo-gradle-plugin:expo-autolinking-settings-plugin:jar UP-TO-DATE
+> Task :expo-gradle-plugin:expo-autolinking-plugin:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :gradle-plugin:react-native-gradle-plugin:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :expo-module-gradle-plugin:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :expo-updates-gradle-plugin:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :expo-updates-gradle-plugin:pluginDescriptors UP-TO-DATE
+> Task :expo-updates-gradle-plugin:processResources UP-TO-DATE
+> Task :expo-module-gradle-plugin:pluginDescriptors UP-TO-DATE
+> Task :expo-module-gradle-plugin:processResources UP-TO-DATE
+> Task :expo-gradle-plugin:expo-autolinking-plugin:compileKotlin UP-TO-DATE
+> Task :expo-gradle-plugin:expo-autolinking-plugin:compileJava NO-SOURCE
+> Task :expo-gradle-plugin:expo-autolinking-plugin:pluginDescriptors UP-TO-DATE
+> Task :expo-gradle-plugin:expo-autolinking-plugin:processResources UP-TO-DATE
+> Task :expo-gradle-plugin:expo-autolinking-plugin:classes UP-TO-DATE
+> Task :gradle-plugin:react-native-gradle-plugin:compileKotlin UP-TO-DATE
+> Task :gradle-plugin:react-native-gradle-plugin:compileJava NO-SOURCE
+> Task :expo-gradle-plugin:expo-autolinking-plugin:jar UP-TO-DATE
+> Task :gradle-plugin:react-native-gradle-plugin:pluginDescriptors UP-TO-DATE
+> Task :gradle-plugin:react-native-gradle-plugin:processResources UP-TO-DATE
+> Task :gradle-plugin:react-native-gradle-plugin:classes UP-TO-DATE
+> Task :gradle-plugin:react-native-gradle-plugin:jar UP-TO-DATE
+> Task :expo-updates-gradle-plugin:compileKotlin UP-TO-DATE
+> Task :expo-module-gradle-plugin:compileKotlin UP-TO-DATE
+> Task :expo-updates-gradle-plugin:compileJava NO-SOURCE
+> Task :expo-updates-gradle-plugin:classes UP-TO-DATE
+> Task :expo-module-gradle-plugin:compileJava NO-SOURCE
+> Task :expo-module-gradle-plugin:classes UP-TO-DATE
+> Task :expo-updates-gradle-plugin:jar UP-TO-DATE
+> Task :expo-module-gradle-plugin:jar UP-TO-DATE
+
+> Configure project :app
+ ℹ️  [33mApplying gradle plugin[0m '[32mexpo-updates-gradle-plugin[0m'
+
+> Configure project :
+[32m[ExpoRootProject][0m Using the following versions:
+  - buildTools:  [32m36.0.0[0m
+  - minSdk:      [32m24[0m
+  - compileSdk:  [32m36[0m
+  - targetSdk:   [32m36[0m
+  - ndk:         [32m27.1.12297006[0m
+  - kotlin:      [32m2.1.20[0m
+  - ksp:         [32m2.1.20-2.0.1[0m
+
+> Configure project :expo
+
+Using expo modules
+  - [32mexpo-constants[0m (18.0.13)
+  - [32mexpo-eas-client[0m (1.0.8)
+  - [32mexpo-json-utils[0m (0.15.0)
+  - [32mexpo-manifests[0m (1.0.10)
+  - [32mexpo-modules-core[0m (3.0.29)
+  - [32mexpo-structured-headers[0m (5.0.0)
+  - [32mexpo-updates[0m (29.0.16)
+  - [32mexpo-updates-interface[0m (2.0.0)
+  - [33m[📦][0m [32mexpo-application[0m (7.0.8)
+  - [33m[📦][0m [32mexpo-asset[0m (55.0.9)
+  - [33m[📦][0m [32mexpo-file-system[0m (19.0.21)
+  - [33m[📦][0m [32mexpo-font[0m (14.0.11)
+  - [33m[📦][0m [32mexpo-image-loader[0m (6.0.0)
+  - [33m[📦][0m [32mexpo-image-picker[0m (17.0.10)
+  - [33m[📦][0m [32mexpo-keep-awake[0m (15.0.8)
+  - [33m[📦][0m [32mexpo-linear-gradient[0m (15.0.8)
+  - [33m[📦][0m [32mexpo-location[0m (19.0.8)
+  - [33m[📦][0m [32mexpo-notifications[0m (0.32.16)
+  - [33m[📦][0m [32mexpo-sharing[0m (14.0.8)
+  - [33m[📦][0m [32mexpo-task-manager[0m (14.0.9)
+  - [33m[📦][0m [32munimodules-app-loader[0m (6.0.8)
+
+
+> Configure project :react-native-firebase_app
+:react-native-firebase_app package.json found at /home/durga/Test/realtime-track/mobile-app/node_modules/@react-native-firebase/app/package.json
+:react-native-firebase_app:firebase.bom using default value: 34.6.0
+:react-native-firebase_app:play.play-services-auth using default value: 21.4.0
+:react-native-firebase_app package.json found at /home/durga/Test/realtime-track/mobile-app/node_modules/@react-native-firebase/app/package.json
+:react-native-firebase_app:version set from package.json: 23.7.0 (23,7,0 - 23007000)
+:react-native-firebase_app:android.compileSdk using custom value: 36
+:react-native-firebase_app:android.targetSdk using custom value: 36
+:react-native-firebase_app:android.minSdk using custom value: 24
+:react-native-firebase_app:reactNativeAndroidDir /home/durga/Test/realtime-track/mobile-app/node_modules/react-native
+
+> Configure project :react-native-firebase_auth
+:react-native-firebase_auth package.json found at /home/durga/Test/realtime-track/mobile-app/node_modules/@react-native-firebase/auth/package.json
+:react-native-firebase_app package.json found at /home/durga/Test/realtime-track/mobile-app/node_modules/@react-native-firebase/app/package.json
+:react-native-firebase_auth:firebase.bom using default value: 34.6.0
+:react-native-firebase_auth package.json found at /home/durga/Test/realtime-track/mobile-app/node_modules/@react-native-firebase/auth/package.json
+:react-native-firebase_auth:version set from package.json: 23.7.0 (23,7,0 - 23007000)
+:react-native-firebase_auth:android.compileSdk using custom value: 36
+:react-native-firebase_auth:android.targetSdk using custom value: 36
+:react-native-firebase_auth:android.minSdk using custom value: 24
+:react-native-firebase_auth:reactNativeAndroidDir /home/durga/Test/realtime-track/mobile-app/node_modules/react-native
+
+> Configure project :react-native-firebase_messaging
+:react-native-firebase_messaging package.json found at /home/durga/Test/realtime-track/mobile-app/node_modules/@react-native-firebase/messaging/package.json
+:react-native-firebase_app package.json found at /home/durga/Test/realtime-track/mobile-app/node_modules/@react-native-firebase/app/package.json
+:react-native-firebase_messaging:firebase.bom using default value: 34.6.0
+:react-native-firebase_messaging package.json found at /home/durga/Test/realtime-track/mobile-app/node_modules/@react-native-firebase/messaging/package.json
+:react-native-firebase_messaging:version set from package.json: 23.7.0 (23,7,0 - 23007000)
+:react-native-firebase_messaging:android.compileSdk using custom value: 36
+:react-native-firebase_messaging:android.targetSdk using custom value: 36
+:react-native-firebase_messaging:android.minSdk using custom value: 24
+:react-native-firebase_messaging:reactNativeAndroidDir /home/durga/Test/realtime-track/mobile-app/node_modules/react-native
+
+> Task :pawan-pk_react-native-mapbox-navigation:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :pawan-pk_react-native-mapbox-navigation:generateCodegenSchemaFromJavaScript UP-TO-DATE
+> Task :pawan-pk_react-native-mapbox-navigation:generateCodegenArtifactsFromSchema UP-TO-DATE
+> Task :pawan-pk_react-native-mapbox-navigation:preBuild UP-TO-DATE
+> Task :pawan-pk_react-native-mapbox-navigation:preDebugBuild UP-TO-DATE
+> Task :pawan-pk_react-native-mapbox-navigation:dataBindingMergeDependencyArtifactsDebug UP-TO-DATE
+> Task :pawan-pk_react-native-mapbox-navigation:generateDebugResValues UP-TO-DATE
+> Task :pawan-pk_react-native-mapbox-navigation:generateDebugResources UP-TO-DATE
+> Task :pawan-pk_react-native-mapbox-navigation:packageDebugResources UP-TO-DATE
+> Task :pawan-pk_react-native-mapbox-navigation:parseDebugLocalResources UP-TO-DATE
+> Task :pawan-pk_react-native-mapbox-navigation:dataBindingGenBaseClassesDebug UP-TO-DATE
+> Task :pawan-pk_react-native-mapbox-navigation:generateDebugBuildConfig UP-TO-DATE
+> Task :pawan-pk_react-native-mapbox-navigation:generateDebugRFile UP-TO-DATE
+
+> Task :pawan-pk_react-native-mapbox-navigation:compileDebugKotlin FAILED
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:19:19 Unresolved reference 'maps'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:20:19 Unresolved reference 'maps'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:21:19 Unresolved reference 'maps'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:22:19 Unresolved reference 'maps'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:23:19 Unresolved reference 'maps'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:24:19 Unresolved reference 'maps'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:107:36 Cannot access class 'MapboxMap'. Check your module classpath for missing or conflicting dependencies.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:107:79 Cannot access class 'MapView'. Check your module classpath for missing or conflicting dependencies.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:107:87 Unresolved reference 'mapboxMap'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:113:34 Cannot access class 'MapboxMap'. Check your module classpath for missing or conflicting dependencies.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:113:34 Cannot access class 'CameraAnimationsPlugin'. Check your module classpath for missing or conflicting dependencies.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:114:13 Cannot access class 'MapView'. Check your module classpath for missing or conflicting dependencies.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:114:21 Unresolved reference 'mapboxMap'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:115:13 Cannot access class 'MapView'. Check your module classpath for missing or conflicting dependencies.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:115:21 Unresolved reference 'camera'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:130:32 Unresolved reference 'EdgeInsets'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:130:43 Property delegate must have a 'getValue(MapboxNavigationView, KProperty1<MapboxNavigationView, ERROR CLASS: Symbol not found for EdgeInsets>)' method. None of the following functions is applicable:
+fun <T> Lazy<T>.getValue(thisRef: Any?, property: KProperty<*>): T
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:130:46 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:130:46 Not enough information to infer type argument for 'T'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:130:46 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:130:46 Not enough information to infer type argument for 'T'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:131:5 Unresolved reference 'EdgeInsets'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:138:41 Unresolved reference 'EdgeInsets'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:138:52 Property delegate must have a 'getValue(MapboxNavigationView, KProperty1<MapboxNavigationView, ERROR CLASS: Symbol not found for EdgeInsets>)' method. None of the following functions is applicable:
+fun <T> Lazy<T>.getValue(thisRef: Any?, property: KProperty<*>): T
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:138:55 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:138:55 Not enough information to infer type argument for 'T'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:138:55 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:138:55 Not enough information to infer type argument for 'T'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:139:5 Unresolved reference 'EdgeInsets'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:146:33 Unresolved reference 'EdgeInsets'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:146:44 Property delegate must have a 'getValue(MapboxNavigationView, KProperty1<MapboxNavigationView, ERROR CLASS: Symbol not found for EdgeInsets>)' method. None of the following functions is applicable:
+fun <T> Lazy<T>.getValue(thisRef: Any?, property: KProperty<*>): T
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:146:47 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:146:47 Not enough information to infer type argument for 'T'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:146:47 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:146:47 Not enough information to infer type argument for 'T'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:147:5 Unresolved reference 'EdgeInsets'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:154:42 Unresolved reference 'EdgeInsets'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:154:53 Property delegate must have a 'getValue(MapboxNavigationView, KProperty1<MapboxNavigationView, ERROR CLASS: Symbol not found for EdgeInsets>)' method. None of the following functions is applicable:
+fun <T> Lazy<T>.getValue(thisRef: Any?, property: KProperty<*>): T
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:154:56 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:154:56 Not enough information to infer type argument for 'T'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:154:56 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:154:56 Not enough information to infer type argument for 'T'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:155:5 Unresolved reference 'EdgeInsets'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:339:34 Cannot access 'LocationProvider' which is a supertype of 'NavigationLocationProvider'. Check your module classpath for missing or conflicting dependencies.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:381:25 Cannot access class 'MapView'. Check your module classpath for missing or conflicting dependencies.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:381:33 Unresolved reference 'mapboxMap'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:384:22 Cannot access class 'Style'. Check your module classpath for missing or conflicting dependencies.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:384:43 Argument type mismatch: actual type is 'Any', but 'Style' was expected.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:448:17 Cannot access class 'MapView'. Check your module classpath for missing or conflicting dependencies.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:448:25 Unresolved reference 'mapboxMap'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:448:42 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:448:48 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:449:25 Cannot access class 'Style'. Check your module classpath for missing or conflicting dependencies.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:449:45 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:458:27 Cannot access class 'MapView'. Check your module classpath for missing or conflicting dependencies.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:458:35 Unresolved reference 'mapboxMap'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:461:25 Cannot access class 'Style'. Check your module classpath for missing or conflicting dependencies.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:462:13 Argument type mismatch: actual type is 'Any', but 'Style' was expected.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:466:24 None of the following candidates is applicable:
+fun render(style: Style, expectedValue: Expected<InvalidPointError, ArrowAddedValue>): Unit
+fun render(style: Style, arrowAdded: ArrowAddedValue): Unit
+fun render(style: Style, visibilityChange: ArrowVisibilityChangeValue): Unit
+fun render(style: Style, state: ClearArrowsValue): Unit
+fun render(style: Style, state: RemoveArrowValue): Unit
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:499:32 Unresolved reference 'CameraOptions'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:503:13 Cannot access class 'MapView'. Check your module classpath for missing or conflicting dependencies.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:503:21 Unresolved reference 'mapboxMap'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:510:13 Cannot access class 'MapView'. Check your module classpath for missing or conflicting dependencies.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:510:21 Unresolved reference 'camera'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:526:26 Cannot access class 'EdgeInsets'. Check your module classpath for missing or conflicting dependencies.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:528:26 Cannot access class 'EdgeInsets'. Check your module classpath for missing or conflicting dependencies.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:531:26 Cannot access class 'EdgeInsets'. Check your module classpath for missing or conflicting dependencies.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:533:26 Cannot access class 'EdgeInsets'. Check your module classpath for missing or conflicting dependencies.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:575:13 Cannot access class 'MapView'. Check your module classpath for missing or conflicting dependencies.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:575:21 Unresolved reference 'mapboxMap'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:577:21 Cannot access class 'Style'. Check your module classpath for missing or conflicting dependencies.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:577:38 Unresolved reference 'it'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:623:13 Cannot access class 'MapView'. Check your module classpath for missing or conflicting dependencies.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:623:21 Unresolved reference 'location'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:624:7 Unresolved reference 'enabled'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:625:7 Unresolved reference 'puckBearingEnabled'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:626:7 Unresolved reference 'locationPuck'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:626:22 Unresolved reference 'LocationPuck2D'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:627:24 Unresolved reference 'ImageHolder'.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:632:13 Cannot access class 'MapView'. Check your module classpath for missing or conflicting dependencies.
+e: file:///home/durga/Test/realtime-track/mobile-app/node_modules/@pawan-pk/react-native-mapbox-navigation/android/src/main/java/com/mapboxnavigation/MapboxNavigationView.kt:632:21 Unresolved reference 'location'.
+
+[Incubating] Problems report is available at: file:///home/durga/Test/realtime-track/mobile-app/android/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':pawan-pk_react-native-mapbox-navigation:compileDebugKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.14.3/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 3s
+39 actionable tasks: 1 executed, 38 up-to-date

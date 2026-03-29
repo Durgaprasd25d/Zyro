@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { COLORS, SPACING, SHADOWS } from '../../constants/theme';
 import technicianService from '../../services/technicianService';
+import rideService from '../../services/rideService';
 
 export default function TechnicianOTPScreen({ route, navigation }) {
     const { job, amount } = route?.params || {};
@@ -11,20 +12,25 @@ export default function TechnicianOTPScreen({ route, navigation }) {
     const [verifying, setVerifying] = useState(false);
 
     const handleVerify = async () => {
-        if (otp.length !== 4) return;
+        if (otp.length !== 5) return;
 
         setVerifying(true);
-        const result = await technicianService.verifyOTP(job.id, otp);
+        try {
+            const result = await rideService.completeRide(job.id, otp);
 
-        if (result.success) {
-            navigation.navigate('WalletUpdate', {
-                job,
-                amount: result.total,
-                earnings: result.earnings,
-                commission: result.commission
-            });
-        } else {
-            Alert.alert('Error', result.error || 'Invalid OTP');
+            if (result.success) {
+                navigation.navigate('WalletUpdate', {
+                    job,
+                    amount: result.total,
+                    earnings: result.earnings,
+                    commission: result.commission
+                });
+            } else {
+                Alert.alert('Error', result.error || 'Invalid OTP');
+                setVerifying(false);
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Verification failed');
             setVerifying(false);
         }
     };
@@ -53,8 +59,8 @@ export default function TechnicianOTPScreen({ route, navigation }) {
                         value={otp}
                         onChangeText={setOtp}
                         keyboardType="number-pad"
-                        maxLength={4}
-                        placeholder="0000"
+                        maxLength={5}
+                        placeholder="00000"
                         placeholderTextColor={COLORS.greyMedium}
                     />
                 </View>
@@ -67,17 +73,17 @@ export default function TechnicianOTPScreen({ route, navigation }) {
                         </View>
                     </View>
                     <View style={styles.amountRow}>
-                        <Text style={styles.amountLabel}>Amount</Text>
-                        <Text style={styles.amountValue}>₹{amount || 1200}</Text>
+                        <Text style={styles.amountLabel}>Total to Collect</Text>
+                        <Text style={styles.amountValue}>₹{amount || 1000}</Text>
                     </View>
                 </View>
             </View>
 
             <View style={styles.footer}>
                 <TouchableOpacity
-                    style={[styles.verifyBtn, otp.length !== 4 && styles.disabledBtn]}
+                    style={[styles.verifyBtn, otp.length !== 5 && styles.disabledBtn]}
                     onPress={handleVerify}
-                    disabled={otp.length !== 4}
+                    disabled={otp.length !== 5 || verifying}
                 >
                     <Text style={styles.verifyBtnText}>Verify OTP</Text>
                 </TouchableOpacity>
@@ -104,10 +110,10 @@ const styles = StyleSheet.create({
     subtitle: { fontSize: 14, color: COLORS.grey, textAlign: 'center', marginBottom: SPACING.xxl },
     otpContainer: { width: '80%', marginBottom: SPACING.xl },
     otpInput: {
-        fontSize: 48,
+        fontSize: 40,
         fontWeight: 'bold',
         textAlign: 'center',
-        letterSpacing: 20,
+        letterSpacing: 12,
         backgroundColor: COLORS.greyLight,
         borderRadius: 20,
         padding: SPACING.lg,

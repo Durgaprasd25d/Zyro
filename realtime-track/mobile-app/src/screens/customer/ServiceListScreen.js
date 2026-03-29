@@ -1,28 +1,47 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Dimensions, ActivityIndicator, StatusBar } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+    View,
+    Text,
+    StyleSheet,
+    TouchableOpacity,
+    FlatList,
+    ActivityIndicator,
+    StatusBar,
+    Platform,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SPACING, SHADOWS } from '../../constants/theme';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import config from '../../constants/config';
 
-const { width } = Dimensions.get('window');
+// Uber-Inspired Clean Palette (matching HomeScreen)
+const COLORS = {
+    black: '#000000',
+    white: '#ffffff',
+    background: '#f7f7f7',
+    textPrimary: '#000000',
+    textSecondary: '#545454',
+    textTertiary: '#8a8a8a',
+    border: '#e0e0e0',
+    accent: '#06c167',
+    blue: '#276ef1',
+    card: '#ffffff',
+};
 
 export default function ServiceListScreen({ route, navigation }) {
     const { type, categoryName } = route.params;
-    const [services, setServices] = React.useState([]);
-    const [loading, setLoading] = React.useState(true);
+    const [services, setServices] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    React.useEffect(() => {
+    useEffect(() => {
         fetchServices();
-    }, [type]);
+    }, []);
 
     const fetchServices = async () => {
         try {
             const response = await fetch(`${config.BACKEND_URL}/api/services/category/${type}`);
             const result = await response.json();
             if (result.success) {
-                setServices(result.data.services);
+                setServices(result.data.services || []);
             }
         } catch (error) {
             console.error('Error fetching services:', error);
@@ -31,32 +50,42 @@ export default function ServiceListScreen({ route, navigation }) {
         }
     };
 
-    const renderItem = ({ item }) => (
+    const renderService = ({ item }) => (
         <TouchableOpacity
-            style={styles.card}
-            activeOpacity={0.8}
+            style={styles.serviceCard}
+            activeOpacity={0.7}
             onPress={() => navigation.navigate('ServiceDetail', { service: item })}
         >
-            <View style={styles.cardContent}>
+            <View style={styles.serviceCardContent}>
+                <View style={styles.serviceIconBox}>
+                    <Ionicons name="construct-outline" size={28} color={COLORS.black} />
+                </View>
+
                 <View style={styles.serviceInfo}>
                     <Text style={styles.serviceName}>{item.name}</Text>
-                    <View style={styles.metaRow}>
-                        <View style={styles.badge}>
-                            <Ionicons name="time-outline" size={14} color={COLORS.indigo} />
-                            <Text style={styles.badgeText}>{item.time}</Text>
+                    <Text style={styles.serviceDescription} numberOfLines={2}>
+                        {item.description || 'Professional AC service by verified technicians'}
+                    </Text>
+
+                    <View style={styles.serviceMetaRow}>
+                        <View style={styles.metaItem}>
+                            <Ionicons name="time-outline" size={14} color={COLORS.textTertiary} />
+                            <Text style={styles.metaText}>{item.time || '1-2 hrs'}</Text>
                         </View>
-                        <View style={[styles.badge, { backgroundColor: '#f0fdf4' }]}>
-                            <Ionicons name="star" size={12} color="#22c55e" />
-                            <Text style={[styles.badgeText, { color: '#22c55e' }]}>4.8</Text>
+                        <View style={styles.metaDivider} />
+                        <View style={styles.metaItem}>
+                            <Ionicons name="star" size={14} color="#f59e0b" />
+                            <Text style={styles.metaText}>4.8</Text>
                         </View>
                     </View>
                 </View>
-                <View style={styles.priceSection}>
-                    <Text style={styles.currency}>₹</Text>
-                    <Text style={styles.priceValue}>{item.price}</Text>
-                    <View style={styles.arrowCircle}>
-                        <Ionicons name="chevron-forward" size={18} color="#fff" />
-                    </View>
+
+                <View style={styles.servicePriceSection}>
+                    <Text style={styles.priceLabel}>from</Text>
+                    <Text style={styles.priceValue}>₹{item.price || 0}</Text>
+                    <TouchableOpacity style={styles.bookButton}>
+                        <Ionicons name="chevron-forward" size={18} color={COLORS.white} />
+                    </TouchableOpacity>
                 </View>
             </View>
         </TouchableOpacity>
@@ -64,47 +93,47 @@ export default function ServiceListScreen({ route, navigation }) {
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="light-content" />
+            <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
 
-            <LinearGradient
-                colors={[COLORS.slate, COLORS.slateLight]}
-                style={styles.header}
-            >
-                <SafeAreaView edges={['top']}>
-                    <View style={styles.headerContent}>
-                        <TouchableOpacity
-                            style={styles.backBtn}
-                            onPress={() => navigation.canGoBack() && navigation.goBack()}
-                        >
-                            <Ionicons name="arrow-back" size={24} color="#fff" />
-                        </TouchableOpacity>
-                        <View style={styles.titleContainer}>
-                            <Text style={styles.headerSubtitle}>Category</Text>
-                            <Text style={styles.headerTitle}>{categoryName || type}</Text>
-                        </View>
-                        <View style={{ width: 44 }} />
+            {/* Header */}
+            <SafeAreaView edges={['top']} style={styles.header}>
+                <View style={styles.headerContent}>
+                    <TouchableOpacity
+                        style={styles.backButton}
+                        onPress={() => navigation.goBack()}
+                    >
+                        <Ionicons name="arrow-back" size={24} color={COLORS.black} />
+                    </TouchableOpacity>
+                    <View style={styles.headerTitleContainer}>
+                        <Text style={styles.headerTitle}>{categoryName || 'Services'}</Text>
+                        {!loading && (
+                            <Text style={styles.headerSubtitle}>{services.length} services available</Text>
+                        )}
                     </View>
-                </SafeAreaView>
-            </LinearGradient>
+                    <View style={{ width: 40 }} />
+                </View>
+            </SafeAreaView>
 
+            {/* Content */}
             {loading ? (
-                <View style={styles.loaderContainer}>
-                    <ActivityIndicator size="large" color={COLORS.indigo} />
-                    <Text style={styles.loaderText}>Finding best services...</Text>
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={COLORS.black} />
+                </View>
+            ) : services.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                    <View style={styles.emptyIconBox}>
+                        <Ionicons name="folder-open-outline" size={48} color={COLORS.textTertiary} />
+                    </View>
+                    <Text style={styles.emptyTitle}>No services found</Text>
+                    <Text style={styles.emptySubtitle}>Check back later for new services</Text>
                 </View>
             ) : (
                 <FlatList
                     data={services}
-                    renderItem={renderItem}
-                    keyExtractor={item => item._id}
-                    contentContainerStyle={styles.list}
+                    renderItem={renderService}
+                    keyExtractor={(item) => item._id || item.id}
+                    contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
-                    ListEmptyComponent={
-                        <View style={styles.emptyState}>
-                            <Ionicons name="construct-outline" size={80} color={COLORS.textMuted} />
-                            <Text style={styles.emptyText}>No services available in this category yet.</Text>
-                        </View>
-                    }
                 />
             )}
         </View>
@@ -114,139 +143,152 @@ export default function ServiceListScreen({ route, navigation }) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: COLORS.premiumBg,
+        backgroundColor: COLORS.background,
     },
     header: {
-        paddingBottom: 20,
-        borderBottomLeftRadius: 24,
-        borderBottomRightRadius: 24,
+        backgroundColor: COLORS.white,
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.border,
     },
     headerContent: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        paddingTop: 10,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
     },
-    backBtn: {
-        width: 44,
-        height: 44,
-        borderRadius: 12,
-        backgroundColor: 'rgba(255,255,255,0.15)',
+    backButton: {
+        width: 40,
+        height: 40,
+        justifyContent: 'center',
+    },
+    headerTitleContainer: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    headerTitle: {
+        fontSize: 17,
+        fontWeight: '600',
+        color: COLORS.black,
+    },
+    headerSubtitle: {
+        fontSize: 13,
+        color: COLORS.textSecondary,
+        marginTop: 2,
+    },
+    loadingContainer: {
+        flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
     },
-    titleContainer: {
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
         alignItems: 'center',
+        paddingHorizontal: 40,
     },
-    headerSubtitle: {
-        color: 'rgba(255,255,255,0.6)',
-        fontSize: 12,
-        fontWeight: '600',
-        textTransform: 'uppercase',
-        letterSpacing: 1,
-    },
-    headerTitle: {
-        color: '#fff',
-        fontSize: 20,
-        fontWeight: 'bold',
-    },
-    list: {
-        padding: 20,
-        paddingTop: 25,
-    },
-    card: {
-        backgroundColor: '#fff',
-        borderRadius: 20,
-        marginBottom: 16,
-        padding: 16,
-        ...SHADOWS.medium,
+    emptyIconBox: {
+        width: 96,
+        height: 96,
+        borderRadius: 48,
+        backgroundColor: COLORS.card,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 24,
         borderWidth: 1,
-        borderColor: COLORS.borderLight,
+        borderColor: COLORS.border,
     },
-    cardContent: {
+    emptyTitle: {
+        fontSize: 20,
+        fontWeight: '600',
+        color: COLORS.black,
+        marginBottom: 8,
+    },
+    emptySubtitle: {
+        fontSize: 15,
+        color: COLORS.textSecondary,
+        textAlign: 'center',
+    },
+    listContent: {
+        padding: 16,
+    },
+    serviceCard: {
+        backgroundColor: COLORS.card,
+        borderRadius: 12,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+    },
+    serviceCardContent: {
         flexDirection: 'row',
+        padding: 16,
+        alignItems: 'flex-start',
+    },
+    serviceIconBox: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: COLORS.background,
+        justifyContent: 'center',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        marginRight: 16,
     },
     serviceInfo: {
         flex: 1,
+        marginRight: 12,
     },
     serviceName: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: COLORS.textMain,
+        fontSize: 16,
+        fontWeight: '600',
+        color: COLORS.black,
+        marginBottom: 4,
+    },
+    serviceDescription: {
+        fontSize: 13,
+        color: COLORS.textSecondary,
+        lineHeight: 18,
         marginBottom: 8,
     },
-    metaRow: {
+    serviceMetaRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
     },
-    badge: {
+    metaItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: COLORS.borderLight,
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 8,
         gap: 4,
     },
-    badgeText: {
+    metaText: {
         fontSize: 12,
-        fontWeight: '700',
-        color: COLORS.textMuted,
+        color: COLORS.textSecondary,
+        fontWeight: '500',
     },
-    priceSection: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 2,
+    metaDivider: {
+        width: 1,
+        height: 12,
+        backgroundColor: COLORS.border,
+        marginHorizontal: 10,
     },
-    currency: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: COLORS.indigo,
-        marginTop: 4,
+    servicePriceSection: {
+        alignItems: 'flex-end',
+    },
+    priceLabel: {
+        fontSize: 11,
+        color: COLORS.textTertiary,
+        marginBottom: 2,
     },
     priceValue: {
-        fontSize: 24,
-        fontWeight: '900',
-        color: COLORS.textMain,
-        marginRight: 10,
+        fontSize: 18,
+        fontWeight: '700',
+        color: COLORS.black,
+        marginBottom: 8,
     },
-    arrowCircle: {
+    bookButton: {
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: COLORS.indigo,
+        backgroundColor: COLORS.black,
         justifyContent: 'center',
         alignItems: 'center',
-        ...SHADOWS.light,
-    },
-    loaderContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 15,
-    },
-    loaderText: {
-        color: COLORS.textMuted,
-        fontSize: 14,
-        fontWeight: '500',
-    },
-    emptyState: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: 100,
-        paddingHorizontal: 40,
-    },
-    emptyText: {
-        textAlign: 'center',
-        color: COLORS.textMuted,
-        fontSize: 16,
-        marginTop: 20,
-        lineHeight: 24,
     },
 });
-

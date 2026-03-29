@@ -9,28 +9,31 @@ import {
     Alert,
     Share,
     Platform,
+    Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { StatusBar } from 'expo-status-bar';
 import QRCode from 'react-native-qrcode-svg';
 import ViewShot from 'react-native-view-shot';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
-import { COLORS, SPACING, SHADOWS } from '../../constants/theme';
 import rideService from '../../services/rideService';
 
-const PREMIUM_COLORS = {
-    primary: '#4f46e5',
-    secondary: '#7c3aed',
-    success: '#22c55e',
-    slate: '#0f172a',
-    background: '#f8fafc',
+const { width } = Dimensions.get('window');
+
+// Uber-Inspired Clean Palette
+const COLORS = {
+    black: '#000000',
     white: '#ffffff',
-    textMain: '#1e293b',
-    textMuted: '#64748b',
-    border: '#e2e8f0',
+    background: '#f7f7f7',
+    textPrimary: '#000000',
+    textSecondary: '#545454',
+    textTertiary: '#8a8a8a',
+    border: '#e0e0e0',
+    accent: '#06c167',
+    blue: '#276ef1',
+    card: '#ffffff',
 };
 
 export default function ReceiptScreen({ route, navigation }) {
@@ -102,11 +105,11 @@ Date: ${new Date(receiptData.bookingDate).toLocaleDateString()}
 ━━━━━━━━━━━━━━━━━━━━
 BILLING DETAILS
 ━━━━━━━━━━━━━━━━━━━━
-Service Charge: ₹${receiptData.billing.serviceCharge}
-Platform Fee: ₹${receiptData.billing.platformFee}
-GST (${receiptData.billing.gstPercentage}%): ₹${receiptData.billing.gst}
+Service Charge: ₹${Math.round(receiptData.billing.serviceCharge)}
+Platform Fee: ₹${Math.round(receiptData.billing.platformFee)}
+GST (${receiptData.billing.gstPercentage}%): ₹${Math.round(receiptData.billing.gst)}
 
-Total Amount: ₹${receiptData.billing.totalAmount}
+Total Amount: ₹${Math.round(receiptData.billing.totalAmount)}
 ━━━━━━━━━━━━━━━━━━━━
 
 Payment: ${receiptData.payment.method} - ${receiptData.payment.status}
@@ -124,30 +127,24 @@ ${receiptData.company.website}
 
     if (loading) {
         return (
-            <View style={styles.container}>
-                <StatusBar style="dark" />
-                <View style={styles.loaderContainer}>
-                    <ActivityIndicator size="large" color={PREMIUM_COLORS.primary} />
-                    <Text style={styles.loaderText}>Generating receipt...</Text>
-                </View>
+            <View style={styles.loaderContainer}>
+                <ActivityIndicator size="large" color={COLORS.black} />
+                <Text style={styles.loaderText}>Generating receipt...</Text>
             </View>
         );
     }
 
     if (!receiptData) {
         return (
-            <View style={styles.container}>
-                <StatusBar style="dark" />
-                <View style={styles.loaderContainer}>
-                    <Ionicons name="document-text-outline" size={60} color={PREMIUM_COLORS.textMuted} />
-                    <Text style={styles.errorText}>Receipt not found</Text>
-                    <TouchableOpacity
-                        style={styles.backButton}
-                        onPress={() => navigation.goBack()}
-                    >
-                        <Text style={styles.backButtonText}>Go Back</Text>
-                    </TouchableOpacity>
-                </View>
+            <View style={styles.loaderContainer}>
+                <Ionicons name="document-text-outline" size={60} color={COLORS.textTertiary} />
+                <Text style={styles.errorText}>Receipt not found</Text>
+                <TouchableOpacity
+                    style={styles.backButton}
+                    onPress={() => navigation.goBack()}
+                >
+                    <Text style={styles.backButtonText}>Go Back</Text>
+                </TouchableOpacity>
             </View>
         );
     }
@@ -157,36 +154,23 @@ ${receiptData.company.website}
             <StatusBar style="dark" />
 
             {/* Header */}
-            <LinearGradient
-                colors={['#ffffff', '#f8fafc']}
-                style={styles.header}
-            >
-                <SafeAreaView edges={['top']}>
-                    <View style={styles.headerContent}>
-                        <TouchableOpacity
-                            style={styles.backBtn}
-                            onPress={() => navigation.goBack()}
-                        >
-                            <Ionicons name="arrow-back" size={24} color={PREMIUM_COLORS.textMain} />
-                        </TouchableOpacity>
-                        <View style={styles.headerTitleWrap}>
-                            <Text style={styles.headerTitle}>Receipt</Text>
-                            <Text style={styles.headerSub}>Tax Invoice</Text>
-                        </View>
-                        <TouchableOpacity
-                            style={styles.downloadBtn}
-                            onPress={handleDownload}
-                            disabled={downloading}
-                        >
-                            {downloading ? (
-                                <ActivityIndicator size="small" color={PREMIUM_COLORS.primary} />
-                            ) : (
-                                <Ionicons name="download-outline" size={24} color={PREMIUM_COLORS.primary} />
-                            )}
-                        </TouchableOpacity>
-                    </View>
-                </SafeAreaView>
-            </LinearGradient>
+            <SafeAreaView edges={['top']} style={styles.header}>
+                <View style={styles.headerContent}>
+                    <TouchableOpacity
+                        style={styles.backIcon}
+                        onPress={() => navigation.goBack()}
+                    >
+                        <Ionicons name="arrow-back" size={24} color={COLORS.black} />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Receipt</Text>
+                    <TouchableOpacity
+                        style={styles.shareIcon}
+                        onPress={handleShare}
+                    >
+                        <Ionicons name="share-social-outline" size={24} color={COLORS.black} />
+                    </TouchableOpacity>
+                </View>
+            </SafeAreaView>
 
             <ScrollView
                 style={styles.scrollView}
@@ -195,145 +179,106 @@ ${receiptData.company.website}
             >
                 {/* Thermal Receipt for Capture */}
                 <ViewShot ref={receiptRef} options={{ format: 'png', quality: 1.0 }}>
-                    <View style={styles.thermalReceipt}>
-                        {/* Header */}
-                        <View style={styles.thermalHeader}>
-                            <Text style={styles.thermalCompanyName}>{receiptData.company.name}</Text>
-                            <Text style={styles.thermalSubtext}>Service Receipt</Text>
-                            <Text style={styles.thermalSubtext}>{receiptData.company.website}</Text>
-                            <Text style={styles.thermalSubtext}>{receiptData.company.phone}</Text>
+                    <View style={styles.receiptCard}>
+                        {/* Company Section */}
+                        <View style={styles.companyInfo}>
+                            <Text style={styles.companyName}>{receiptData.company.name}</Text>
+                            <Text style={styles.companySub}>{receiptData.company.website}</Text>
                         </View>
 
-                        <Text style={styles.thermalDivider}>{'='.repeat(40)}</Text>
+                        <View style={styles.divider} />
 
                         {/* Booking Details */}
-                        <View style={styles.thermalSection}>
-                            <Text style={styles.thermalLabel}>Receipt No: #{receiptData.bookingId?.substring(0, 12).toUpperCase()}</Text>
-                            <Text style={styles.thermalLabel}>
-                                Date: {new Date(receiptData.bookingDate).toLocaleString('en-US', {
-                                    day: '2-digit',
-                                    month: 'short',
-                                    year: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                })}
-                            </Text>
-                            <Text style={styles.thermalLabel}>Service: {receiptData.serviceType?.toUpperCase()}</Text>
-                        </View>
-
-                        <Text style={styles.thermalDivider}>{'-'.repeat(40)}</Text>
-
-                        {/* Customer Info */}
-                        {receiptData.customer?.name && (
-                            <>
-                                <View style={styles.thermalSection}>
-                                    <Text style={styles.thermalLabel}>Customer: {receiptData.customer.name}</Text>
-                                    <Text style={styles.thermalLabel}>Phone: {receiptData.customer.phone}</Text>
-                                    <Text style={styles.thermalLabel} numberOfLines={2}>Location: {receiptData.location}</Text>
-                                </View>
-                                <Text style={styles.thermalDivider}>{'-'.repeat(40)}</Text>
-                            </>
-                        )}
-
-                        {/* Billing */}
-                        <View style={styles.thermalSection}>
-                            <View style={styles.thermalRow}>
-                                <Text style={styles.thermalItem}>Service Charge</Text>
-                                <Text style={styles.thermalPrice}>₹ {receiptData.billing.serviceCharge}</Text>
+                        <View style={styles.detailsGrid}>
+                            <View style={styles.detailItem}>
+                                <Text style={styles.detailLabel}>DATE</Text>
+                                <Text style={styles.detailValue}>
+                                    {new Date(receiptData.bookingDate).toLocaleDateString('en-IN', {
+                                        day: '2-digit',
+                                        month: 'short',
+                                        year: 'numeric'
+                                    })}
+                                </Text>
                             </View>
-                            <View style={styles.thermalRow}>
-                                <Text style={styles.thermalItem}>Platform Fee</Text>
-                                <Text style={styles.thermalPrice}>₹ {receiptData.billing.platformFee}</Text>
-                            </View>
-                            <View style={styles.thermalRow}>
-                                <Text style={styles.thermalItem}>GST ({receiptData.billing.gstPercentage}%)</Text>
-                                <Text style={styles.thermalPrice}>₹ {receiptData.billing.gst}</Text>
+                            <View style={styles.detailItem}>
+                                <Text style={styles.detailLabel}>BOOKING ID</Text>
+                                <Text style={styles.detailValue}>#{receiptData.bookingId?.substring(0, 10).toUpperCase()}</Text>
                             </View>
                         </View>
 
-                        <Text style={styles.thermalDivider}>{'='.repeat(40)}</Text>
+                        <View style={styles.divider} />
 
-                        {/* Total */}
-                        <View style={styles.thermalTotal}>
-                            <Text style={styles.thermalTotalLabel}>TOTAL AMOUNT</Text>
-                            <Text style={styles.thermalTotalValue}>₹ {receiptData.billing.totalAmount}</Text>
+                        {/* Items Section */}
+                        <View style={styles.itemsSection}>
+                            <View style={styles.itemRow}>
+                                <Text style={styles.itemName}>{receiptData.serviceType?.toUpperCase()} SERVICE</Text>
+                                <Text style={styles.itemPrice}>₹{Math.round(receiptData.billing.serviceCharge)}</Text>
+                            </View>
+                            <View style={styles.itemRow}>
+                                <Text style={styles.itemLabel}>Platform Fee</Text>
+                                <Text style={styles.itemValue}>₹{Math.round(receiptData.billing.platformFee)}</Text>
+                            </View>
+                            <View style={styles.itemRow}>
+                                <Text style={styles.itemLabel}>GST ({receiptData.billing.gstPercentage}%)</Text>
+                                <Text style={styles.itemValue}>₹{Math.round(receiptData.billing.gst)}</Text>
+                            </View>
                         </View>
 
-                        <Text style={styles.thermalDivider}>{'='.repeat(40)}</Text>
+                        <View style={styles.heavyDivider} />
+
+                        {/* Total Section */}
+                        <View style={styles.totalRow}>
+                            <Text style={styles.totalLabel}>TOTAL AMOUNT</Text>
+                            <Text style={styles.totalValue}>₹{Math.round(receiptData.billing.totalAmount)}</Text>
+                        </View>
 
                         {/* Payment Info */}
-                        <View style={styles.thermalSection}>
-                            <Text style={styles.thermalLabel}>Payment: {receiptData.payment.method}</Text>
-                            <Text style={styles.thermalLabel}>Status: {receiptData.payment.status}</Text>
-                            {receiptData.payment.transactionId && (
-                                <Text style={styles.thermalLabel} numberOfLines={1}>
-                                    Txn ID: {receiptData.payment.transactionId.substring(0, 24)}
-                                </Text>
-                            )}
+                        <View style={styles.paymentBadge}>
+                            <Ionicons name="shield-checkmark" size={14} color={COLORS.accent} />
+                            <Text style={styles.paymentStatus}>Paid via {receiptData.payment.method}</Text>
                         </View>
 
-                        <Text style={styles.thermalDivider}>{'-'.repeat(40)}</Text>
+                        <View style={styles.divider} />
 
-                        {/* QR Code */}
-                        <View style={styles.thermalQR}>
+                        {/* QR Code Section */}
+                        <View style={styles.qrSection}>
                             <QRCode
                                 value={receiptData.company.website}
-                                size={100}
+                                size={80}
                                 color="#000000"
                                 backgroundColor="#ffffff"
                             />
-                            <Text style={styles.thermalQRText}>Scan for more info</Text>
+                            <Text style={styles.qrLabel}>Scan to verify authenticity</Text>
                         </View>
 
-                        {/* Footer */}
-                        <View style={styles.thermalFooter}>
-                            <Text style={styles.thermalFooterText}>Thank you for choosing {receiptData.company.name}</Text>
-                            <Text style={styles.thermalFooterText}>Visit: {receiptData.company.website}</Text>
-                            <Text style={styles.thermalFooterText}>━━━━━━━━━━━━━━━━━━━━</Text>
-                        </View>
+                        <Text style={styles.thankYouText}>Thank you for choosing ZyroAC</Text>
                     </View>
                 </ViewShot>
 
-                {/* Action Buttons */}
-                <TouchableOpacity
-                    style={styles.downloadButton}
-                    onPress={handleDownload}
-                    activeOpacity={0.8}
-                    disabled={downloading}
-                >
-                    <LinearGradient
-                        colors={[PREMIUM_COLORS.primary, PREMIUM_COLORS.secondary]}
-                        style={styles.downloadGradient}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
+                {/* Footer Actions */}
+                <View style={styles.footerActions}>
+                    <TouchableOpacity
+                        style={styles.downloadButton}
+                        onPress={handleDownload}
+                        disabled={downloading}
                     >
                         {downloading ? (
                             <ActivityIndicator color={COLORS.white} />
                         ) : (
                             <>
-                                <Ionicons name="download" size={20} color={COLORS.white} />
-                                <Text style={styles.downloadButtonText}>Download Receipt</Text>
+                                <Ionicons name="download-outline" size={20} color={COLORS.white} />
+                                <Text style={styles.downloadButtonText}>Save Receipt as JPG</Text>
                             </>
                         )}
-                    </LinearGradient>
-                </TouchableOpacity>
+                    </TouchableOpacity>
 
-                <TouchableOpacity
-                    style={styles.shareButton}
-                    onPress={handleShare}
-                    activeOpacity={0.8}
-                >
-                    <Ionicons name="share-social-outline" size={18} color={PREMIUM_COLORS.primary} />
-                    <Text style={styles.shareButtonText}>Share as Text</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={styles.homeButton}
-                    onPress={() => navigation.navigate('Home')}
-                    activeOpacity={0.8}
-                >
-                    <Text style={styles.homeButtonText}>Back to Home</Text>
-                </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.homeButton}
+                        onPress={() => navigation.navigate('Home')}
+                    >
+                        <Text style={styles.homeButtonText}>Return to Dashboard</Text>
+                    </TouchableOpacity>
+                </View>
             </ScrollView>
         </View>
     );
@@ -342,230 +287,228 @@ ${receiptData.company.website}
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: PREMIUM_COLORS.background,
+        backgroundColor: COLORS.background,
+    },
+    loaderContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: COLORS.white,
+    },
+    loaderText: {
+        marginTop: 16,
+        fontSize: 14,
+        color: COLORS.textSecondary,
     },
     header: {
-        paddingBottom: 20,
-        ...SHADOWS.light,
+        backgroundColor: COLORS.white,
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.border,
     },
     headerContent: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 20,
-        marginTop: 10,
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
     },
-    backBtn: {
-        width: 44,
-        height: 44,
-        borderRadius: 12,
-        backgroundColor: '#f1f5f9',
+    backIcon: {
+        width: 40,
+        height: 40,
         justifyContent: 'center',
-        alignItems: 'center',
     },
-    downloadBtn: {
-        width: 44,
-        height: 44,
-        borderRadius: 12,
-        backgroundColor: '#eff6ff',
+    shareIcon: {
+        width: 40,
+        height: 40,
         justifyContent: 'center',
-        alignItems: 'center',
-    },
-    headerTitleWrap: {
-        flex: 1,
-        alignItems: 'center',
+        alignItems: 'flex-end',
     },
     headerTitle: {
-        color: PREMIUM_COLORS.textMain,
-        fontSize: 20,
-        fontWeight: '900',
-    },
-    headerSub: {
-        color: PREMIUM_COLORS.textMuted,
-        fontSize: 12,
+        fontSize: 17,
         fontWeight: '600',
+        color: COLORS.black,
     },
     scrollView: {
         flex: 1,
     },
     scrollContent: {
-        padding: 20,
-        paddingBottom: 40,
+        padding: 16,
     },
-
-    // Thermal Receipt Styles
-    thermalReceipt: {
-        backgroundColor: '#ffffff',
-        padding: 20,
-        borderRadius: 8,
-        marginBottom: 20,
+    receiptCard: {
+        backgroundColor: COLORS.white,
+        borderRadius: 12,
+        padding: 24,
         borderWidth: 1,
-        borderColor: '#e5e7eb',
+        borderColor: COLORS.border,
+        marginBottom: 24,
     },
-    thermalHeader: {
+    companyInfo: {
         alignItems: 'center',
-        marginBottom: 15,
+        marginBottom: 24,
     },
-    thermalCompanyName: {
-        fontSize: 24,
-        fontWeight: '900',
-        color: '#000000',
-        fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-        textAlign: 'center',
+    companyName: {
+        fontSize: 22,
+        fontWeight: '700',
+        color: COLORS.black,
+        letterSpacing: 0.5,
     },
-    thermalSubtext: {
+    companySub: {
         fontSize: 12,
-        color: '#000000',
-        fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-        textAlign: 'center',
-        marginTop: 2,
+        color: COLORS.textSecondary,
+        marginTop: 4,
     },
-    thermalDivider: {
-        fontSize: 10,
-        color: '#000000',
-        fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-        marginVertical: 8,
-        textAlign: 'center',
+    divider: {
+        height: 1,
+        backgroundColor: COLORS.border,
+        marginVertical: 20,
+        borderStyle: 'dashed',
     },
-    thermalSection: {
-        marginVertical: 8,
+    heavyDivider: {
+        height: 2,
+        backgroundColor: COLORS.black,
+        marginVertical: 20,
     },
-    thermalLabel: {
-        fontSize: 12,
-        color: '#000000',
-        fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-        marginBottom: 4,
-    },
-    thermalRow: {
+    detailsGrid: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 4,
     },
-    thermalItem: {
-        fontSize: 12,
-        color: '#000000',
-        fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    detailItem: {
         flex: 1,
     },
-    thermalPrice: {
-        fontSize: 12,
-        color: '#000000',
-        fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-        fontWeight: 'bold',
-    },
-    thermalTotal: {
-        alignItems: 'center',
-        marginVertical: 10,
-    },
-    thermalTotalLabel: {
-        fontSize: 14,
-        fontWeight: '900',
-        color: '#000000',
-        fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    detailLabel: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: COLORS.textTertiary,
+        letterSpacing: 1,
         marginBottom: 4,
     },
-    thermalTotalValue: {
-        fontSize: 20,
-        fontWeight: '900',
-        color: '#000000',
-        fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    detailValue: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: COLORS.black,
     },
-    thermalQR: {
+    itemsSection: {
+        gap: 12,
+    },
+    itemRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        marginVertical: 15,
     },
-    thermalQRText: {
-        fontSize: 10,
-        color: '#000000',
-        fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    itemName: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: COLORS.black,
+    },
+    itemPrice: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: COLORS.black,
+    },
+    itemLabel: {
+        fontSize: 14,
+        color: COLORS.textSecondary,
+    },
+    itemValue: {
+        fontSize: 14,
+        color: COLORS.textPrimary,
+        fontWeight: '500',
+    },
+    totalRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    totalLabel: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: COLORS.black,
+    },
+    totalValue: {
+        fontSize: 24,
+        fontWeight: '700',
+        color: COLORS.black,
+    },
+    paymentBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'flex-start',
+        gap: 6,
+        backgroundColor: '#E8F5E9',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 8,
+    },
+    paymentStatus: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: COLORS.accent,
+    },
+    qrSection: {
+        alignItems: 'center',
         marginTop: 8,
     },
-    thermalFooter: {
-        alignItems: 'center',
-        marginTop: 10,
-    },
-    thermalFooterText: {
+    qrLabel: {
         fontSize: 10,
-        color: '#000000',
-        fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+        color: COLORS.textTertiary,
+        marginTop: 12,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
+    thankYouText: {
         textAlign: 'center',
-        marginBottom: 2,
+        fontSize: 13,
+        color: COLORS.textSecondary,
+        marginTop: 32,
+        fontStyle: 'italic',
     },
-
-    // Action Buttons
+    footerActions: {
+        gap: 12,
+        marginBottom: 40,
+    },
     downloadButton: {
-        height: 60,
-        borderRadius: 18,
-        overflow: 'hidden',
-        marginBottom: 12,
-        ...SHADOWS.medium,
-    },
-    downloadGradient: {
-        flex: 1,
+        backgroundColor: COLORS.black,
+        height: 56,
+        borderRadius: 10,
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
         gap: 10,
     },
     downloadButtonText: {
-        fontSize: 16,
-        fontWeight: '900',
         color: COLORS.white,
-        letterSpacing: 0.5,
-    },
-    shareButton: {
-        height: 60,
-        borderRadius: 18,
-        backgroundColor: '#eff6ff',
-        justifyContent: 'center',
-        alignItems: 'center',
-        flexDirection: 'row',
-        gap: 8,
-        marginBottom: 12,
-    },
-    shareButtonText: {
         fontSize: 16,
-        fontWeight: '800',
-        color: PREMIUM_COLORS.primary,
+        fontWeight: '600',
     },
     homeButton: {
-        height: 60,
-        borderRadius: 18,
-        backgroundColor: '#f1f5f9',
+        backgroundColor: COLORS.white,
+        height: 56,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: COLORS.black,
         justifyContent: 'center',
         alignItems: 'center',
     },
     homeButtonText: {
+        color: COLORS.black,
         fontSize: 16,
-        fontWeight: '800',
-        color: PREMIUM_COLORS.textMain,
-    },
-    loaderContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    loaderText: {
-        marginTop: 16,
-        fontSize: 14,
-        color: PREMIUM_COLORS.textMuted,
         fontWeight: '600',
     },
     errorText: {
-        marginTop: 16,
         fontSize: 16,
-        color: PREMIUM_COLORS.textMuted,
-        fontWeight: '600',
+        color: COLORS.textSecondary,
+        marginTop: 16,
     },
     backButton: {
         marginTop: 24,
-        paddingHorizontal: 24,
+        paddingHorizontal: 32,
         paddingVertical: 12,
-        backgroundColor: PREMIUM_COLORS.primary,
-        borderRadius: 12,
+        backgroundColor: COLORS.black,
+        borderRadius: 8,
     },
     backButtonText: {
         color: COLORS.white,
-        fontSize: 14,
-        fontWeight: '700',
-    },
+        fontWeight: '600',
+    }
 });

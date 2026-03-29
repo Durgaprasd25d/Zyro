@@ -1,0 +1,5 @@
+<resources>
+  <string name="app_name">Zyro AC</string>
+  <string name="expo_runtime_version">1.0.0</string>
+  <string name="mapbox_access_token">sk.eyJ1IjoiZHVyZ2EwNyIsImEiOiJjbW14bnZqb2kyeGZnMnlyMHd6cWhhZ2Q5In0.R4K3aVUxEaONsulQbFq1-A</string>
+</resources>

@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { COLORS, SPACING, SHADOWS } from '../../constants/theme';
 
 export default function CODCollectionScreen({ route, navigation }) {
     const { job } = route?.params || {};
-    const amount = job?.amount || 1200;
+    const amount = Math.round(job?.price || job?.amount || 1000);
 
     const handleProceed = () => {
         navigation.navigate('TechnicianOTP', { job, amount });
@@ -24,9 +24,10 @@ export default function CODCollectionScreen({ route, navigation }) {
 
             <View style={styles.content}>
                 <View style={styles.amountCard}>
-                    <Ionicons name="cash" size={60} color={COLORS.white} />
-                    <Text style={styles.amountLabel}>Total to Collect</Text>
-                    <Text style={styles.amountValue}>₹{amount}</Text>
+                    <View style={styles.amountRow}>
+                        <Text style={styles.amountLabel}>Total to Collect</Text>
+                        <Text style={styles.amountValue}>₹{amount}</Text>
+                    </View>
                     <Text style={styles.amountNote}>Please collect this amount from the customer</Text>
                 </View>
 

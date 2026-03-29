@@ -117,9 +117,9 @@ app.get('/', (req, res) => {
     });
 });
 
-// Keepalive endpoint for Render (prevent sleep)
-app.get('/keepalive', (req, res) => {
-    res.status(200).send('ok');
+// Keepalive & health endpoints for Render (prevent sleep)
+app.get(['/keepalive', '/health'], (req, res) => {
+    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 // 404 handler

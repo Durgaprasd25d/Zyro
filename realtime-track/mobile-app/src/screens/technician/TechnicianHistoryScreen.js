@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import JobCard from '../../components/JobCard';
 import { COLORS, SPACING, SHADOWS } from '../../constants/theme';
 import technicianService from '../../services/technicianService';

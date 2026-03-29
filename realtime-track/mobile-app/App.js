@@ -6,7 +6,9 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import MapboxGL from '@rnmapbox/maps';
 
+import config from './src/constants/config';
 import AuthScreen from './src/screens/AuthScreen';
 import SplashScreen from './src/screens/SplashScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
@@ -16,6 +18,7 @@ import HomeScreen from './src/screens/customer/HomeScreen';
 import ServiceListScreen from './src/screens/customer/ServiceListScreen';
 import ServiceDetailScreen from './src/screens/customer/ServiceDetailScreen';
 import ScheduleScreen from './src/screens/customer/ScheduleScreen';
+import MapPickerScreen from './src/screens/customer/MapPickerScreen';
 import BookingSummaryScreen from './src/screens/customer/BookingSummaryScreen';
 import PaymentMethodScreen from './src/screens/customer/PaymentMethodScreen';
 import PaymentStatusScreen from './src/screens/customer/PaymentStatusScreen';
@@ -25,13 +28,16 @@ import HistoryScreen from './src/screens/customer/HistoryScreen';
 import ProfileScreen from './src/screens/customer/ProfileScreen';
 import CustomerRazorpayCheckoutScreen from './src/screens/customer/CustomerRazorpayCheckoutScreen';
 import ReceiptScreen from './src/screens/customer/ReceiptScreen';
+import TechnicianWaitingScreen from './src/screens/customer/TechnicianWaitingScreen';
+import ServiceProgressScreen from './src/screens/customer/ServiceProgressScreen';
+
 
 // Technician Screens
 import TechnicianDashboardScreen from './src/screens/technician/TechnicianDashboardScreen';
 import JobRequestScreen from './src/screens/technician/JobRequestScreen';
 import JobDetailsScreen from './src/screens/technician/JobDetailsScreen';
 import ArrivalScreen from './src/screens/technician/ArrivalScreen';
-import ServiceProgressScreen from './src/screens/technician/ServiceProgressScreen';
+import TechnicianServiceProgressScreen from './src/screens/technician/ServiceProgressScreen';
 import CODCollectionScreen from './src/screens/technician/CODCollectionScreen';
 import TechnicianOTPScreen from './src/screens/technician/TechnicianOTPScreen';
 import WalletUpdateScreen from './src/screens/technician/WalletUpdateScreen';
@@ -88,6 +94,10 @@ export default function App() {
         }
 
         onFetchUpdateAsync();
+
+        if (config.MAPBOX_ACCESS_TOKEN) {
+            MapboxGL.setAccessToken(config.MAPBOX_ACCESS_TOKEN);
+        }
 
         const bootstrapAsync = async () => {
             let token;
@@ -219,6 +229,11 @@ export default function App() {
                             options={{ headerShown: false }}
                         />
                         <Stack.Screen
+                            name="MapPicker"
+                            component={MapPickerScreen}
+                            options={{ headerShown: false }}
+                        />
+                        <Stack.Screen
                             name="BookingSummary"
                             component={BookingSummaryScreen}
                             options={{ headerShown: false }}
@@ -253,6 +268,16 @@ export default function App() {
                             component={ReceiptScreen}
                             options={{ headerShown: false }}
                         />
+                        <Stack.Screen
+                            name="TechnicianWaiting"
+                            component={TechnicianWaitingScreen}
+                            options={{ headerShown: false }}
+                        />
+                        <Stack.Screen
+                            name="ServiceProgress"
+                            component={ServiceProgressScreen}
+                            options={{ headerShown: false }}
+                        />
 
                         {/* Technician Screens */}
                         <Stack.Screen
@@ -276,8 +301,8 @@ export default function App() {
                             options={{ headerShown: false }}
                         />
                         <Stack.Screen
-                            name="ServiceProgress"
-                            component={ServiceProgressScreen}
+                            name="TechnicianServiceProgress"
+                            component={TechnicianServiceProgressScreen}
                             options={{ headerShown: false }}
                         />
                         <Stack.Screen

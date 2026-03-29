@@ -63,6 +63,12 @@ const handlePaymentSuccess = async (ride, paymentDetails, io) => {
         }
     }
 
+    // Generate completion OTP if prepaid and not already generated
+    if (ride.paymentTiming === 'PREPAID' && !ride.completionOtp) {
+        ride.completionOtp = Math.floor(10000 + Math.random() * 90000).toString();
+        await ride.save();
+    }
+
     // SOCKET EMITS
     if (ride.completionOtp) {
         io.to(`user:${ride.customerId}`).emit('payment:success', {
@@ -99,7 +105,8 @@ router.post('/create-order', async (req, res) => {
             return res.status(404).json({ success: false, error: 'Ride not found' });
         }
 
-        const finalAmount = amount || ride.price || 0;
+        let finalAmount = Math.round(amount || ride.price || 0);
+
         if (finalAmount < 1) {
             return res.status(400).json({ success: false, error: 'Payment amount must be at least ₹1' });
         }
