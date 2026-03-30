@@ -49,10 +49,14 @@ import TechnicianHistoryScreen from './src/screens/technician/TechnicianHistoryS
 import TechnicianProfileScreen from './src/screens/technician/TechnicianProfileScreen';
 import TechnicianNavigationScreen from './src/screens/technician/TechnicianNavigationScreen';
 import WithdrawalRequestScreen from './src/screens/technician/WithdrawalRequestScreen';
+import TechnicianFinanceScreen from './src/screens/technician/TechnicianFinanceScreen';
 import DriverScreen from './src/screens/technician/DriverScreen'; // Legacy - keep for existing tracking
 import RazorpayCheckoutScreen from './src/screens/technician/RazorpayCheckoutScreen';
 import KYCScreen from './src/screens/technician/KYCScreen';
 import VerificationPendingScreen from './src/screens/technician/VerificationPendingScreen';
+import PersonalDetailsScreen from './src/screens/technician/PersonalDetailsScreen';
+import ChangePasswordScreen from './src/screens/technician/ChangePasswordScreen';
+import SupportScreen from './src/screens/technician/SupportScreen';
 
 import authService from './src/services/authService';
 import technicianService from './src/services/technicianService';
@@ -322,7 +326,7 @@ export default function App() {
                         />
                         <Stack.Screen
                             name="TechnicianWallet"
-                            component={TechnicianWalletScreen}
+                            component={TechnicianFinanceScreen}
                             options={{ headerShown: false }}
                         />
                         <Stack.Screen
@@ -347,7 +351,7 @@ export default function App() {
                         />
                         <Stack.Screen
                             name="WithdrawalRequest"
-                            component={WithdrawalRequestScreen}
+                            component={TechnicianFinanceScreen} // Using the new unified screen
                             options={{ headerShown: false }}
                         />
                         <Stack.Screen
@@ -378,6 +382,21 @@ export default function App() {
                         <Stack.Screen
                             name="VerificationPending"
                             component={VerificationPendingScreen}
+                            options={{ headerShown: false }}
+                        />
+                        <Stack.Screen
+                            name="PersonalDetails"
+                            component={PersonalDetailsScreen}
+                            options={{ headerShown: false }}
+                        />
+                        <Stack.Screen
+                            name="ChangePassword"
+                            component={ChangePasswordScreen}
+                            options={{ headerShown: false }}
+                        />
+                        <Stack.Screen
+                            name="Support"
+                            component={SupportScreen}
                             options={{ headerShown: false }}
                         />
                     </Stack.Navigator>

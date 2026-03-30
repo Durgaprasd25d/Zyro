@@ -1,14 +1,9 @@
-import React, { useEffect, useState, useRef } from "react";
-import {
-  GoogleMap,
-  useJsApiLoader,
-  Marker,
-  InfoWindow,
-  Polyline,
-  Circle,
-} from "@react-google-maps/api";
+import React, { useEffect, useState, useRef, useMemo } from "react";
+import Map, { Marker, Source, Layer, useMap } from "react-map-gl/mapbox";
+import "mapbox-gl/dist/mapbox-gl.css";
 import { io } from "socket.io-client";
 import axios from "axios";
+import config from "../config";
 import {
   MapPin,
   User,
@@ -21,24 +16,14 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-const mapContainerStyle = {
-  width: "100%",
-  height: "calc(100vh - 180px)",
-  borderRadius: "16px",
-};
+const MAPBOX_TOKEN = config.MAPBOX_TOKEN;
+const BACKEND_URL = config.SOCKET_URL;
+const API_URL = config.API_URL;
 
 const defaultCenter = {
-  lat: 13.0827, // Chennai
-  lng: 80.2707,
-};
-
-const mapOptions = {
-  disableDefaultUI: false,
-  zoomControl: true,
-  styles: [
-    { featureType: "poi", stylers: [{ visibility: "off" }] },
-    { featureType: "transit", stylers: [{ visibility: "off" }] },
-  ],
+  latitude: 13.0827, // Chennai
+  longitude: 80.2707,
+  zoom: 12,
 };
 
 // Helper to calculate distance between two coordinates in km
@@ -56,12 +41,40 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   return R * c;
 };
 
-export default function LiveMap() {
-  const { isLoaded } = useJsApiLoader({
-    id: "google-map-script",
-    googleMapsApiKey: "AIzaSyAQCa64PcTvWMOJ7anLefPuW9FQC5DcHzw",
-  });
+// Helper to create GeoJSON circle
+const createGeoJSONCircle = (center, radiusInMeters, points = 64) => {
+  if (!center) return null;
+  const coords = {
+    latitude: center.lat,
+    longitude: center.lng,
+  };
 
+  const km = radiusInMeters / 1000;
+
+  const ret = [];
+  const distanceX = km / (111.32 * Math.cos((coords.latitude * Math.PI) / 180));
+  const distanceY = km / 110.57;
+
+  for (let i = 0; i < points; i++) {
+    const theta = (i / points) * (2 * Math.PI);
+    const x = distanceX * Math.cos(theta);
+    const y = distanceY * Math.sin(theta);
+
+    ret.push([coords.longitude + x, coords.latitude + y]);
+  }
+  ret.push(ret[0]);
+
+  return {
+    type: "Feature",
+    geometry: {
+      type: "Polygon",
+      coordinates: [ret],
+    },
+  };
+};
+
+export default function LiveMap() {
+  const [viewState, setViewState] = useState(defaultCenter);
   const [allJobs, setAllJobs] = useState([]);
   const [filteredJobs, setFilteredJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
@@ -71,7 +84,6 @@ export default function LiveMap() {
   const [pulseOpacity, setPulseOpacity] = useState(0.4);
 
   const socketRef = useRef(null);
-  const mapRef = useRef(null);
 
   // Scanner animation effect
   useEffect(() => {
@@ -87,7 +99,7 @@ export default function LiveMap() {
   useEffect(() => {
     fetchActiveJobs();
 
-    socketRef.current = io("http://127.0.0.1:4000", {
+    socketRef.current = io(BACKEND_URL, {
       transports: ["websocket"],
     });
     socketRef.current.on("connect", () => {
@@ -129,9 +141,7 @@ export default function LiveMap() {
 
   const fetchActiveJobs = async () => {
     try {
-      const response = await axios.get(
-        "http://127.0.0.1:4000/api/admin/active-jobs",
-      );
+      const response = await axios.get(`${API_URL}/admin/active-jobs`);
       if (response.data.success) {
         setAllJobs(response.data.jobs);
       }
@@ -150,8 +160,12 @@ export default function LiveMap() {
           };
           setAdminLocation(pos);
           setScannerActive(true);
-          mapRef.current?.panTo(pos);
-          mapRef.current?.setZoom(13);
+          setViewState({
+            latitude: pos.lat,
+            longitude: pos.lng,
+            zoom: 13,
+            transitionDuration: 1000
+          });
         },
         () => {
           alert("Error: The Geolocation service failed.");
@@ -160,13 +174,18 @@ export default function LiveMap() {
     }
   };
 
+  const scannerData = useMemo(() => 
+    createGeoJSONCircle(adminLocation, scannerRadius), 
+    [adminLocation, scannerRadius]
+  );
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
             <Radio className="text-rose-500 animate-pulse" size={24} />
-            Fleet Scanner
+            Fleet Scanner (Mapbox)
           </h2>
           <p className="text-slate-500">
             Real-time geospatial monitoring & geo-fencing
@@ -238,7 +257,18 @@ export default function LiveMap() {
               filteredJobs.map((job) => (
                 <button
                   key={job.rideId}
-                  onClick={() => setSelectedJob(job)}
+                  onClick={() => {
+                    setSelectedJob(job);
+                    const loc = job.currentLocation || job.pickup;
+                    if (loc) {
+                      setViewState({
+                        latitude: loc.lat,
+                        longitude: loc.lng,
+                        zoom: 15,
+                        transitionDuration: 1000
+                      });
+                    }
+                  }}
                   className={`w-full text-left p-4 rounded-xl transition-all border group ${
                     selectedJob?.rideId === job.rideId
                       ? "bg-blue-50 border-blue-200"
@@ -270,77 +300,81 @@ export default function LiveMap() {
           </div>
         </div>
 
-        <div className="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative">
-          {isLoaded ? (
-            <GoogleMap
-              mapContainerStyle={mapContainerStyle}
-              center={adminLocation || defaultCenter}
-              zoom={12}
-              options={mapOptions}
-              onLoad={(map) => (mapRef.current = map)}
-            >
-              {/* Geo-Fence Circle */}
-              {scannerActive && adminLocation && (
-                <>
-                  <Circle
-                    center={adminLocation}
-                    radius={scannerRadius}
-                    options={{
-                      fillColor: "#3B82F6",
-                      fillOpacity: 0.1,
-                      strokeColor: "#3B82F6",
-                      strokeOpacity: 0.3,
-                      strokeWeight: 1,
-                      clickable: false,
-                    }}
-                  />
-                  <Circle
-                    center={adminLocation}
-                    radius={scannerRadius * 0.95}
-                    options={{
-                      fillColor: "#3B82F6",
-                      fillOpacity: pulseOpacity,
-                      strokeWeight: 0,
-                      clickable: false,
-                    }}
-                  />
-                  <Marker
-                    position={adminLocation}
-                    icon={{
-                      path: window.google.maps.SymbolPath.CIRCLE,
-                      scale: 8,
-                      fillColor: "#3B82F6",
-                      fillOpacity: 1,
-                      strokeColor: "#FFFFFF",
-                      strokeWeight: 3,
-                    }}
-                  />
-                </>
-              )}
+        <div className="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative" style={{ height: "650px" }}>
+          <Map
+            {...viewState}
+            onMove={evt => setViewState(evt.viewState)}
+            style={{ width: '100%', height: '100%' }}
+            mapStyle="mapbox://styles/mapbox/light-v11"
+            mapboxAccessToken={MAPBOX_TOKEN}
+          >
+            {/* Geo-Fence Circle */}
+            {scannerActive && adminLocation && scannerData && (
+              <Source id="scanner-circle" type="geojson" data={scannerData}>
+                <Layer
+                  id="scanner-fill"
+                  type="fill"
+                  paint={{
+                    "fill-color": "#3B82F6",
+                    "fill-opacity": pulseOpacity,
+                  }}
+                />
+                <Layer
+                  id="scanner-outline"
+                  type="line"
+                  paint={{
+                    "line-color": "#3B82F6",
+                    "line-width": 2,
+                    "line-opacity": 0.3,
+                  }}
+                />
+              </Source>
+            )}
 
-              {filteredJobs.map((job) => (
-                <React.Fragment key={job.rideId}>
-                  {job.currentLocation && (
-                    <Marker
-                      position={{
-                        lat: job.currentLocation.lat,
-                        lng: job.currentLocation.lng,
-                      }}
-                      onClick={() => setSelectedJob(job)}
-                      icon={{
-                        url: "https://cdn-icons-png.flaticon.com/512/3063/3063822.png",
-                        scaledSize: new window.google.maps.Size(40, 40),
-                      }}
-                    />
-                  )}
-                </React.Fragment>
-              ))}
-            </GoogleMap>
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gray-50">
-              Loading Radar...
-            </div>
-          )}
+            {/* Admin Location Marker */}
+            {adminLocation && (
+              <Marker
+                latitude={adminLocation.lat}
+                longitude={adminLocation.lng}
+                anchor="center"
+              >
+                <div className="w-5 h-5 bg-blue-600 rounded-full border-4 border-white shadow-lg" />
+              </Marker>
+            )}
+
+            {/* Job Markers */}
+            {filteredJobs.map((job) => {
+              const loc = job.currentLocation || job.pickup;
+              if (!loc) return null;
+              return (
+                <Marker
+                  key={job.rideId}
+                  latitude={loc.lat}
+                  longitude={loc.lng}
+                  anchor="bottom"
+                  onClick={e => {
+                    e.originalEvent.stopPropagation();
+                    setSelectedJob(job);
+                  }}
+                >
+                  <div className="cursor-pointer group">
+                    <div className="bg-white p-1 rounded-full shadow-md border-2 border-slate-800 transition-transform group-hover:scale-110">
+                      <img 
+                        src="https://cdn-icons-png.flaticon.com/512/3063/3063822.png" 
+                        alt="technician" 
+                        className="w-8 h-8"
+                      />
+                    </div>
+                    {selectedJob?.rideId === job.rideId && (
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-slate-900 text-white text-[10px] px-2 py-1 rounded shadow-xl whitespace-nowrap z-10 font-bold">
+                        {job.serviceType.toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                </Marker>
+              );
+            })}
+          </Map>
         </div>
       </div>
     </div>

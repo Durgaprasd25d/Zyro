@@ -1,6 +1,5 @@
-import { Alert } from 'react-native';
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
+import { Alert, View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS } from '../../constants/theme';
@@ -142,17 +141,39 @@ export default function TechnicianDashboardScreen({ navigation }) {
         }
     };
 
+    const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+    const [lastToggleTime, setLastToggleTime] = useState(0);
+
     const handleToggleOnline = async () => {
+        const now = Date.now();
+        // Rate limit: 2 seconds between toggles
+        if (now - lastToggleTime < 2000) {
+            return;
+        }
+
         if (!isOnline && kycStatus !== 'VERIFIED') {
             Alert.alert("KYC Required", "Complete KYC to go online.");
             return;
         }
 
+        // Optimistic UI Update
+        const nextStatus = !isOnline;
+        setIsOnline(nextStatus);
+        setLastToggleTime(now);
+        setIsUpdatingStatus(true);
+
         try {
-            const result = await technicianService.updateOnlineStatus(!isOnline);
-            if (result.success) setIsOnline(!isOnline);
+            const result = await technicianService.updateOnlineStatus(nextStatus);
+            if (!result.success) {
+                // Rollback on failure
+                setIsOnline(!nextStatus);
+                Alert.alert('Status Error', result.error || 'Failed to sync status');
+            }
         } catch (error) {
-            Alert.alert('Error', 'Failed to update status');
+            setIsOnline(!nextStatus);
+            Alert.alert('Error', 'Connection failed');
+        } finally {
+            setIsUpdatingStatus(false);
         }
     };
 
@@ -192,12 +213,24 @@ export default function TechnicianDashboardScreen({ navigation }) {
                             <Text style={[styles.toggleText, !isOnline && styles.toggleTextActive]}>Offline</Text>
                         </TouchableOpacity>
                     </View>
-                    <Text style={styles.availabilityText}>
-                        Availability: <Text style={[styles.availabilityStatus, isOnline && styles.availabilityOnline]}>
-                            {isOnline ? 'Online' : 'Offline'}
+                    <View style={styles.statusRow}>
+                        <Text style={styles.availabilityText}>
+                            SYSTEM STATUS: <Text style={[styles.availabilityStatus, isOnline && styles.availabilityOnline]}>
+                                {isOnline ? 'OPERATIONAL' : 'STANDBY'}
+                            </Text>
                         </Text>
-                        {isOnline && ' 📶'}
-                    </Text>
+                        <View style={styles.statusIconContainer}>
+                            {isUpdatingStatus ? (
+                                <ActivityIndicator size="small" color={isOnline ? '#10b981' : '#999'} />
+                            ) : (
+                                <Ionicons 
+                                    name={isOnline ? "radio" : "ellipse-outline"} 
+                                    size={16} 
+                                    color={isOnline ? '#10b981' : '#999'} 
+                                />
+                            )}
+                        </View>
+                    </View>
                 </View>
                 
                 {/* Active Job Card */}
@@ -266,7 +299,7 @@ export default function TechnicianDashboardScreen({ navigation }) {
                         </View>
                         <TouchableOpacity
                             style={styles.withdrawButton}
-                            onPress={() => navigation.navigate('TechnicianWallet')}
+                            onPress={() => navigation.navigate('TechnicianWallet', { initialView: 'WITHDRAW' })}
                         >
                             <Text style={styles.withdrawText}>Withdraw</Text>
                         </TouchableOpacity>
@@ -383,9 +416,22 @@ const styles = StyleSheet.create({
         color: '#fff',
     },
     availabilityText: {
-        fontSize: 14,
-        color: '#333',
-        textAlign: 'center',
+        fontSize: 11,
+        color: '#666',
+        fontWeight: '900',
+        letterSpacing: 1
+    },
+    statusRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8
+    },
+    statusIconContainer: {
+        width: 16,
+        height: 16,
+        justifyContent: 'center',
+        alignItems: 'center'
     },
     availabilityStatus: {
         fontWeight: '600',

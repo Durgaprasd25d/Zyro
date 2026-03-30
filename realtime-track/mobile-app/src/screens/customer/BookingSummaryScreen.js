@@ -7,8 +7,10 @@ import {
     TouchableOpacity,
     StatusBar,
     Platform,
-    Dimensions
+    Dimensions,
+    ActivityIndicator
 } from 'react-native';
+import config from '../../constants/config';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
@@ -30,16 +32,39 @@ const COLORS = {
 
 export default function BookingSummaryScreen({ route, navigation }) {
     const { service, date, time, address } = route.params;
+    const [fees, setFees] = React.useState({ platformFee: 0, gst: 0 });
+    const [loading, setLoading] = React.useState(true);
+
+    React.useEffect(() => {
+        const fetchFees = async () => {
+            try {
+                const response = await fetch(`${config.BACKEND_URL}/api/services/settings`);
+                const result = await response.json();
+                if (result.success) {
+                    setFees(result.settings);
+                }
+            } catch (error) {
+                console.error('Error fetching fees:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchFees();
+    }, []);
 
     const basePrice = Math.round(parseFloat(service.price));
-    const platformFee = 49; // Platform fee
-    const tax = Math.round((basePrice + platformFee) * 0.18); // 18% GST
-    const total = Math.round(basePrice + platformFee + tax);
+    // Calculate Platform Fee as a percentage or flat? 
+    // The user's previous code was flat 49, but user asked for "controlled" fields.
+    // I will treat them as percentages based on the Admin UI I built.
+    const platformFeeVal = Math.round(parseFloat(fees.platformFee || 0));
+    const taxVal = Math.round(basePrice * (fees.gst / 100)); // GST only on service charge
+    const total = Math.round(basePrice + platformFeeVal + taxVal);
 
     const pricing = {
         basePrice,
-        platformFee,
-        gst: tax,
+        platformFee: platformFeeVal,
+        gst: taxVal,
+        gstRate: fees.gst, // Added GST percentage for historical records
         price: total
     };
 
@@ -110,27 +135,33 @@ export default function BookingSummaryScreen({ route, navigation }) {
                 {/* Price Breakdown */}
                 <Text style={styles.sectionTitle}>Price Breakdown</Text>
                 <View style={styles.card}>
-                    <View style={styles.priceRow}>
-                        <Text style={styles.priceLabel}>Base Service Fee</Text>
-                        <Text style={styles.priceValue}>₹{basePrice}</Text>
-                    </View>
+                    {loading ? (
+                        <ActivityIndicator size="small" color={COLORS.blue} style={{ padding: 20 }} />
+                    ) : (
+                        <View style={{ gap: 12 }}>
+                            <View style={styles.priceRow}>
+                                <Text style={styles.priceLabel}>Base Service Fee</Text>
+                                <Text style={styles.priceValue}>₹{basePrice}</Text>
+                            </View>
 
-                    <View style={styles.priceRow}>
-                        <Text style={styles.priceLabel}>Platform Fee</Text>
-                        <Text style={styles.priceValue}>₹{platformFee}</Text>
-                    </View>
+                            <View style={styles.priceRow}>
+                                <Text style={styles.priceLabel}>Platform Fee</Text>
+                                <Text style={styles.priceValue}>₹{platformFeeVal}</Text>
+                            </View>
 
-                    <View style={styles.priceRow}>
-                        <Text style={styles.priceLabel}>GST (18%)</Text>
-                        <Text style={styles.priceValue}>₹{tax}</Text>
-                    </View>
+                            <View style={styles.priceRow}>
+                                <Text style={styles.priceLabel}>GST ({fees.gst}%)</Text>
+                                <Text style={styles.priceValue}>₹{taxVal}</Text>
+                            </View>
 
-                    <View style={styles.priceDivider} />
+                            <View style={styles.priceDivider} />
 
-                    <View style={styles.totalRow}>
-                        <Text style={styles.totalLabel}>Total Amount</Text>
-                        <Text style={[styles.totalValue, { color: COLORS.blue }]}>₹{total}</Text>
-                    </View>
+                            <View style={styles.totalRow}>
+                                <Text style={styles.totalLabel}>Total Amount</Text>
+                                <Text style={[styles.totalValue, { color: COLORS.blue }]}>₹{total}</Text>
+                            </View>
+                        </View>
+                    )}
                 </View>
 
                 <View style={styles.guaranteeRow}>

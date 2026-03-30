@@ -49,6 +49,14 @@ export const COLORS = {
     textMain: '#1e293b',
     textMuted: '#64748b',
     borderLight: '#f1f5f9',
+
+    // Black & White Theme
+    bw_black: '#000000',
+    bw_white: '#FFFFFF',
+    bw_grey: '#1a1a1a',
+    bw_greyLight: '#f2f2f2',
+    bw_greyMedium: '#d1d1d1',
+    bw_border: '#e5e5e5',
 };
 
 

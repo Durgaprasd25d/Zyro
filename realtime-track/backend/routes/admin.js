@@ -5,7 +5,39 @@ const User = require('../models/User');
 const Ride = require('../models/Ride');
 const Transaction = require('../models/Transaction');
 const WithdrawalRequest = require('../models/WithdrawalRequest');
+const Settings = require('../models/Settings');
 const Razorpay = require('razorpay');
+
+// Get Platform Settings
+router.get('/settings', async (req, res) => {
+    try {
+        let settings = await Settings.findOne();
+        if (!settings) {
+            settings = await Settings.create({ platformFee: 10, gst: 18 });
+        }
+        res.json({ success: true, settings });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Update Platform Settings
+router.post('/settings', async (req, res) => {
+    try {
+        const { platformFee, gst } = req.body;
+        let settings = await Settings.findOne();
+        if (!settings) {
+            settings = new Settings({ platformFee, gst });
+        } else {
+            settings.platformFee = platformFee;
+            settings.gst = gst;
+        }
+        await settings.save();
+        res.json({ success: true, settings, message: 'Settings updated successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
 
 const razorpay = new Razorpay({
     key_id: process.env.RAZORPAY_KEYID,
@@ -20,12 +52,63 @@ router.get('/stats', async (req, res) => {
         const totalUsers = await User.countDocuments({ role: 'customer' });
         const totalTechnicians = await User.countDocuments({ role: 'technician' });
         const totalJobs = await Ride.countDocuments();
-        const completedJobs = await Ride.countDocuments({ status: 'COMPLETED' });
+        
+        // Optimized aggregate for totals
+        const totals = await Ride.aggregate([
+            { $match: { status: 'COMPLETED' } },
+            {
+                $group: {
+                    _id: null,
+                    totalRevenue: { $sum: '$price' },
+                    completedCount: { $sum: 1 }
+                }
+            }
+        ]);
 
-        // Revenue calculations
-        const rides = await Ride.find({ status: 'COMPLETED' });
-        const totalRevenue = rides.reduce((sum, job) => sum + (job.price || 0), 0);
-        const totalCommission = rides.reduce((sum, job) => sum + (Math.round((job.price || 0) * 0.2)), 0);
+        const revenue = totals[0]?.totalRevenue || 0;
+        const completedJobs = totals[0]?.completedCount || 0;
+        const totalCommission = Math.round(revenue * 0.2);
+
+        // Recent Activity (Last 7 Days)
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        sevenDaysAgo.setHours(0, 0, 0, 0);
+
+        const recentActivity = await Ride.aggregate([
+            { 
+                $match: { 
+                    status: 'COMPLETED',
+                    updatedAt: { $gte: sevenDaysAgo } 
+                } 
+            },
+            {
+                $group: {
+                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$updatedAt" } },
+                    revenue: { $sum: "$price" },
+                    jobs: { $sum: 1 }
+                }
+            },
+            { $sort: { "_id": 1 } }
+        ]);
+
+        // Fill gaps in recentActivity if any day has 0 data
+        const activityMap = recentActivity.reduce((acc, item) => {
+            acc[item._id] = item;
+            return acc;
+        }, {});
+
+        const finalizedActivity = [];
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            const dateStr = date.toISOString().split('T')[0];
+            finalizedActivity.push({
+                date: dateStr,
+                label: date.toLocaleDateString(undefined, { weekday: 'short' }),
+                revenue: activityMap[dateStr]?.revenue || 0,
+                jobs: activityMap[dateStr]?.jobs || 0
+            });
+        }
 
         // Wallet stats
         const techs = await Technician.find({});
@@ -39,10 +122,11 @@ router.get('/stats', async (req, res) => {
                 technicians: totalTechnicians,
                 jobs: totalJobs,
                 completedJobs,
-                revenue: totalRevenue,
+                revenue,
                 commission: totalCommission,
                 wallets: totalWalletBalance,
-                dues: totalCommissionsDue
+                dues: totalCommissionsDue,
+                recentActivity: finalizedActivity
             }
         });
     } catch (error) {
@@ -192,7 +276,7 @@ router.post('/withdrawals/:id/status', async (req, res) => {
 
         // 1. If REJECTED, move money back from lockedAmount to balance
         if (status === 'rejected') {
-            const technician = await Technician.findOne({ userId: withdrawal.technician });
+            const technician = await Technician.findById(withdrawal.technician);
             if (technician) {
                 technician.wallet.lockedAmount -= withdrawal.amount;
                 technician.wallet.balance += withdrawal.amount;
@@ -200,7 +284,7 @@ router.post('/withdrawals/:id/status', async (req, res) => {
 
                 // Record reversal transaction
                 await Transaction.create({
-                    technician: withdrawal.technician,
+                    technician: technician.userId,
                     type: 'credit',
                     amount: withdrawal.amount,
                     description: `Withdrawal Request Rejected - Funds Restored`,
@@ -242,7 +326,7 @@ router.post('/withdrawals/:id/mark-paid', async (req, res) => {
             return res.status(400).json({ success: false, error: 'Cannot pay a rejected request' });
         }
 
-        const technician = await Technician.findOne({ userId: withdrawal.technician });
+        const technician = await Technician.findById(withdrawal.technician);
         if (!technician) {
             return res.status(404).json({ success: false, error: 'Technician profile not found' });
         }
@@ -273,7 +357,7 @@ router.post('/withdrawals/:id/mark-paid', async (req, res) => {
 
         // 3. Create Transaction Record
         await Transaction.create({
-            technician: withdrawal.technician,
+            technician: technician.userId,
             type: 'debit',
             amount: withdrawal.amount,
             description: `Wallet Withdrawal (${withdrawal.payoutMethod === 'upi' ? 'UPI' : 'Bank'})`,

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import config from '../config';
 import {
     Plus,
     Edit2,
@@ -13,7 +14,7 @@ import {
     Search
 } from 'lucide-react';
 
-const API_BASE = 'http://127.0.0.1:4000/api/services';
+const API_BASE = `${config.API_URL}/services`;
 
 export default function Services() {
     const [categories, setCategories] = useState([]);
@@ -43,8 +44,8 @@ export default function Services() {
         setLoading(true);
         try {
             const [catRes, serRes] = await Promise.all([
-                axios.get(`${API_BASE}/categories`),
-                axios.get(`${API_BASE}/all`)
+                axios.get(`${config.API_URL}/services/categories`),
+                axios.get(`${config.API_URL}/services/all`)
             ]);
             setCategories(catRes.data.data);
             setServices(serRes.data.data);

@@ -141,6 +141,22 @@ const authService = {
   setUser: async (user) => {
     await AsyncStorage.setItem("userData", JSON.stringify(user));
   },
+
+  changePassword: async (userId, currentPassword, newPassword) => {
+    try {
+      const response = await axios.post(`${API_URL}/change-password`, {
+        userId,
+        currentPassword,
+        newPassword,
+      });
+      return response.data;
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || "Failed to change password",
+      };
+    }
+  },
 };
 
 export default authService;

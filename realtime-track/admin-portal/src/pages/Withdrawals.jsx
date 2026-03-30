@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { CreditCard, CheckCircle, XCircle, Clock, ExternalLink } from 'lucide-react';
+import { CreditCard, CheckCircle, XCircle } from 'lucide-react';
+import config from '../config';
 
 export default function Withdrawals() {
     const [requests, setRequests] = useState([]);
@@ -14,7 +15,7 @@ export default function Withdrawals() {
     const fetchRequests = async () => {
         setLoading(true);
         try {
-            const response = await axios.get(`http://127.0.0.1:4000/api/admin/withdrawals?status=${filter}`);
+            const response = await axios.get(`${config.API_URL}/admin/withdrawals?status=${filter}`);
             if (response.data.success) {
                 setRequests(response.data.withdrawals);
             }
@@ -28,7 +29,7 @@ export default function Withdrawals() {
     const updateStatus = async (id, status) => {
         const note = prompt('Enter admin note (optional):');
         try {
-            const response = await axios.post(`http://127.0.0.1:4000/api/admin/withdrawals/${id}/status`, {
+            const response = await axios.post(`${config.API_URL}/admin/withdrawals/${id}/status`, {
                 status,
                 adminNote: note
             });
@@ -45,7 +46,7 @@ export default function Withdrawals() {
         if (!txId) return;
 
         try {
-            const response = await axios.post(`http://127.0.0.1:4000/api/admin/withdrawals/${id}/mark-paid`, {
+            const response = await axios.post(`${config.API_URL}/admin/withdrawals/${id}/mark-paid`, {
                 transactionId: txId
             });
             if (response.data.success) {
@@ -60,7 +61,7 @@ export default function Withdrawals() {
         if (!window.confirm('Initiate real money transfer via RazorpayX?')) return;
 
         try {
-            const response = await axios.post(`http://127.0.0.1:4000/api/payout/process-payout`, {
+            const response = await axios.post(`${config.API_URL}/payout/process-payout`, {
                 withdrawalId: id
             });
             if (response.data.success) {

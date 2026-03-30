@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { UserCheck, UserX, Search, Filter } from 'lucide-react';
+import config from '../config';
 
 export default function Technicians() {
     const [technicians, setTechnicians] = useState([]);
@@ -13,7 +14,7 @@ export default function Technicians() {
 
     const fetchTechnicians = async () => {
         try {
-            const response = await axios.get('http://127.0.0.1:4000/api/admin/technicians');
+            const response = await axios.get(`${config.API_URL}/admin/technicians`);
             if (response.data.success) {
                 setTechnicians(response.data.technicians);
             }
@@ -42,7 +43,7 @@ export default function Technicians() {
 
     const submitVerification = async (userId, endpoint, data) => {
         try {
-            const response = await axios.post(`http://127.0.0.1:4000/api/admin/technicians/${userId}/${endpoint}`, data);
+            const response = await axios.post(`${config.API_URL}/admin/technicians/${userId}/${endpoint}`, data);
             if (response.data.success) {
                 fetchTechnicians(); // Refresh
             }

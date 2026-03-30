@@ -70,6 +70,10 @@ subprojects {
                 if (details.requested.group == 'com.mapbox.navigationcore' && details.requested.name == 'ui-components') {
                     details.useTarget("com.mapbox.navigationcore:ui-components-ndk27:3.11.0")
                 }
+                // Force to cached version to avoid network download failures
+                if (details.requested.group == 'org.jetbrains.kotlinx' && details.requested.name == 'kotlinx-coroutines-play-services') {
+                    details.useVersion("1.9.0")
+                }
             }
         }
         

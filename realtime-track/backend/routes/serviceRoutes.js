@@ -2,6 +2,20 @@ const express = require('express');
 const router = express.Router();
 const Category = require('../models/Category');
 const Service = require('../models/Service');
+const Settings = require('../models/Settings');
+
+// Get Platform Settings (Public)
+router.get('/settings', async (req, res) => {
+    try {
+        let settings = await Settings.findOne();
+        if (!settings) {
+            settings = await Settings.create({ platformFee: 10, gst: 18 });
+        }
+        res.json({ success: true, settings });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
 
 // Get all categories with their services
 router.get('/categories', async (req, res) => {

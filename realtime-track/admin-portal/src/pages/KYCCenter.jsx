@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import config from '../config';
 import { CheckCircle, XCircle, Eye, AlertCircle, Clock, ExternalLink } from 'lucide-react';
 
 export default function KYCCenter() {
@@ -18,7 +19,7 @@ export default function KYCCenter() {
         setLoading(true);
         try {
             // If viewMode is VERIFIED, we actually want people who are KYC verified but Payout NOT verified
-            const response = await axios.get(`http://127.0.0.1:4000/api/admin/technicians/verification-list`, {
+            const response = await axios.get(`${config.API_URL}/admin/technicians/verification-list`, {
                 params: { status: viewMode }
             });
             if (response.data.success) {
@@ -46,7 +47,7 @@ export default function KYCCenter() {
 
         setIsProcessing(true);
         try {
-            const response = await axios.post(`http://127.0.0.1:4000/api/admin/technicians/${userId}/verify-kyc`, {
+            const response = await axios.post(`${config.API_URL}/admin/technicians/${userId}/verify-kyc`, {
                 status,
                 reason: status === 'REJECTED' ? rejectionReason : null
             });
@@ -68,7 +69,7 @@ export default function KYCCenter() {
 
         setIsProcessing(true);
         try {
-            const response = await axios.post(`http://127.0.0.1:4000/api/admin/technicians/${userId}/verify-payout`, {
+            const response = await axios.post(`${config.API_URL}/admin/technicians/${userId}/verify-payout`, {
                 isVerified
             });
 

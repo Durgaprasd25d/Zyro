@@ -7,13 +7,13 @@
 // Load from .env file (create .env from .env.example)
 // In Expo SDK 49+, use EXPO_PUBLIC_ prefix for automatic environment variable injection
 const BACKEND_URL =
-  process.env.EXPO_PUBLIC_BACKEND_URL || "http://localhost:4000"; // Works with adb reverse
+  process.env.EXPO_PUBLIC_BACKEND_URL || "https://zyro-s0gj.onrender.com"; // Works with adb reverse
 console.log(
   "📡 [Config] process.env.EXPO_PUBLIC_BACKEND_URL:",
   process.env.EXPO_PUBLIC_BACKEND_URL,
 );
 console.log("📡 [Config] Final BACKEND_URL:", BACKEND_URL);
-const MAPBOX_ACCESS_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_API_KEY || "";
+const MAPBOX_ACCESS_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_API_KEY || "pk.eyJ1IjoiZHVyZ2EwNyIsImEiOiJjbW14bXo2ZWsyenRvMnJyMG5yOXBtczlrIn0.opLR_TbZiRjBsPfgIOu83g";
 
 if (!MAPBOX_ACCESS_TOKEN) {
   console.warn(
@@ -22,7 +22,7 @@ if (!MAPBOX_ACCESS_TOKEN) {
 }
 
 const RAZORPAY_KEYID =
-  process.env.EXPO_PUBLIC_RAZORPAY_KEYID || "rzp_test_RxiuviHEGyiaLv";
+  process.env.EXPO_PUBLIC_RAZORPAY_KEYID || "";
 const CLOUDINARY_CLOUD_NAME =
   process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME || "djsdp7cns";
 const CLOUDINARY_UPLOAD_PRESET =

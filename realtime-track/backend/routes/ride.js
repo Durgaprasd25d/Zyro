@@ -83,7 +83,10 @@ router.post('/request', async (req, res) => {
                 serviceType: ride.serviceType,
                 paymentMethod: ride.paymentMethod,
                 paymentTiming: ride.paymentTiming,
-                price: ride.price || 1000
+                price: ride.price || 1000,
+                basePrice: ride.basePrice,
+                platformFee: ride.platformFee,
+                gst: ride.gst
             });
 
             // Push Notification to all Technicians
@@ -160,6 +163,10 @@ router.get('/all-jobs', async (req, res) => {
                 serviceType: r.serviceType,
                 pickup: r.pickup,
                 price: r.price || 1000,
+                basePrice: r.basePrice,
+                platformFee: r.platformFee,
+                gst: r.gst,
+                gstRate: r.gstRate || 0,
                 paymentMethod: r.paymentMethod,
                 paymentTiming: r.paymentTiming,
                 createdAt: r.createdAt
@@ -169,6 +176,9 @@ router.get('/all-jobs', async (req, res) => {
                 serviceType: r.serviceType,
                 pickup: r.pickup,
                 price: r.price || 1000,
+                basePrice: r.basePrice,
+                platformFee: r.platformFee,
+                gst: r.gst,
                 status: r.status,
                 createdAt: r.createdAt
             })),
@@ -177,6 +187,9 @@ router.get('/all-jobs', async (req, res) => {
                 serviceType: r.serviceType,
                 pickup: r.pickup,
                 price: r.price || 1000,
+                basePrice: r.basePrice,
+                platformFee: r.platformFee,
+                gst: r.gst,
                 status: r.status,
                 createdAt: r.createdAt
             })),
@@ -185,6 +198,9 @@ router.get('/all-jobs', async (req, res) => {
                 serviceType: r.serviceType,
                 pickup: r.pickup,
                 price: r.price || 1000,
+                basePrice: r.basePrice,
+                platformFee: r.platformFee,
+                gst: r.gst,
                 completedAt: r.timestamp,
                 createdAt: r.createdAt
             }))
@@ -468,7 +484,10 @@ router.post('/payment-success', async (req, res) => {
                 serviceType: ride.serviceType,
                 paymentMethod: ride.paymentMethod,
                 paymentTiming: ride.paymentTiming,
-                price: ride.price || 1000
+                price: ride.price || 1000,
+                basePrice: ride.basePrice,
+                platformFee: ride.platformFee,
+                gst: ride.gst
             });
         }
 
@@ -538,10 +557,10 @@ router.post('/complete', async (req, res) => {
         if (technician) {
             // ONLY credit wallet if payment wasn't already handled (e.g. for Online, it's handled in payment.js)
             if (ride.paymentStatus !== 'PAID') {
-                const price = ride.price || 1000;
-                const COMMISSION_RATE = 0.20;
-                const commission = Math.round(price * COMMISSION_RATE);
-                const earnings = price - commission;
+                const totalAmount = ride.price || 0;
+                // Use the stored platformFee (rupees) instead of hardcoded commission rate
+                const platformFee = ride.platformFee || 0;
+                const earnings = totalAmount - platformFee;
 
                 // Credit for Cash/Manual or other types not handled by payment.js split
                 technician.wallet.balance += earnings;
@@ -668,11 +687,13 @@ router.get('/receipt/:rideId', async (req, res) => {
             return res.status(404).json({ success: false, error: 'Receipt not found' });
         }
 
-        // Calculate billing breakdown
-        const serviceCharge = Math.round(ride.price || 0);
-        const platformFee = Math.round(serviceCharge * 0.05); // 5% platform fee
-        const gst = Math.round((serviceCharge + platformFee) * 0.18); // 18% GST
-        const totalAmount = Math.round(serviceCharge + platformFee + gst);
+        // Use stored billing breakdown from the ride document
+        const serviceCharge = Math.round(ride.basePrice || 0);
+        const platformFee = Math.round(ride.platformFee || 0);
+        const gst = Math.round(ride.gst || 0);
+        const totalAmount = Math.round(ride.price || 0);
+
+        const gstPercentage = ride.gstRate || 18;
 
         // Fetch technician details if available
         let technicianInfo = null;
@@ -707,7 +728,7 @@ router.get('/receipt/:rideId', async (req, res) => {
                 serviceCharge,
                 platformFee,
                 gst,
-                gstPercentage: 18,
+                gstPercentage,
                 totalAmount
             },
 
@@ -791,7 +812,10 @@ router.post('/cancel-by-technician', async (req, res) => {
                 serviceType: ride.serviceType,
                 paymentMethod: ride.paymentMethod,
                 paymentTiming: ride.paymentTiming,
-                price: ride.price || 1000
+                price: ride.price || 1000,
+                basePrice: ride.basePrice,
+                platformFee: ride.platformFee,
+                gst: ride.gst
             });
 
             // Send push notifications to technicians

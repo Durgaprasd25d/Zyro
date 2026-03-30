@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import config from '../config';
 
 export default function Login() {
     const [mobile, setMobile] = useState('');
@@ -15,8 +16,7 @@ export default function Login() {
         setLoading(true);
 
         try {
-            // Using 127.0.0.1 to avoid localhost resolution issues
-            const response = await axios.post('http://127.0.0.1:4000/api/auth/login', {
+            const response = await axios.post(`${config.API_URL}/auth/login`, {
                 mobile,
                 password
             });

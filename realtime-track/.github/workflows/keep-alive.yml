@@ -11,11 +11,6 @@ jobs:
     steps:
       - name: Ping Backend
         run: |
-          # Use the BACKEND_URL secret or a fallback if the user hasn't set it yet
-          URL="${{ secrets.BACKEND_URL }}"
-          if [ -z "$URL" ]; then
-            echo "Error: BACKEND_URL secret is not set."
-            exit 1
-          fi
+          URL="https://zyro-s0gj.onrender.com"
           echo "Pinging $URL/health..."
           curl -s -f "$URL/health" || curl -s -f "$URL/keepalive" || echo "Ping failed but continuing..."

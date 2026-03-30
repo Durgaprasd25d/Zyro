@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import config from '../config';
 import {
     Settings as SettingsIcon,
     Shield,
@@ -9,22 +11,56 @@ import {
     Lock,
     Percent,
     AlertTriangle,
-    CheckCircle2
+    CheckCircle2,
+    Loader2
 } from 'lucide-react';
 
 export default function Settings() {
     const [saved, setSaved] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [settings, setSettings] = useState({
-        platformFee: 20,
+        platformFee: 0,
+        gst: 0,
         maintenanceMode: false,
         autoApproval: false,
         notificationEmails: 'admin@zyroac.com',
         minWithdrawal: 500
     });
 
-    const handleSave = () => {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
+    useEffect(() => {
+        fetchSettings();
+    }, []);
+
+    const fetchSettings = async () => {
+        try {
+            const response = await axios.get(`${config.API_URL}/admin/settings`);
+            if (response.data.success) {
+                setSettings({
+                    ...settings,
+                    platformFee: response.data.settings.platformFee,
+                    gst: response.data.settings.gst
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching settings:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSave = async () => {
+        try {
+            const response = await axios.post(`${config.API_URL}/admin/settings`, {
+                platformFee: Number(settings.platformFee),
+                gst: Number(settings.gst)
+            });
+            if (response.data.success) {
+                setSaved(true);
+                setTimeout(() => setSaved(false), 3000);
+            }
+        } catch (error) {
+            alert('Error updating settings');
+        }
     };
 
     const SettingGroup = ({ title, description, children }) => (
@@ -81,15 +117,33 @@ export default function Settings() {
             <SettingGroup title="Financial Controls" description="Manage platform fees and transaction limits">
                 <SettingItem
                     icon={Percent}
-                    label="Platform Commission Fee"
-                    description="Percentage taken from each completed service transaction."
+                    label="Platform Usage Fee"
+                    description="Fixed convenience fee charged per booking."
+                >
+                    <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span className="text-slate-400 font-bold">₹</span>
+                        </div>
+                        <input
+                            type="number"
+                            className="w-28 pl-8 pr-4 py-2 bg-slate-50 border-none rounded-xl text-right font-bold text-slate-800 focus:ring-2 focus:ring-blue-500/20"
+                            value={settings.platformFee}
+                            onChange={e => setSettings({ ...settings, platformFee: e.target.value })}
+                        />
+                    </div>
+                </SettingItem>
+
+                <SettingItem
+                    icon={Percent}
+                    label="GST Percentage"
+                    description="Government tax applied to the base service price."
                 >
                     <div className="relative">
                         <input
                             type="number"
                             className="w-24 px-4 py-2 bg-slate-50 border-none rounded-xl text-right font-bold text-slate-800 focus:ring-2 focus:ring-blue-500/20"
-                            value={settings.platformFee}
-                            onChange={e => setSettings({ ...settings, platformFee: e.target.value })}
+                            value={settings.gst}
+                            onChange={e => setSettings({ ...settings, gst: e.target.value })}
                         />
                         <span className="absolute right-3 top-2 text-slate-400 font-bold">%</span>
                     </div>

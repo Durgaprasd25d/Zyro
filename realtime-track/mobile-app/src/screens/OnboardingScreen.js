@@ -69,18 +69,18 @@ const InteractiveStep1 = ({ onComplete }) => {
 
             <View style={styles.interactiveArea}>
                 <Animated.View style={[styles.acFoundContainer, acStyle]}>
-                    <Image source={require('../../assets/onboarding/ac_clean.png')} style={styles.acImage} resizeMode="contain" />
+                    <Image source={require('../../assets/onboarding/ac_service_bw.png')} style={styles.acImage} resizeMode="contain" />
                     <View style={styles.foundBadge}>
-                        <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
-                        <Text style={styles.foundText}>Service Found!</Text>
+                        <Ionicons name="checkmark-circle" size={24} color="#000000" />
+                        <Text style={styles.foundText}>Expert Assigned!</Text>
                     </View>
                 </Animated.View>
 
                 <TouchableOpacity activeOpacity={0.8} onPress={handlePress} style={styles.pulseButton}>
                     <Animated.View style={[styles.ripple, rippleStyle]} />
-                    <LinearGradient colors={COLORS.roseGoldGradient} style={styles.pulseInner}>
+                    <View style={styles.pulseInner}>
                         <Ionicons name="search" size={32} color="white" />
-                    </LinearGradient>
+                    </View>
                 </TouchableOpacity>
             </View>
         </View>
@@ -121,7 +121,7 @@ const InteractiveStep2 = ({ onComplete }) => {
     return (
         <View style={styles.stepContainer}>
             <Text style={styles.stepTitle}>Live Tracking</Text>
-            <Text style={styles.stepSubtitle}>Slide the bar to track your expert arriving in real-time.</Text>
+            <Text style={styles.stepSubtitle}>Slide to see how easy it is to track your Zyro expert.</Text>
 
             <View style={styles.interactiveArea}>
                 <View style={styles.mapContainer}>
@@ -132,14 +132,14 @@ const InteractiveStep2 = ({ onComplete }) => {
                         <Image source={require('../../assets/onboarding/tech.png')} style={styles.techImage} resizeMode="contain" />
                         {arrived && (
                             <Animated.View entering={FadeInUp.springify()} style={styles.tagBadge}>
-                                <Text style={styles.tagText}>I'M HERE!</Text>
+                                <Text style={styles.tagText}>ARRIVED</Text>
                             </Animated.View>
                         )}
                     </Animated.View>
 
                     <View style={styles.homeIcon}>
-                        <Ionicons name="home" size={40} color={COLORS.roseGold} />
-                        <Text style={styles.homeLabel}>YOUR HOME</Text>
+                        <Ionicons name="home" size={40} color="#000000" />
+                        <Text style={styles.homeLabel}>LOCATION</Text>
                     </View>
                 </View>
 
@@ -150,16 +150,16 @@ const InteractiveStep2 = ({ onComplete }) => {
                                 <Animated.View style={[styles.sliderThumb, thumbStyle]}>
                                     <Ionicons name="chevron-forward" size={24} color="white" />
                                 </Animated.View>
-                                <Text style={styles.sliderText}>Slide to simulate arrival</Text>
+                                <Text style={styles.sliderText}>Slide to track expert</Text>
                             </View>
                         </PanGestureHandler>
                     </View>
                 ) : (
                     <TouchableOpacity style={styles.continueBtn} onPress={onComplete}>
-                        <LinearGradient colors={COLORS.roseGoldGradient} style={styles.btnGradient}>
-                            <Text style={styles.btnText}>CONTINUE TO BILLING</Text>
+                        <View style={styles.btnGradient}>
+                            <Text style={styles.btnText}>NEXT STEP</Text>
                             <Ionicons name="arrow-forward" size={20} color="white" />
-                        </LinearGradient>
+                        </View>
                     </TouchableOpacity>
                 )}
             </View>
@@ -180,7 +180,7 @@ const InteractiveStep3 = ({ onComplete }) => {
 
     return (
         <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>Transparent Billing</Text>
+            <Text style={styles.stepTitle}>Zyro Billing</Text>
             <Text style={styles.stepSubtitle}>Premium service meets honest prices. No hidden fees.</Text>
 
             <View style={styles.interactiveArea}>
@@ -190,8 +190,8 @@ const InteractiveStep3 = ({ onComplete }) => {
                         <View style={styles.receiptHeader}>
                             <Logo size={40} />
                             <View>
-                                <Text style={styles.receiptId}>INV-8829</Text>
-                                <Text style={styles.receiptDate}>17 JAN 2026</Text>
+                                <Text style={styles.receiptId}>ZY-9831</Text>
+                                <Text style={styles.receiptDate}>30 MAR 2026</Text>
                             </View>
                         </View>
 
@@ -215,25 +215,25 @@ const InteractiveStep3 = ({ onComplete }) => {
                         <View style={styles.dashedDivider} />
 
                         <Animated.View entering={FadeInDown.delay(1200)} style={styles.totalRow}>
-                            <Text style={styles.totalLabel}>Total Payable</Text>
+                            <Text style={styles.totalLabel}>Total</Text>
                             <Text style={styles.totalValue}>₹1,590.64</Text>
                         </Animated.View>
 
                         <View style={styles.paymentBadgeContainer}>
-                            <LinearGradient colors={['#4CAF50', '#2E7D32']} style={styles.paymentBadge}>
+                            <View style={styles.paymentBadge}>
                                 <Ionicons name="checkmark-shield" size={18} color="white" />
                                 <Text style={styles.paymentStatusText}>PAYMENT SECURED</Text>
                                 <Animated.View style={[styles.shineOverlay, shineStyle]} />
-                            </LinearGradient>
+                            </View>
                         </View>
                     </Animated.View>
                 </View>
 
                 <TouchableOpacity style={styles.getStartedBtn} onPress={onComplete}>
-                    <LinearGradient colors={COLORS.roseGoldGradient} style={styles.btnGradient}>
-                        <Text style={styles.btnText}>LAUNCH ZYRO AC</Text>
+                    <View style={styles.btnGradient}>
+                        <Text style={styles.btnText}>GET STARTED</Text>
                         <Ionicons name="sparkles" size={20} color="white" />
-                    </LinearGradient>
+                    </View>
                 </TouchableOpacity>
             </View>
         </View>
@@ -241,8 +241,8 @@ const InteractiveStep3 = ({ onComplete }) => {
 };
 
 const Logo = ({ size = 60 }) => (
-    <View style={{ width: size, height: size }}>
-        <Image source={require('../../assets/logo.png')} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
+    <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }}>
+        <Ionicons name="wind" size={size * 0.8} color="#000000" />
     </View>
 );
 
@@ -264,7 +264,7 @@ export default function OnboardingScreen({ navigation }) {
 
     return (
         <View style={styles.container}>
-            <LinearGradient colors={['#FFFFFF', '#FDF2F4']} style={styles.mainGradient}>
+            <View style={styles.mainContent}>
                 <SafeAreaView style={{ flex: 1 }}>
                     <View style={styles.header}>
                         <View style={styles.progressBar}>
@@ -281,14 +281,14 @@ export default function OnboardingScreen({ navigation }) {
                     {step === 1 && <InteractiveStep2 onComplete={nextStep} />}
                     {step === 2 && <InteractiveStep3 onComplete={finish} />}
                 </SafeAreaView>
-            </LinearGradient>
+            </View>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1 },
-    mainGradient: { flex: 1 },
+    container: { flex: 1, backgroundColor: '#FFFFFF' },
+    mainContent: { flex: 1 },
     header: {
         paddingHorizontal: SPACING.xl,
         paddingTop: SPACING.md,
@@ -303,18 +303,19 @@ const styles = StyleSheet.create({
         marginRight: 40,
     },
     progressSegment: {
-        height: 6,
+        height: 4,
         flex: 1,
         backgroundColor: '#E0E0E0',
-        borderRadius: 3,
+        borderRadius: 2,
     },
     activeSegment: {
-        backgroundColor: COLORS.roseGold,
+        backgroundColor: '#000000',
     },
     skipText: {
-        color: COLORS.roseGold,
+        color: '#000000',
         fontWeight: 'bold',
         fontSize: 14,
+        opacity: 0.5,
     },
     stepContainer: {
         flex: 1,
@@ -323,17 +324,17 @@ const styles = StyleSheet.create({
         paddingHorizontal: SPACING.xl,
     },
     stepTitle: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: COLORS.black,
+        fontSize: 36,
+        fontWeight: '900',
+        color: '#000000',
         textAlign: 'center',
     },
     stepSubtitle: {
         fontSize: 16,
-        color: COLORS.grey,
+        color: '#757575',
         textAlign: 'center',
         marginTop: 10,
-        lineHeight: 22,
+        lineHeight: 24,
     },
     interactiveArea: {
         flex: 1,
@@ -352,6 +353,7 @@ const styles = StyleSheet.create({
         width: 100,
         height: 100,
         borderRadius: 50,
+        backgroundColor: '#000000',
         justifyContent: 'center',
         alignItems: 'center',
         ...SHADOWS.medium,
@@ -361,33 +363,36 @@ const styles = StyleSheet.create({
         width: 100,
         height: 100,
         borderRadius: 50,
-        backgroundColor: COLORS.roseGold,
-        borderWidth: 2,
-        borderColor: COLORS.roseGold,
+        backgroundColor: '#000000',
+        borderWidth: 1,
+        borderColor: '#000000',
     },
     acFoundContainer: {
         position: 'absolute',
-        top: 20,
+        top: 0,
         alignItems: 'center',
     },
-    acImage: { width: 220, height: 220 },
+    acImage: { width: 280, height: 280 },
     foundBadge: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#FFF',
         paddingHorizontal: 15,
-        paddingVertical: 8,
-        borderRadius: 20,
+        paddingVertical: 10,
+        borderRadius: 25,
+        borderWidth: 1,
+        borderColor: '#f0f0f0',
         ...SHADOWS.small,
-        marginTop: -30,
+        marginTop: -20,
     },
-    foundText: { marginLeft: 8, color: COLORS.black, fontWeight: '600' },
+    foundText: { marginLeft: 8, color: '#000000', fontWeight: '900', fontSize: 12 },
     mapContainer: {
         width: '100%',
         height: 300,
-        backgroundColor: '#FFF',
-        borderRadius: 20,
-        ...SHADOWS.light,
+        backgroundColor: '#F8F9FA',
+        borderRadius: 24,
+        borderWidth: 1,
+        borderColor: '#eee',
         justifyContent: 'center',
         alignItems: 'center',
         overflow: 'hidden',
@@ -395,21 +400,21 @@ const styles = StyleSheet.create({
     linePath: {
         position: 'absolute',
         width: '60%',
-        height: 4,
-        backgroundColor: '#F0F0F0',
-        borderRadius: 2,
+        height: 2,
+        backgroundColor: '#E0E0E0',
+        borderRadius: 1,
     },
     lineActive: {
         position: 'absolute',
         left: '20%',
-        height: 4,
-        backgroundColor: COLORS.roseGold,
-        borderRadius: 2,
+        height: 2,
+        backgroundColor: '#000000',
+        borderRadius: 1,
     },
     techIcon: {
         position: 'absolute',
-        width: 80,
-        height: 80,
+        width: 90,
+        height: 90,
         zIndex: 5,
     },
     techImage: { width: '100%', height: '100%' },
@@ -418,16 +423,17 @@ const styles = StyleSheet.create({
         right: '15%',
         alignItems: 'center',
     },
-    homeLabel: { fontSize: 10, fontWeight: 'bold', color: COLORS.grey, marginTop: 4 },
+    homeLabel: { fontSize: 9, fontWeight: '900', color: '#000000', marginTop: 4, letterSpacing: 1 },
     sliderTray: {
         width: 300,
-        height: 60,
-        backgroundColor: '#FFF',
-        borderRadius: 30,
-        ...SHADOWS.small,
+        height: 64,
+        backgroundColor: '#F8F9FA',
+        borderRadius: 32,
+        borderWidth: 1,
+        borderColor: '#eee',
         marginTop: 40,
         justifyContent: 'center',
-        paddingHorizontal: 5,
+        paddingHorizontal: 6,
     },
     sliderTrack: {
         flex: 1,
@@ -435,96 +441,99 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     sliderThumb: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
-        backgroundColor: COLORS.roseGold,
+        width: 52,
+        height: 52,
+        borderRadius: 26,
+        backgroundColor: '#000000',
         justifyContent: 'center',
         alignItems: 'center',
-        ...SHADOWS.small,
+        ...SHADOWS.medium,
     },
     sliderText: {
         position: 'absolute',
         width: '100%',
         textAlign: 'center',
-        fontSize: 14,
-        color: COLORS.grey,
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#999',
         zIndex: -1,
     },
     tagBadge: {
         position: 'absolute',
-        top: -25,
-        backgroundColor: COLORS.roseGold,
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 12,
+        top: -30,
+        backgroundColor: '#000000',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 15,
         ...SHADOWS.small,
     },
-    tagText: { color: 'white', fontSize: 10, fontWeight: 'bold' },
+    tagText: { color: 'white', fontSize: 10, fontWeight: '900', letterSpacing: 1 },
     continueBtn: {
         width: '85%',
-        height: 56,
-        borderRadius: 28,
-        overflow: 'hidden',
+        height: 60,
+        borderRadius: 30,
+        backgroundColor: '#000000',
         marginTop: 40,
         ...SHADOWS.medium,
     },
     receiptStack: {
         width: width * 0.85,
-        height: 380,
+        height: 400,
         justifyContent: 'center',
         alignItems: 'center',
     },
     receiptCard: {
         width: '100%',
         backgroundColor: '#FFF',
-        borderRadius: 20,
-        padding: 24,
+        borderRadius: 24,
+        padding: 30,
+        borderWidth: 1,
+        borderColor: '#eee',
         ...SHADOWS.medium,
         zIndex: 2,
     },
     receiptCardBack: {
         position: 'absolute',
-        width: '90%',
+        width: '92%',
         height: '100%',
-        backgroundColor: '#F5E6E8',
-        top: 10,
+        backgroundColor: '#f5f5f5',
+        top: 15,
         zIndex: 1,
-        borderRadius: 20,
+        borderRadius: 24,
     },
-    receiptHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-    receiptId: { color: COLORS.grey, fontSize: 12, fontWeight: '600' },
-    receiptDate: { color: COLORS.grey, fontSize: 10 },
-    divider: { height: 1, backgroundColor: '#F0F0F0', marginVertical: 15 },
-    dashedDivider: { height: 1, borderWidth: 1, borderColor: '#EEE', borderStyle: 'dashed', marginVertical: 20 },
-    receiptRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
-    itemLabel: { color: COLORS.grey, fontSize: 14 },
-    itemValue: { color: COLORS.black, fontWeight: '600' },
+    receiptHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
+    receiptId: { color: '#000000', fontSize: 12, fontWeight: '900', opacity: 0.5 },
+    receiptDate: { color: '#000000', fontSize: 10, opacity: 0.4 },
+    divider: { height: 1, backgroundColor: '#f0f0f0', marginVertical: 15 },
+    dashedDivider: { height: 1, borderWidth: 1, borderColor: '#eee', borderStyle: 'dashed', marginVertical: 20 },
+    receiptRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 },
+    itemLabel: { color: '#757575', fontSize: 14 },
+    itemValue: { color: '#000000', fontWeight: 'bold' },
     totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    totalLabel: { fontWeight: 'bold', fontSize: 20, color: COLORS.black },
-    totalValue: { fontWeight: 'bold', fontSize: 22, color: COLORS.roseGold },
-    paymentBadgeContainer: { marginTop: 25, borderRadius: 12, overflow: 'hidden' },
+    totalLabel: { fontWeight: '900', fontSize: 24, color: '#000000' },
+    totalValue: { fontWeight: '900', fontSize: 26, color: '#000000' },
+    paymentBadgeContainer: { marginTop: 30, borderRadius: 15, overflow: 'hidden', backgroundColor: '#000000' },
     paymentBadge: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 12,
+        padding: 16,
     },
-    paymentStatusText: { color: 'white', fontWeight: 'bold', marginLeft: 10, fontSize: 12, letterSpacing: 1 },
+    paymentStatusText: { color: 'white', fontWeight: '900', marginLeft: 10, fontSize: 12, letterSpacing: 2 },
     shineOverlay: {
         ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(255,255,255,0.3)',
-        width: 100,
-        transform: [{ skewX: '-20deg' }],
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        width: 150,
+        transform: [{ skewX: '-25deg' }],
     },
     getStartedBtn: {
         width: '85%',
-        height: 60,
-        borderRadius: 30,
-        overflow: 'hidden',
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: '#000000',
         marginTop: 40,
         ...SHADOWS.medium,
     },
-    btnGradient: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
-    btnText: { color: 'white', fontWeight: 'bold', fontSize: 18, letterSpacing: 0.5 },
+    btnGradient: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 15 },
+    btnText: { color: 'white', fontWeight: '900', fontSize: 18, letterSpacing: 1 },
 });

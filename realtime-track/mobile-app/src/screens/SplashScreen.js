@@ -76,14 +76,13 @@ export default function SplashScreen({ navigation }) {
     const backgroundStyle = useAnimatedStyle(() => ({
         ...StyleSheet.absoluteFillObject,
         opacity: bgOpacity.value,
-        backgroundColor: '#0F172A', // Deep Slate / Obsidian
+        backgroundColor: '#FFFFFF', // Pure White
     }));
 
     const globeStyle = useAnimatedStyle(() => ({
         opacity: globeOpacity.value,
         transform: [
             { scale: globeScale.value },
-            { rotate: `${globeRotate.value}deg` }
         ],
     }));
 
@@ -92,10 +91,10 @@ export default function SplashScreen({ navigation }) {
         width: 140,
         height: 140,
         borderRadius: 70,
-        borderWidth: 2,
-        borderColor: 'rgba(56, 189, 248, 0.3)', // Electric Blue
+        borderWidth: 1,
+        borderColor: 'rgba(0, 0, 0, 0.1)', // Subtle Pulse
         transform: [{ scale: pulseScale.value }],
-        opacity: withRepeat(withTiming(0, { duration: 1500 }), -1, false),
+        opacity: withRepeat(withTiming(0, { duration: 2000 }), -1, false),
     }));
 
     const textStyle = useAnimatedStyle(() => ({
@@ -107,7 +106,7 @@ export default function SplashScreen({ navigation }) {
 
     return (
         <View style={styles.container}>
-            <StatusBar style="light" hidden />
+            <StatusBar style="dark" hidden />
             <Animated.View style={backgroundStyle} />
 
             <View style={styles.content}>
@@ -115,20 +114,20 @@ export default function SplashScreen({ navigation }) {
                     <Animated.View style={pulseStyle} />
                     <Animated.View style={globeStyle}>
                         <AnimatedFeather 
-                            name="globe" 
-                            size={100} 
-                            color="#38BDF8" // Electric Blue
+                            name="wind" 
+                            size={80} 
+                            color="#000000" // Black
                         />
                     </Animated.View>
                 </View>
 
                 <Animated.View style={textStyle}>
-                    <Text style={styles.brandName}>REALTIME</Text>
-                    <Text style={styles.brandSub}>TRACK</Text>
+                    <Text style={styles.brandName}>ZYRO</Text>
+                    <Text style={styles.brandSub}>AC SERVICE</Text>
                     <View style={styles.loaderBarContainer}>
                         <Animated.View style={styles.loaderBar} />
                     </View>
-                    <Text style={styles.loadingText}>ESTABLISHING SECURE LINK...</Text>
+                    <Text style={styles.loadingText}>PREPARING YOUR COMFORT...</Text>
                 </Animated.View>
             </View>
         </View>
@@ -138,7 +137,7 @@ export default function SplashScreen({ navigation }) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#0F172A',
+        backgroundColor: '#FFFFFF',
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -152,37 +151,38 @@ const styles = StyleSheet.create({
         width: 150,
     },
     brandName: {
-        fontSize: 42,
+        fontSize: 48,
         fontWeight: '900',
-        color: '#FFFFFF',
-        letterSpacing: 8,
+        color: '#000000',
+        letterSpacing: 12,
     },
     brandSub: {
-        fontSize: 18,
-        fontWeight: '300',
-        color: '#38BDF8',
-        letterSpacing: 12,
-        marginTop: -5,
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#000000',
+        letterSpacing: 8,
+        marginTop: 5,
+        opacity: 0.6,
     },
     loaderBarContainer: {
         width: 180,
-        height: 2,
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        height: 3,
+        backgroundColor: 'rgba(0, 0, 0, 0.05)',
         marginTop: 40,
-        borderRadius: 1,
+        borderRadius: 2,
         overflow: 'hidden',
     },
     loaderBar: {
         width: '40%',
         height: '100%',
-        backgroundColor: '#38BDF8',
+        backgroundColor: '#000000',
         position: 'absolute',
     },
     loadingText: {
-        color: 'rgba(255, 255, 255, 0.4)',
+        color: 'rgba(0, 0, 0, 0.4)',
         fontSize: 10,
         marginTop: 15,
         letterSpacing: 2,
-        fontWeight: '600',
+        fontWeight: '700',
     }
 });

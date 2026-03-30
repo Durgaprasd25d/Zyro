@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import config from '../config';
 import {
     CreditCard,
     ArrowUpRight,
@@ -18,7 +19,7 @@ import {
     AlertCircle
 } from 'lucide-react';
 
-const API_BASE = 'http://127.0.0.1:4000/api/admin';
+const API_BASE = `${config.API_URL}/admin`;
 
 export default function Transactions() {
     const [transactions, setTransactions] = useState([]);

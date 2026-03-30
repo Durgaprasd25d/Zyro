@@ -66,6 +66,10 @@ const RideSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    gstRate: {
+        type: Number,
+        default: 0
+    },
     paymentMethod: {
         type: String,
         // enum: ['COD', 'ONLINE'], // COD DISABLED - Online only for MVP
