@@ -15,5 +15,5 @@ jobs:
       - name: Ping keepalive endpoint
         run: |
           echo "Pinging backend keepalive endpoint..."
-          curl -f https://zyro-ac-web-service.onrender.com/keepalive || echo "Ping failed, server might be down"
+          curl -f https://zyro-s0gj.onrender.com/ || echo "Ping failed, server might be down"
           echo "Keepalive ping completed at $(date)"
