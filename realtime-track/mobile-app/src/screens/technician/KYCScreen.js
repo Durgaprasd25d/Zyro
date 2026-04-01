@@ -11,6 +11,7 @@ import {
     Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LayoutAnimation } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import * as ImagePicker from 'expo-image-picker';
 import { COLORS, SPACING, SHADOWS } from '../../constants/theme';
@@ -24,6 +25,58 @@ const DOCUMENT_TYPES = [
     { id: 'bankProof', label: 'Bank Passbook / Cheque', icon: 'business-outline' },
     { id: 'selfie', label: 'Selfie with Face Visible', icon: 'person-outline', isSelfie: true }
 ];
+
+// Helper for optimized Cloudinary URLs
+const getOptimizedUrl = (url) => {
+    if (!url || !url.includes('cloudinary.com')) return url;
+    // Insert transformation parameters: q_auto (quality), f_auto (format), w_500 (width)
+    return url.replace('/upload/', '/upload/q_auto,f_auto,w_500/');
+};
+
+// Memoized Document Item Component
+const DocItem = React.memo(({ doc, kycData, isLocked, onPick }) => {
+    const data = kycData[doc.id];
+    return (
+        <View style={styles.docItem}>
+            <View style={styles.docLabelContainer}>
+                <Ionicons name={doc.icon} size={20} color={COLORS.grey} />
+                <Text style={styles.docLabel}>{doc.label}</Text>
+            </View>
+
+            <TouchableOpacity
+                style={[
+                    styles.uploadBox,
+                    data.url && styles.uploadedBox,
+                    isLocked && styles.disabledBox
+                ]}
+                onPress={() => onPick(doc.id, doc.isSelfie)}
+                disabled={isLocked || data.uploading}
+            >
+                {data.uploading ? (
+                    <ActivityIndicator color={COLORS.technicianPrimary} />
+                ) : data.url ? (
+                    <View style={styles.previewContainer}>
+                        <Image 
+                            source={{ uri: getOptimizedUrl(data.url) }} 
+                            style={styles.preview} 
+                        />
+                        {!isLocked && (
+                            <View style={styles.editOverlay}>
+                                <Ionicons name="camera" size={20} color={COLORS.white} />
+                                <Text style={styles.editText}>Change</Text>
+                            </View>
+                        )}
+                    </View>
+                ) : (
+                    <View style={styles.emptyBox}>
+                        <Ionicons name="cloud-upload-outline" size={32} color={COLORS.grey} />
+                        <Text style={styles.uploadText}>Tap to Upload</Text>
+                    </View>
+                )}
+            </TouchableOpacity>
+        </View>
+    );
+});
 
 export default function KYCScreen({ navigation }) {
     const [kycData, setKycData] = useState({
@@ -65,6 +118,7 @@ export default function KYCScreen({ navigation }) {
         } catch (error) {
             console.error('Error fetching KYC status:', error);
         } finally {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
             setLoading(false);
         }
     };
@@ -201,10 +255,12 @@ export default function KYCScreen({ navigation }) {
                     [{ text: "OK", onPress: () => navigation.goBack() }]
                 );
             } else {
-                Alert.alert("Error", res.error || "Submission failed");
+                // Show the actual error from the server instead of generic "Submission failed"
+                Alert.alert("Submission Error", res.error || "The server could not process your request. Please try again.");
             }
         } catch (error) {
-            Alert.alert("Error", "Network error. Please try again.");
+            // Show the actual catch error (e.g. 500 status message or timeout)
+            Alert.alert("Connection Error", `Could not connect to server: ${error.message}. Check your internet and try again.`);
         } finally {
             setIsSubmitting(false);
         }
@@ -261,41 +317,13 @@ export default function KYCScreen({ navigation }) {
 
                 <View style={styles.docList}>
                     {DOCUMENT_TYPES.map((doc) => (
-                        <View key={doc.id} style={styles.docItem}>
-                            <View style={styles.docLabelContainer}>
-                                <Ionicons name={doc.icon} size={20} color={COLORS.grey} />
-                                <Text style={styles.docLabel}>{doc.label}</Text>
-                            </View>
-
-                            <TouchableOpacity
-                                style={[
-                                    styles.uploadBox,
-                                    kycData[doc.id].url && styles.uploadedBox,
-                                    isLocked && styles.disabledBox
-                                ]}
-                                onPress={() => handlePickImage(doc.id, doc.isSelfie)}
-                                disabled={isLocked || kycData[doc.id].uploading}
-                            >
-                                {kycData[doc.id].uploading ? (
-                                    <ActivityIndicator color={COLORS.technicianPrimary} />
-                                ) : kycData[doc.id].url ? (
-                                    <View style={styles.previewContainer}>
-                                        <Image source={{ uri: kycData[doc.id].url }} style={styles.preview} />
-                                        {!isLocked && (
-                                            <View style={styles.editOverlay}>
-                                                <Ionicons name="camera" size={20} color={COLORS.white} />
-                                                <Text style={styles.editText}>Change</Text>
-                                            </View>
-                                        )}
-                                    </View>
-                                ) : (
-                                    <View style={styles.emptyBox}>
-                                        <Ionicons name="cloud-upload-outline" size={32} color={COLORS.grey} />
-                                        <Text style={styles.uploadText}>Tap to Upload</Text>
-                                    </View>
-                                )}
-                            </TouchableOpacity>
-                        </View>
+                        <DocItem
+                            key={doc.id}
+                            doc={doc}
+                            kycData={kycData}
+                            isLocked={isLocked}
+                            onPick={handlePickImage}
+                        />
                     ))}
                 </View>
 

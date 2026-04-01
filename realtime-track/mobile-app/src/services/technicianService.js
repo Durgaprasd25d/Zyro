@@ -4,11 +4,18 @@ import * as Location from 'expo-location';
 
 const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://192.168.1.100:4000';
 
+let _cachedUser = null;
+
 // Get user data from storage
 export const getUserData = async () => {
     try {
+        if (_cachedUser) return _cachedUser;
         const user = await AsyncStorage.getItem('userData');
-        return user ? JSON.parse(user) : null;
+        if (user) {
+            _cachedUser = JSON.parse(user);
+            return _cachedUser;
+        }
+        return null;
     } catch (error) {
         console.error('Error getting user data:', error);
         return null;

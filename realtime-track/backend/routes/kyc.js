@@ -49,12 +49,27 @@ router.post('/submit', async (req, res) => {
         }
 
         // Update documents and status
+        if (!technician.verification) {
+            technician.verification = {
+                kycStatus: 'NOT_STARTED',
+                kycVerified: false,
+                documents: {}
+            };
+        }
+        
+        if (!technician.verification.documents) {
+            technician.verification.documents = {};
+        }
+
         technician.verification.documents = {
             ...technician.verification.documents,
             ...documents
         };
 
         if (bankDetails) {
+            if (!technician.verification.bankDetails) {
+                technician.verification.bankDetails = {};
+            }
             technician.verification.bankDetails = {
                 ...technician.verification.bankDetails,
                 ...bankDetails
