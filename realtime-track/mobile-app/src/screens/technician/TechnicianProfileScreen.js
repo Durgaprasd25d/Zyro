@@ -18,6 +18,8 @@ export default function TechnicianProfileScreen({ navigation }) {
         return unsubscribe;
     }, [navigation]);
 
+    const [fullKycData, setFullKycData] = useState(null);
+
     const loadData = async () => {
         setRefreshing(true);
         const userData = await authService.getUser();
@@ -26,9 +28,11 @@ export default function TechnicianProfileScreen({ navigation }) {
         const res = await technicianService.getKYCStatus();
         if (res.success) {
             setKycStatus(res.kycStatus);
+            setFullKycData(res);
         }
         setRefreshing(false);
     };
+
 
     const getBadge = () => {
         switch (kycStatus) {
@@ -98,7 +102,10 @@ export default function TechnicianProfileScreen({ navigation }) {
                         icon="shield-checkmark-outline" 
                         label="KYC & Verification" 
                         subtitle={badge.label.toLowerCase()}
-                        onPress={() => navigation.navigate('KYC')} 
+                        onPress={() => navigation.navigate('KYC', { 
+                            initialStatus: kycStatus,
+                            initialKycData: fullKycData?.documents
+                        })} 
                         rightElement={
                             <View style={[styles.dot, { backgroundColor: kycStatus === 'VERIFIED' ? '#000' : '#ccc' }]} />
                         }

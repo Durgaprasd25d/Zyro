@@ -109,6 +109,8 @@ export default function TechnicianDashboardScreen({ navigation }) {
         }
     };
 
+    const [fullKycData, setFullKycData] = useState(null);
+
     const loadDashboardData = async () => {
         try {
             const userId = user?.id || user?._id;
@@ -135,11 +137,13 @@ export default function TechnicianDashboardScreen({ navigation }) {
             const kycRes = await technicianService.getKYCStatus();
             if (kycRes.success) {
                 setKycStatus(kycRes.kycStatus);
+                setFullKycData(kycRes);
             }
         } catch (error) {
             console.error('Error loading dashboard:', error);
         }
     };
+
 
     const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
     const [lastToggleTime, setLastToggleTime] = useState(0);
@@ -152,7 +156,20 @@ export default function TechnicianDashboardScreen({ navigation }) {
         }
 
         if (!isOnline && kycStatus !== 'VERIFIED') {
-            Alert.alert("KYC Required", "Complete KYC to go online.");
+            Alert.alert(
+                "KYC Required", 
+                "You must complete your KYC verification before you can go online and accept jobs.",
+                [
+                    { text: "Later", style: "cancel" },
+                    { 
+                        text: "Complete KYC", 
+                        onPress: () => navigation.navigate('KYC', { 
+                            initialStatus: kycStatus,
+                            initialKycData: fullKycData?.documents 
+                        }) 
+                    }
+                ]
+            );
             return;
         }
 

@@ -78,17 +78,19 @@ const DocItem = React.memo(({ doc, kycData, isLocked, onPick }) => {
     );
 });
 
-export default function KYCScreen({ navigation }) {
-    const [kycData, setKycData] = useState({
+export default function KYCScreen({ navigation, route }) {
+    const { initialStatus, initialKycData } = route.params || {};
+
+    const [kycData, setKycData] = useState(initialKycData || {
         aadhaarFront: { url: '', publicId: '', uploading: false },
         aadhaarBack: { url: '', publicId: '', uploading: false },
         panCard: { url: '', publicId: '', uploading: false },
         bankProof: { url: '', publicId: '', uploading: false },
         selfie: { url: '', publicId: '', uploading: false }
     });
-    const [status, setStatus] = useState('NOT_STARTED'); // 'NOT_STARTED', 'PENDING', 'VERIFIED', 'REJECTED'
+    const [status, setStatus] = useState(initialStatus || 'NOT_STARTED'); // 'NOT_STARTED', 'PENDING', 'VERIFIED', 'REJECTED'
     const [rejectionReason, setRejectionReason] = useState('');
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(!initialStatus); // Only block if no initial status
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
@@ -117,11 +119,15 @@ export default function KYCScreen({ navigation }) {
             }
         } catch (error) {
             console.error('Error fetching KYC status:', error);
+            if (!initialStatus) {
+                Alert.alert("Error", "Could not fetch KYC status. Please try again.");
+            }
         } finally {
             LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
             setLoading(false);
         }
     };
+
 
     const handlePickImage = async (docId, isSelfie = false) => {
         if (status === 'PENDING' || status === 'VERIFIED') return;
