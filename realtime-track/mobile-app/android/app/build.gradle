@@ -59,8 +59,8 @@ android {
         applicationId 'com.realtime.track'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 4
-        versionName "1.1.0"
+        versionCode 6
+        versionName "1.1.1"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
@@ -173,3 +173,31 @@ dependencies {
 
 apply plugin: 'com.google.gms.google-services'
 apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"
+
+// ─── Fix: CXX1429 prefab "not readable" error ────────────────────────────────
+// react-native-reanimated's configureCMake task fires before react-native-worklets
+// has generated its prefab_package intermediates directory, causing the build to
+// fail with "directory is not readable". This block forces worklets to generate
+// its prefab package BEFORE reanimated configures CMake.
+afterEvaluate {
+    def workletsProject = findProject(":react-native-worklets")
+    def reanimatedProject = findProject(":react-native-reanimated")
+
+    if (workletsProject != null && reanimatedProject != null) {
+        // Collect all prefab-package generating tasks from worklets
+        def workletsPrefabTasks = workletsProject.tasks.matching { task ->
+            task.name.toLowerCase().contains("prefabpackage") ||
+            task.name.toLowerCase().contains("bundlelibcompiletojar") ||
+            task.name.toLowerCase().contains("externalnativebuildrelease")
+        }
+
+        // Make every reanimated configureCMake task wait for them
+        reanimatedProject.tasks.matching { task ->
+            task.name.toLowerCase().contains("configurecmake")
+        }.configureEach { configureTask ->
+            configureTask.dependsOn(workletsPrefabTasks)
+        }
+
+        println "✅ [Build Fix] react-native-reanimated CMake configure tasks now depend on react-native-worklets prefab tasks."
+    }
+}

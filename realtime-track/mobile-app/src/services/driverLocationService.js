@@ -7,6 +7,7 @@
 
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
+import { Alert } from 'react-native';
 import { calculateBearing, calculateDistance } from '../utils/mapUtils';
 import config from '../constants/config';
 
@@ -32,6 +33,24 @@ class DriverLocationService {
             if (foregroundStatus !== 'granted') {
                 console.warn('Foreground location permission denied');
                 return false;
+            }
+
+            // PROMINENT DISCLOSURE FOR BACKGROUND LOCATION
+            const disclosureAccepted = await new Promise((resolve) => {
+                Alert.alert(
+                    "Background Location Access",
+                    "Zyro AC collects location data to enable service dispatch and live tracking even when the app is closed or not in use. This allows us to dispatch the nearest technician to customers and provide them with accurate arrival times.\n\nPlease select 'Allow all the time' in the next screen to enable this feature.",
+                    [
+                        { text: "Decline", style: "cancel", onPress: () => resolve(false) },
+                        { text: "Accept", onPress: () => resolve(true) }
+                    ],
+                    { cancelable: false }
+                );
+            });
+
+            if (!disclosureAccepted) {
+                console.warn('User declined background location disclosure');
+                return true; // Still return true as foreground is sufficient for basic tracking
             }
 
             const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
