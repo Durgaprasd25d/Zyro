@@ -132,35 +132,68 @@ export default function KYCScreen({ navigation, route }) {
     const handlePickImage = async (docId, isSelfie = false) => {
         if (status === 'PENDING' || status === 'VERIFIED') return;
 
+        // Check current permission status BEFORE requesting
+        const { status: existingCamStatus } = await ImagePicker.getCameraPermissionsAsync();
+
         const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
         if (permissionResult.granted === false) {
-            Alert.alert("Permission Required", "Please allow camera access to upload documents.");
+            Alert.alert(
+                "Permission Required",
+                "Please allow camera access in your device settings to upload documents.",
+                [{ text: "OK" }]
+            );
             return;
         }
 
-        let result;
+        // BUG FIX: On Android, when permission is granted for the FIRST TIME,
+        // the permission dialog hasn't fully dismissed yet. Launching the camera
+        // immediately causes an error. Detect this and ask the user to tap again.
+        if (existingCamStatus !== 'granted' && permissionResult.granted) {
+            Alert.alert(
+                "Camera Ready",
+                "Camera access granted! Please tap again to take the photo.",
+                [{ text: "OK" }]
+            );
+            return;
+        }
+
         if (isSelfie) {
-            result = await ImagePicker.launchCameraAsync({
-                allowsEditing: true,
-                aspect: [1, 1],
-                quality: 0.5,
-            });
+            try {
+                const result = await ImagePicker.launchCameraAsync({
+                    allowsEditing: true,
+                    aspect: [1, 1],
+                    quality: 0.5,
+                });
+                if (!result.canceled && result.assets?.[0]?.uri) {
+                    uploadToCloudinary(docId, result.assets[0].uri);
+                }
+            } catch (err) {
+                console.error('Camera launch error:', err);
+                Alert.alert("Camera Error", "Could not open camera. Please tap again.");
+            }
         } else {
-            // Option to choose between library and camera
+            // Check media library permission for gallery
+            const { status: existingLibStatus } = await ImagePicker.getMediaLibraryPermissionsAsync();
+            const libPerm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
             Alert.alert(
                 "Upload Document",
                 "Choose an option",
                 [
                     { text: "Camera", onPress: () => takePhoto(docId) },
-                    { text: "Gallery", onPress: () => pickFromGallery(docId) },
+                    {
+                        text: "Gallery",
+                        onPress: () => {
+                            if (!libPerm.granted) {
+                                Alert.alert("Permission Required", "Please allow photo library access. Tap Gallery again.");
+                            } else {
+                                pickFromGallery(docId);
+                            }
+                        }
+                    },
                     { text: "Cancel", style: "cancel" }
                 ]
             );
-            return;
-        }
-
-        if (!result.canceled) {
-            uploadToCloudinary(docId, result.assets[0].uri);
         }
     };
 

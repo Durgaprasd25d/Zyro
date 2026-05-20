@@ -3,7 +3,10 @@
     <item name="android:enforceNavigationBarContrast" tools:targetApi="29">true</item>
     <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
     <item name="colorPrimary">@color/colorPrimary</item>
-    <item name="android:statusBarColor">#ffffff</item>
+    <!-- android:statusBarColor is deprecated in Android 15 (API 35).
+         Status bar and navigation bar colors are managed by React Native's
+         StatusBar component at runtime. Do NOT set them as static theme attributes. -->
+    <item name="android:windowLightStatusBar" tools:targetApi="23">true</item>
   </style>
   <style name="Theme.App.SplashScreen" parent="AppTheme">
     <item name="android:windowBackground">@drawable/ic_launcher_background</item>
