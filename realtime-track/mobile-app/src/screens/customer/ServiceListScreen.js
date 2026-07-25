@@ -8,10 +8,12 @@ import {
     ActivityIndicator,
     StatusBar,
     Platform,
+    Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import config from '../../constants/config';
+import { DESIGN_COLORS as C } from '../../constants/designSystem';
 
 // Uber-Inspired Clean Palette (matching HomeScreen)
 const COLORS = {
@@ -25,6 +27,28 @@ const COLORS = {
     accent: '#06c167',
     blue: '#276ef1',
     card: '#ffffff',
+};
+
+// Dynamic Service Image Mapping matching the exact backend seeded services
+const SERVICE_IMAGES = {
+    'gas leak fix': require('../../../assets/gas_leak_fix.png'),
+    'cooling issue': require('../../../assets/cooling_issue.png'),
+    'deep cleaning': require('../../../assets/deep_cleaning.png'),
+    'standard checkup': require('../../../assets/standard_checkup.png'),
+    'unit installation': require('../../../assets/unit_installation.png'),
+    'fast repair': require('../../../assets/fast_repair.png'),
+};
+
+const getServiceImage = (name) => {
+    if (!name) return SERVICE_IMAGES['standard checkup'];
+    const normalized = name.toLowerCase().trim();
+    if (normalized.includes('gas') || normalized.includes('leak')) return SERVICE_IMAGES['gas leak fix'];
+    if (normalized.includes('cooling') || normalized.includes('issue') || normalized.includes('cool')) return SERVICE_IMAGES['cooling issue'];
+    if (normalized.includes('deep') || normalized.includes('clean') || normalized.includes('chemical')) return SERVICE_IMAGES['deep cleaning'];
+    if (normalized.includes('checkup') || normalized.includes('standard') || normalized.includes('maintenance')) return SERVICE_IMAGES['standard checkup'];
+    if (normalized.includes('installation') || normalized.includes('unit') || normalized.includes('install')) return SERVICE_IMAGES['unit installation'];
+    if (normalized.includes('fast') || normalized.includes('emergency') || normalized.includes('repair')) return SERVICE_IMAGES['fast repair'];
+    return SERVICE_IMAGES['standard checkup'];
 };
 
 export default function ServiceListScreen({ route, navigation }) {
@@ -57,9 +81,11 @@ export default function ServiceListScreen({ route, navigation }) {
             onPress={() => navigation.navigate('ServiceDetail', { service: item })}
         >
             <View style={styles.serviceCardContent}>
-                <View style={styles.serviceIconBox}>
-                    <Ionicons name="construct-outline" size={28} color={COLORS.black} />
-                </View>
+                <Image
+                    source={getServiceImage(item.name)}
+                    style={styles.serviceThumbnail}
+                    resizeMode="cover"
+                />
 
                 <View style={styles.serviceInfo}>
                     <Text style={styles.serviceName}>{item.name}</Text>
@@ -75,7 +101,7 @@ export default function ServiceListScreen({ route, navigation }) {
                         <View style={styles.metaDivider} />
                         <View style={styles.metaItem}>
                             <Ionicons name="star" size={14} color="#f59e0b" />
-                            <Text style={styles.metaText}>4.8</Text>
+                            <Text style={styles.metaText}>4.9</Text>
                         </View>
                     </View>
                 </View>
@@ -83,7 +109,10 @@ export default function ServiceListScreen({ route, navigation }) {
                 <View style={styles.servicePriceSection}>
                     <Text style={styles.priceLabel}>from</Text>
                     <Text style={styles.priceValue}>₹{item.price || 0}</Text>
-                    <TouchableOpacity style={styles.bookButton}>
+                    <TouchableOpacity 
+                        style={styles.bookButton}
+                        onPress={() => navigation.navigate('ServiceDetail', { service: item })}
+                    >
                         <Ionicons name="chevron-forward" size={18} color={COLORS.white} />
                     </TouchableOpacity>
                 </View>
@@ -117,7 +146,7 @@ export default function ServiceListScreen({ route, navigation }) {
             {/* Content */}
             {loading ? (
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={COLORS.black} />
+                    <ActivityIndicator size="large" color={C.primary} />
                 </View>
             ) : services.length === 0 ? (
                 <View style={styles.emptyContainer}>
@@ -224,14 +253,12 @@ const styles = StyleSheet.create({
         padding: 16,
         alignItems: 'flex-start',
     },
-    serviceIconBox: {
+    serviceThumbnail: {
         width: 56,
         height: 56,
-        borderRadius: 28,
-        backgroundColor: COLORS.background,
-        justifyContent: 'center',
-        alignItems: 'center',
+        borderRadius: 12,
         marginRight: 16,
+        backgroundColor: COLORS.background,
     },
     serviceInfo: {
         flex: 1,
@@ -287,7 +314,7 @@ const styles = StyleSheet.create({
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: COLORS.black,
+        backgroundColor: C.primary,
         justifyContent: 'center',
         alignItems: 'center',
     },

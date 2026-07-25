@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import * as Updates from 'expo-updates';
 import { View, ActivityIndicator, Alert, Platform, UIManager } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -15,6 +15,8 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 import config from './src/constants/config';
 import AuthScreen from './src/screens/AuthScreen';
 import SplashScreen from './src/screens/SplashScreen';
+import SplashScreen2 from './src/screens/SplashScreen2';
+import SplashScreen3 from './src/screens/SplashScreen3';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 
 // Customer Screens
@@ -154,28 +156,41 @@ export default function App() {
         );
     }
 
+    // Dark nav theme — prevents white flash between screens
+    const NavTheme = {
+        ...DarkTheme,
+        colors: {
+            ...DarkTheme.colors,
+            background: '#131313',
+            card:       '#131313',
+        },
+    };
+
     return (
         <SafeAreaProvider>
             <GestureHandlerRootView style={{ flex: 1 }}>
-                <NavigationContainer>
+                <NavigationContainer theme={NavTheme}>
                     <Stack.Navigator
                         initialRouteName={
                             !userToken ? (hasSeenOnboarding ? "Auth" : "Splash") :
                                 userRole === 'technician' ? "TechnicianDashboard" : "Home"
                         }
                         screenOptions={{
+                            // Dark card background globally — no white flash on any transition
+                            cardStyle: { backgroundColor: '#131313' },
                             headerStyle: {
-                                backgroundColor: COLORS.white,
+                                backgroundColor: COLORS.surface || '#131313',
                                 elevation: 0,
                                 shadowOpacity: 0,
                                 borderBottomWidth: 1,
-                                borderBottomColor: COLORS.greyLight,
+                                borderBottomColor: COLORS.outlineVariant || '#50443f',
                             },
-                            headerTintColor: COLORS.black,
+                            headerTintColor: COLORS.onSurface || '#e5e2e1',
                             headerTitleStyle: {
                                 fontWeight: 'bold',
                                 fontSize: 16,
                                 letterSpacing: 1,
+                                color: COLORS.onSurface || '#e5e2e1',
                             },
                             headerBackTitleVisible: false,
                             headerTitleAlign: 'center',
@@ -184,7 +199,29 @@ export default function App() {
                         <Stack.Screen
                             name="Splash"
                             component={SplashScreen}
-                            options={{ headerShown: false }}
+                            options={{
+                                headerShown: false,
+                                animationEnabled: false,  // our own crossfade handles it
+                                cardStyle: { backgroundColor: '#131313' },
+                            }}
+                        />
+                        <Stack.Screen
+                            name="Splash2"
+                            component={SplashScreen2}
+                            options={{
+                                headerShown: false,
+                                animationEnabled: false,
+                                cardStyle: { backgroundColor: '#131313' },
+                            }}
+                        />
+                        <Stack.Screen
+                            name="Splash3"
+                            component={SplashScreen3}
+                            options={{
+                                headerShown: false,
+                                animationEnabled: false,
+                                cardStyle: { backgroundColor: '#131313' },
+                            }}
                         />
                         <Stack.Screen
                             name="Onboarding"

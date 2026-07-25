@@ -1,118 +1,97 @@
+/**
+ * theme.js — Legacy re-export shim
+ *
+ * All new code should import from `designSystem.js` directly.
+ * This file re-exports from the design system so existing screens
+ * that import { COLORS, SPACING, SHADOWS } from './theme' continue to work.
+ */
+
+import DS, {
+    DESIGN_COLORS,
+    DESIGN_SPACING,
+    DESIGN_SHADOWS,
+    DESIGN_RADIUS,
+    DESIGN_TYPOGRAPHY,
+    DESIGN_GRADIENTS,
+} from './designSystem';
+
+// ── Backward-compatible COLORS (merges old keys + new tokens) ──
 export const COLORS = {
-    // Premium Rose Gold Palette (Customer)
-    roseGold: '#B76E79', // Base
-    roseGoldLight: '#E5B2B9', // Soft
-    roseGoldDark: '#8D5159', // Deep
-    roseGoldMuted: '#C9A9A6', // Subtle
-    roseGoldGradient: ['#E5B2B9', '#B76E79'], // Main Gradient
+    // ─── New Design System Tokens ───
+    ...DESIGN_COLORS,
 
-    // Technician Theme Colors
-    technicianPrimary: '#8D5159', // Deep Rose
-    technicianAccent: '#C9A9A6',  // Muted Rose
-    technicianDark: '#5A3D42',    // Dark Brown
-    technicianLight: '#F5E6E8',   // Very light rose
-    technicianBg: '#FFF9F9',      // Almost white with rose tint
+    // ─── Legacy Aliases (kept so old screens don't break) ───
+    roseGold:           DESIGN_COLORS.primary,
+    roseGoldLight:      DESIGN_COLORS.primaryFixed,
+    roseGoldDark:       DESIGN_COLORS.inversePrimary,
+    roseGoldMuted:      DESIGN_COLORS.primaryContainer,
+    roseGoldGradient:   DESIGN_GRADIENTS.primaryAccent,
 
-    // Metallic / Gold accents
-    gold: '#D4AF37',
-    copper: '#B87333',
+    technicianPrimary:  DESIGN_COLORS.primary,
+    technicianAccent:   DESIGN_COLORS.primaryContainer,
+    technicianDark:     DESIGN_COLORS.onPrimary,
+    technicianLight:    DESIGN_COLORS.primaryFixed,
+    technicianBg:       DESIGN_COLORS.surfaceContainerLow,
 
-    // Support Colors
-    navy: '#1A237E',
-    white: '#FFFFFF',
-    black: '#121212',
-    grey: '#757575',
-    greyLight: '#F5F5F5',
-    greyMedium: '#E0E0E0',
+    gold:               DESIGN_COLORS.primaryFixed,
+    copper:             DESIGN_COLORS.primary,
 
-    // Semantic Colors
-    success: '#4CAF50',
-    earningsGreen: '#4CAF50',
-    error: '#F44336',
-    warning: '#FFC107',
-    warningAmber: '#FFA726',
-    info: '#2196F3',
+    navy:               '#1A237E',
+    white:              DESIGN_COLORS.onSurface,
+    black:              DESIGN_COLORS.background,
+    grey:               DESIGN_COLORS.outline,
+    greyLight:          DESIGN_COLORS.surfaceContainerHighest,
+    greyMedium:         DESIGN_COLORS.outlineVariant,
 
-    // Backgrounds
-    background: '#FFFFFF',
-    card: '#FFFFFF',
-    primaryBg: '#FFF5F6', // Very light rose tint
-    secondaryBg: '#F8F9FA',
-    overlay: 'rgba(0, 0, 0, 0.4)',
+    success:            DESIGN_COLORS.success,
+    earningsGreen:      DESIGN_COLORS.success,
+    error:              DESIGN_COLORS.error,
+    warning:            DESIGN_COLORS.warning,
+    warningAmber:       DESIGN_COLORS.warning,
+    info:               DESIGN_COLORS.info,
 
-    // Premium Slate & Indigo Palette (New Redesign)
-    slate: '#0f172a',
-    slateLight: '#1e293b',
-    indigo: '#4f46e5',
-    violet: '#7c3aed',
-    premiumBg: '#f8fafc',
-    textMain: '#1e293b',
-    textMuted: '#64748b',
-    borderLight: '#f1f5f9',
+    background:         DESIGN_COLORS.background,
+    card:               DESIGN_COLORS.surfaceContainerLow,
+    primaryBg:          DESIGN_COLORS.surfaceContainerLowest,
+    secondaryBg:        DESIGN_COLORS.surfaceContainer,
+    overlay:            DESIGN_COLORS.overlay,
 
-    // Black & White Theme
-    bw_black: '#000000',
-    bw_white: '#FFFFFF',
-    bw_grey: '#1a1a1a',
-    bw_greyLight: '#f2f2f2',
-    bw_greyMedium: '#d1d1d1',
-    bw_border: '#e5e5e5',
+    // Kept but redirected
+    slate:              DESIGN_COLORS.surfaceContainerHighest,
+    slateLight:         DESIGN_COLORS.surfaceContainerHigh,
+    indigo:             '#4f46e5',
+    violet:             '#7c3aed',
+    premiumBg:          DESIGN_COLORS.surfaceContainerLow,
+    textMain:           DESIGN_COLORS.onSurface,
+    textMuted:          DESIGN_COLORS.onSurfaceVariant,
+    borderLight:        DESIGN_COLORS.outlineVariant,
+
+    bw_black:           DESIGN_COLORS.background,
+    bw_white:           DESIGN_COLORS.onSurface,
+    bw_grey:            DESIGN_COLORS.surfaceContainerHigh,
+    bw_greyLight:       DESIGN_COLORS.surfaceContainerHighest,
+    bw_greyMedium:      DESIGN_COLORS.outlineVariant,
+    bw_border:          DESIGN_COLORS.outline,
 };
 
-
-export const SPACING = {
-    xs: 4,
-    sm: 8,
-    md: 16,
-    lg: 24,
-    xl: 32,
-    xxl: 40,
-    header: 60,
+export const SPACING = DESIGN_SPACING;
+export const FONTS   = {
+    regular: 'Outfit_300Light',
+    medium:  'Outfit_500Medium',
+    bold:    'Outfit_600SemiBold',
+    heavy:   'Outfit_600SemiBold',
 };
-
-export const FONTS = {
-    regular: 'System',
-    medium: 'System',
-    bold: 'System',
-    heavy: 'System',
-};
-
-export const SHADOWS = {
-    none: { elevation: 0, shadowOpacity: 0 },
-    light: {
-        shadowColor: "#64748b",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 2,
-    },
-    medium: {
-        shadowColor: "#64748b",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-        elevation: 5,
-    },
-    small: {
-        shadowColor: "#64748b",
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 1,
-    },
-    heavy: {
-        shadowColor: "#0f172a",
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.2,
-        shadowRadius: 12,
-        elevation: 10,
-    }
-};
-
+export const SHADOWS    = DESIGN_SHADOWS;
+export const RADIUS     = DESIGN_RADIUS;
+export const TYPOGRAPHY = DESIGN_TYPOGRAPHY;
+export const GRADIENTS  = DESIGN_GRADIENTS;
 
 export default {
     COLORS,
     SPACING,
     FONTS,
     SHADOWS,
+    RADIUS,
+    TYPOGRAPHY,
+    GRADIENTS,
 };

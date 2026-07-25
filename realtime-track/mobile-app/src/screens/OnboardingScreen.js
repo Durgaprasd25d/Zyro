@@ -1,51 +1,35 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    Dimensions,
-    TouchableOpacity,
-    Image,
+    View, Text, StyleSheet, Dimensions, TouchableOpacity, Image,
 } from 'react-native';
 import Animated, {
-    useSharedValue,
-    useAnimatedStyle,
-    withSpring,
-    withTiming,
-    withDelay,
-    interpolate,
-    Extrapolate,
-    interpolateColor,
-    runOnJS,
-    withSequence,
-    withRepeat,
-    FadeInDown,
-    FadeInUp,
+    useSharedValue, useAnimatedStyle, withSpring, withTiming,
+    withDelay, interpolate, runOnJS, withSequence, withRepeat,
+    FadeInDown, FadeInUp,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { COLORS, SPACING, SHADOWS } from '../constants/theme';
 import { PanGestureHandler } from 'react-native-gesture-handler';
+import { DESIGN_COLORS as C, DESIGN_SPACING as SP, DESIGN_TYPOGRAPHY as TY } from '../constants/designSystem';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
+// ─── Step 1: Tap to Book ────────────────────────────────────────────────────
 const InteractiveStep1 = ({ onComplete }) => {
-    const scale = useSharedValue(1);
+    const scale       = useSharedValue(1);
     const rippleScale = useSharedValue(1);
-    const rippleOpacity = useSharedValue(0.5);
-    const isFound = useSharedValue(0);
+    const rippleOp    = useSharedValue(0.6);
+    const isFound     = useSharedValue(0);
 
     const handlePress = () => {
-        scale.value = withSequence(withTiming(0.8, { duration: 100 }), withSpring(1));
-        rippleScale.value = withTiming(4, { duration: 1000 });
-        rippleOpacity.value = withTiming(0, { duration: 1000 }, () => {
+        scale.value     = withSequence(withTiming(0.8, { duration: 100 }), withSpring(1));
+        rippleScale.value = withTiming(4, { duration: 900 });
+        rippleOp.value    = withTiming(0, { duration: 900 }, () => {
             rippleScale.value = 1;
-            rippleOpacity.value = 0.5;
+            rippleOp.value    = 0.6;
         });
-
-        // Simulate finding a service
         setTimeout(() => {
             isFound.value = withSpring(1);
             setTimeout(onComplete, 1500);
@@ -56,11 +40,11 @@ const InteractiveStep1 = ({ onComplete }) => {
         transform: [{ scale: isFound.value }, { translateY: interpolate(isFound.value, [0, 1], [50, 0]) }],
         opacity: isFound.value,
     }));
-
     const rippleStyle = useAnimatedStyle(() => ({
         transform: [{ scale: rippleScale.value }],
-        opacity: rippleOpacity.value,
+        opacity: rippleOp.value,
     }));
+    const btnStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
     return (
         <View style={styles.stepContainer}>
@@ -68,25 +52,51 @@ const InteractiveStep1 = ({ onComplete }) => {
             <Text style={styles.stepSubtitle}>Find the best AC experts near you in seconds.</Text>
 
             <View style={styles.interactiveArea}>
-                <Animated.View style={[styles.acFoundContainer, acStyle]}>
-                    <Image source={require('../../assets/onboarding/ac_service_bw.png')} style={styles.acImage} resizeMode="contain" />
-                    <View style={styles.foundBadge}>
-                        <Ionicons name="checkmark-circle" size={24} color="#000000" />
-                        <Text style={styles.foundText}>Expert Assigned!</Text>
-                    </View>
+                <Animated.View style={[styles.bookingSuccessCard, acStyle]}>
+                    <LinearGradient
+                        colors={[C.surfaceContainerHigh, C.surfaceContainerLowest]}
+                        style={styles.bookingCardInner}
+                        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                    >
+                        <View style={styles.successIconCircle}>
+                            <Ionicons name="shield-checkmark" size={38} color={C.primary} />
+                        </View>
+                        <Text style={styles.successCardTitle}>EXPERT MATCHED</Text>
+                        <Text style={styles.successCardDesc}>Your booking is confirmed with a premium technician.</Text>
+                        
+                        <View style={styles.badgeRow}>
+                            <View style={styles.miniBadge}>
+                                <Ionicons name="star" size={12} color={C.primary} style={{ marginRight: 4 }} />
+                                <Text style={styles.miniBadgeText}>4.9/5 Rated</Text>
+                            </View>
+                            <View style={styles.miniBadge}>
+                                <Ionicons name="flash" size={12} color={C.primary} style={{ marginRight: 4 }} />
+                                <Text style={styles.miniBadgeText}>Fast Arrival</Text>
+                            </View>
+                        </View>
+                    </LinearGradient>
                 </Animated.View>
 
-                <TouchableOpacity activeOpacity={0.8} onPress={handlePress} style={styles.pulseButton}>
-                    <Animated.View style={[styles.ripple, rippleStyle]} />
-                    <View style={styles.pulseInner}>
-                        <Ionicons name="search" size={32} color="white" />
-                    </View>
+                <TouchableOpacity activeOpacity={0.9} onPress={handlePress}>
+                    <Animated.View style={[styles.pulseButton, btnStyle]}>
+                        <Animated.View style={[styles.ripple, rippleStyle]} />
+                        <LinearGradient
+                            colors={[C.primary, C.onPrimary]}
+                            style={styles.pulseInner}
+                            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                        >
+                            <Ionicons name="search" size={30} color={C.onSurface} />
+                        </LinearGradient>
+                    </Animated.View>
                 </TouchableOpacity>
+
+                <Text style={styles.tapHint}>Tap to find an expert</Text>
             </View>
         </View>
     );
 };
 
+// ─── Step 2: Live Tracking ──────────────────────────────────────────────────
 const InteractiveStep2 = ({ onComplete }) => {
     const progress = useSharedValue(0);
     const [arrived, setArrived] = useState(false);
@@ -94,25 +104,9 @@ const InteractiveStep2 = ({ onComplete }) => {
     const handleSlider = (val) => {
         if (!arrived) {
             progress.value = val;
-            if (val > 0.98) {
-                runOnJS(setArrived)(true);
-            }
+            if (val > 0.98) runOnJS(setArrived)(true);
         }
     };
-
-    const techStyle = useAnimatedStyle(() => {
-        const x = interpolate(progress.value, [0, 1], [-width * 0.3, width * 0.35]);
-        const y = interpolate(progress.value, [0, 0.5, 1], [0, -30, 0]);
-        const rotate = interpolate(progress.value, [0, 0.2, 0.5, 0.8, 1], [10, 0, -10, 0, 10]);
-
-        return {
-            transform: [{ translateX: x }, { translateY: y }, { rotate: `${rotate}deg` }],
-        };
-    });
-
-    const pathStyle = useAnimatedStyle(() => ({
-        width: interpolate(progress.value, [0, 1], [0, width * 0.65]),
-    }));
 
     const thumbStyle = useAnimatedStyle(() => ({
         left: interpolate(progress.value, [0, 1], [0, 240]),
@@ -121,45 +115,68 @@ const InteractiveStep2 = ({ onComplete }) => {
     return (
         <View style={styles.stepContainer}>
             <Text style={styles.stepTitle}>Live Tracking</Text>
-            <Text style={styles.stepSubtitle}>Slide to see how easy it is to track your Zyro expert.</Text>
+            <Text style={styles.stepSubtitle}>Slide to track your expert's live journey to your location.</Text>
 
             <View style={styles.interactiveArea}>
-                <View style={styles.mapContainer}>
-                    <View style={styles.linePath} />
-                    <Animated.View style={[styles.lineActive, pathStyle]} />
+                <View style={styles.simpleStatusCard}>
+                    <View style={styles.radarContainer}>
+                        <Ionicons name="location" size={32} color={C.primary} />
+                        <View style={styles.radarPulse} />
+                    </View>
 
-                    <Animated.View style={[styles.techIcon, techStyle]}>
-                        <Image source={require('../../assets/onboarding/tech.png')} style={styles.techImage} resizeMode="contain" />
-                        {arrived && (
-                            <Animated.View entering={FadeInUp.springify()} style={styles.tagBadge}>
-                                <Text style={styles.tagText}>ARRIVED</Text>
-                            </Animated.View>
-                        )}
-                    </Animated.View>
+                    <Text style={styles.statusTitle}>
+                        {arrived ? 'Expert has Arrived!' : 'Technician in Transit'}
+                    </Text>
+                    
+                    <Text style={styles.statusDesc}>
+                        {arrived
+                            ? 'Your technician is at your doorstep. Tap next to review billing.'
+                            : 'Background-checked Zyro partner is moving towards your house with premium tools.'}
+                    </Text>
 
-                    <View style={styles.homeIcon}>
-                        <Ionicons name="home" size={40} color="#000000" />
-                        <Text style={styles.homeLabel}>LOCATION</Text>
+                    <View style={styles.timeline}>
+                        <View style={styles.timelineRow}>
+                            <Ionicons name="checkmark-circle" size={18} color={C.primary} />
+                            <Text style={styles.timelineTextDone}>Booking Confirmed</Text>
+                        </View>
+                        <View style={styles.timelineConnectorDone} />
+                        <View style={styles.timelineRow}>
+                            <Ionicons name="checkmark-circle" size={18} color={C.primary} />
+                            <Text style={styles.timelineTextDone}>Expert Dispatched</Text>
+                        </View>
+                        <View style={styles.timelineConnectorActive} />
+                        <View style={styles.timelineRow}>
+                            <Ionicons 
+                                name={arrived ? "checkmark-circle" : "radio-button-on"} 
+                                size={18} 
+                                color={arrived ? C.primary : C.outline} 
+                            />
+                            <Text style={arrived ? styles.timelineTextDone : styles.timelineTextPending}>
+                                Arrived at Doorstep
+                            </Text>
+                        </View>
                     </View>
                 </View>
 
                 {!arrived ? (
                     <View style={styles.sliderTray}>
-                        <PanGestureHandler onGestureEvent={(e) => handleSlider(Math.max(0, Math.min(1, e.nativeEvent.x / 300)))}>
+                        <PanGestureHandler onGestureEvent={(e) =>
+                            handleSlider(Math.max(0, Math.min(1, e.nativeEvent.x / 300)))
+                        }>
                             <View style={styles.sliderTrack}>
                                 <Animated.View style={[styles.sliderThumb, thumbStyle]}>
-                                    <Ionicons name="chevron-forward" size={24} color="white" />
+                                    <Ionicons name="chevron-forward" size={22} color={C.onPrimary} />
                                 </Animated.View>
                                 <Text style={styles.sliderText}>Slide to track expert</Text>
                             </View>
                         </PanGestureHandler>
                     </View>
                 ) : (
-                    <TouchableOpacity style={styles.continueBtn} onPress={onComplete}>
-                        <View style={styles.btnGradient}>
+                    <TouchableOpacity style={styles.continueBtn} onPress={onComplete} activeOpacity={0.85}>
+                        <LinearGradient colors={[C.primary, C.primaryContainer]} style={styles.btnGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
                             <Text style={styles.btnText}>NEXT STEP</Text>
-                            <Ionicons name="arrow-forward" size={20} color="white" />
-                        </View>
+                            <Ionicons name="arrow-forward" size={18} color={C.onPrimary} />
+                        </LinearGradient>
                     </TouchableOpacity>
                 )}
             </View>
@@ -167,94 +184,15 @@ const InteractiveStep2 = ({ onComplete }) => {
     );
 };
 
-const InteractiveStep3 = ({ onComplete }) => {
-    const shineProgress = useSharedValue(-1);
 
-    React.useEffect(() => {
-        shineProgress.value = withRepeat(withTiming(1, { duration: 1500 }), -1, false);
-    }, []);
 
-    const shineStyle = useAnimatedStyle(() => ({
-        transform: [{ translateX: interpolate(shineProgress.value, [-1, 1], [-width, width]) }],
-    }));
-
-    return (
-        <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>Zyro Billing</Text>
-            <Text style={styles.stepSubtitle}>Premium service meets honest prices. No hidden fees.</Text>
-
-            <View style={styles.interactiveArea}>
-                <View style={styles.receiptStack}>
-                    <View style={[styles.receiptCard, styles.receiptCardBack]} />
-                    <Animated.View entering={FadeInDown.delay(300).springify()} style={styles.receiptCard}>
-                        <View style={styles.receiptHeader}>
-                            <Logo size={40} />
-                            <View>
-                                <Text style={styles.receiptId}>ZY-9831</Text>
-                                <Text style={styles.receiptDate}>30 MAR 2026</Text>
-                            </View>
-                        </View>
-
-                        <View style={styles.divider} />
-
-                        <Animated.View entering={FadeInDown.delay(600)} style={styles.receiptRow}>
-                            <Text style={styles.itemLabel}>Premium AC Service</Text>
-                            <Text style={styles.itemValue}>₹1,299</Text>
-                        </Animated.View>
-
-                        <Animated.View entering={FadeInDown.delay(800)} style={styles.receiptRow}>
-                            <Text style={styles.itemLabel}>Platform Fee</Text>
-                            <Text style={styles.itemValue}>₹49</Text>
-                        </Animated.View>
-
-                        <Animated.View entering={FadeInDown.delay(1000)} style={styles.receiptRow}>
-                            <Text style={styles.itemLabel}>GST (18%)</Text>
-                            <Text style={styles.itemValue}>₹242.64</Text>
-                        </Animated.View>
-
-                        <View style={styles.dashedDivider} />
-
-                        <Animated.View entering={FadeInDown.delay(1200)} style={styles.totalRow}>
-                            <Text style={styles.totalLabel}>Total</Text>
-                            <Text style={styles.totalValue}>₹1,590.64</Text>
-                        </Animated.View>
-
-                        <View style={styles.paymentBadgeContainer}>
-                            <View style={styles.paymentBadge}>
-                                <Ionicons name="checkmark-shield" size={18} color="white" />
-                                <Text style={styles.paymentStatusText}>PAYMENT SECURED</Text>
-                                <Animated.View style={[styles.shineOverlay, shineStyle]} />
-                            </View>
-                        </View>
-                    </Animated.View>
-                </View>
-
-                <TouchableOpacity style={styles.getStartedBtn} onPress={onComplete}>
-                    <View style={styles.btnGradient}>
-                        <Text style={styles.btnText}>GET STARTED</Text>
-                        <Ionicons name="sparkles" size={20} color="white" />
-                    </View>
-                </TouchableOpacity>
-            </View>
-        </View>
-    );
-};
-
-const Logo = ({ size = 60 }) => (
-    <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }}>
-        <Ionicons name="wind" size={size * 0.8} color="#000000" />
-    </View>
-);
-
+// ─── Main Onboarding ────────────────────────────────────────────────────────
 export default function OnboardingScreen({ navigation }) {
     const [step, setStep] = useState(0);
 
     const nextStep = () => {
-        if (step < 2) {
-            setStep(step + 1);
-        } else {
-            finish();
-        }
+        if (step < 1) setStep(step + 1);
+        else finish();
     };
 
     const finish = async () => {
@@ -264,77 +202,64 @@ export default function OnboardingScreen({ navigation }) {
 
     return (
         <View style={styles.container}>
-            <View style={styles.mainContent}>
-                <SafeAreaView style={{ flex: 1 }}>
-                    <View style={styles.header}>
-                        <View style={styles.progressBar}>
-                            {[0, 1, 2].map(i => (
-                                <View key={i} style={[styles.progressSegment, i <= step && styles.activeSegment]} />
-                            ))}
-                        </View>
-                        <TouchableOpacity onPress={finish}>
-                            <Text style={styles.skipText}>SKIP</Text>
-                        </TouchableOpacity>
+            {/* Subtle gradient at bottom */}
+            <LinearGradient
+                colors={['transparent', C.onPrimary + '22']}
+                style={StyleSheet.absoluteFillObject}
+                start={{ x: 0.5, y: 0.5 }} end={{ x: 0.5, y: 1 }}
+                pointerEvents="none"
+            />
+            <SafeAreaView style={{ flex: 1 }}>
+                {/* Header */}
+                <View style={styles.header}>
+                    <View style={styles.progressBar}>
+                        {[0, 1].map(i => (
+                            <View key={i} style={[styles.progressSegment, i <= step && styles.activeSegment]} />
+                        ))}
                     </View>
+                    <TouchableOpacity onPress={finish} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                        <Text style={styles.skipText}>SKIP</Text>
+                    </TouchableOpacity>
+                </View>
 
-                    {step === 0 && <InteractiveStep1 onComplete={nextStep} />}
-                    {step === 1 && <InteractiveStep2 onComplete={nextStep} />}
-                    {step === 2 && <InteractiveStep3 onComplete={finish} />}
-                </SafeAreaView>
-            </View>
+                {step === 0 && <InteractiveStep1 onComplete={nextStep} />}
+                {step === 1 && <InteractiveStep2 onComplete={finish} />}
+            </SafeAreaView>
         </View>
     );
 }
 
+// ─── Styles ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#FFFFFF' },
-    mainContent: { flex: 1 },
+    container:       { flex: 1, backgroundColor: C.background },
     header: {
-        paddingHorizontal: SPACING.xl,
-        paddingTop: SPACING.md,
+        paddingHorizontal: SP.containerPaddingMobile,
+        paddingTop: SP.md,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
     },
-    progressBar: {
-        flexDirection: 'row',
-        gap: 8,
-        flex: 1,
-        marginRight: 40,
-    },
-    progressSegment: {
-        height: 4,
-        flex: 1,
-        backgroundColor: '#E0E0E0',
-        borderRadius: 2,
-    },
-    activeSegment: {
-        backgroundColor: '#000000',
-    },
-    skipText: {
-        color: '#000000',
-        fontWeight: 'bold',
-        fontSize: 14,
-        opacity: 0.5,
-    },
+    progressBar:     { flexDirection: 'row', gap: 6, flex: 1, marginRight: 32 },
+    progressSegment: { height: 3, flex: 1, backgroundColor: C.surfaceContainerHigh, borderRadius: 2 },
+    activeSegment:   { backgroundColor: C.primary },
+    skipText:        { ...TY.labelCaps, color: C.onSurfaceVariant, letterSpacing: 2 },
+
     stepContainer: {
         flex: 1,
         alignItems: 'center',
-        paddingTop: SPACING.xl,
-        paddingHorizontal: SPACING.xl,
+        paddingTop: SP.xl,
+        paddingHorizontal: SP.containerPaddingMobile,
     },
     stepTitle: {
-        fontSize: 36,
-        fontWeight: '900',
-        color: '#000000',
+        ...TY.headlineLgMobile,
+        color: C.onSurface,
         textAlign: 'center',
     },
     stepSubtitle: {
-        fontSize: 16,
-        color: '#757575',
+        ...TY.bodyMd,
+        color: C.onSurfaceVariant,
         textAlign: 'center',
         marginTop: 10,
-        lineHeight: 24,
     },
     interactiveArea: {
         flex: 1,
@@ -342,198 +267,182 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    pulseButton: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        justifyContent: 'center',
-        alignItems: 'center',
+    tapHint: {
+        ...TY.labelCaps,
+        color: C.outline,
+        marginTop: 16,
+        letterSpacing: 2,
     },
-    pulseInner: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        backgroundColor: '#000000',
-        justifyContent: 'center',
-        alignItems: 'center',
-        ...SHADOWS.medium,
-    },
+
+    // Step 1
+    pulseButton: { width: 100, height: 100, borderRadius: 50, justifyContent: 'center', alignItems: 'center' },
+    pulseInner:  { width: 100, height: 100, borderRadius: 50, justifyContent: 'center', alignItems: 'center',
+        shadowColor: C.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 10 },
     ripple: {
         position: 'absolute',
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        backgroundColor: '#000000',
-        borderWidth: 1,
-        borderColor: '#000000',
+        width: 100, height: 100, borderRadius: 50,
+        borderWidth: 2, borderColor: C.primary,
+        backgroundColor: 'transparent',
     },
-    acFoundContainer: {
+    bookingSuccessCard: {
         position: 'absolute',
-        top: 0,
-        alignItems: 'center',
-    },
-    acImage: { width: 280, height: 280 },
-    foundBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#FFF',
-        paddingHorizontal: 15,
-        paddingVertical: 10,
-        borderRadius: 25,
-        borderWidth: 1,
-        borderColor: '#f0f0f0',
-        ...SHADOWS.small,
-        marginTop: -20,
-    },
-    foundText: { marginLeft: 8, color: '#000000', fontWeight: '900', fontSize: 12 },
-    mapContainer: {
-        width: '100%',
-        height: 300,
-        backgroundColor: '#F8F9FA',
-        borderRadius: 24,
-        borderWidth: 1,
-        borderColor: '#eee',
-        justifyContent: 'center',
-        alignItems: 'center',
+        top: 20,
+        width: '90%',
+        borderRadius: 20,
         overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: C.outlineVariant,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.25,
+        shadowRadius: 12,
+        elevation: 8,
     },
-    linePath: {
-        position: 'absolute',
-        width: '60%',
-        height: 2,
-        backgroundColor: '#E0E0E0',
-        borderRadius: 1,
-    },
-    lineActive: {
-        position: 'absolute',
-        left: '20%',
-        height: 2,
-        backgroundColor: '#000000',
-        borderRadius: 1,
-    },
-    techIcon: {
-        position: 'absolute',
-        width: 90,
-        height: 90,
-        zIndex: 5,
-    },
-    techImage: { width: '100%', height: '100%' },
-    homeIcon: {
-        position: 'absolute',
-        right: '15%',
+    bookingCardInner: {
+        padding: 24,
         alignItems: 'center',
     },
-    homeLabel: { fontSize: 9, fontWeight: '900', color: '#000000', marginTop: 4, letterSpacing: 1 },
-    sliderTray: {
-        width: 300,
-        height: 64,
-        backgroundColor: '#F8F9FA',
-        borderRadius: 32,
-        borderWidth: 1,
-        borderColor: '#eee',
-        marginTop: 40,
+    successIconCircle: {
+        width: 68,
+        height: 68,
+        borderRadius: 34,
+        backgroundColor: C.onPrimary + '33',
         justifyContent: 'center',
-        paddingHorizontal: 6,
+        alignItems: 'center',
+        marginBottom: 16,
     },
-    sliderTrack: {
-        flex: 1,
+    successCardTitle: {
+        ...TY.labelCaps,
+        color: C.primary,
+        letterSpacing: 2,
+        fontSize: 14,
+        fontWeight: '700',
+    },
+    successCardDesc: {
+        ...TY.bodyMd,
+        color: C.onSurfaceVariant,
+        textAlign: 'center',
+        marginTop: 8,
+        lineHeight: 22,
+    },
+    badgeRow: {
+        flexDirection: 'row',
+        marginTop: 16,
+        gap: 12,
+    },
+    miniBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-    },
-    sliderThumb: {
-        width: 52,
-        height: 52,
-        borderRadius: 26,
-        backgroundColor: '#000000',
-        justifyContent: 'center',
-        alignItems: 'center',
-        ...SHADOWS.medium,
-    },
-    sliderText: {
-        position: 'absolute',
-        width: '100%',
-        textAlign: 'center',
-        fontSize: 13,
-        fontWeight: '600',
-        color: '#999',
-        zIndex: -1,
-    },
-    tagBadge: {
-        position: 'absolute',
-        top: -30,
-        backgroundColor: '#000000',
+        backgroundColor: C.surfaceContainerHighest,
         paddingHorizontal: 12,
         paddingVertical: 6,
-        borderRadius: 15,
-        ...SHADOWS.small,
-    },
-    tagText: { color: 'white', fontSize: 10, fontWeight: '900', letterSpacing: 1 },
-    continueBtn: {
-        width: '85%',
-        height: 60,
-        borderRadius: 30,
-        backgroundColor: '#000000',
-        marginTop: 40,
-        ...SHADOWS.medium,
-    },
-    receiptStack: {
-        width: width * 0.85,
-        height: 400,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    receiptCard: {
-        width: '100%',
-        backgroundColor: '#FFF',
-        borderRadius: 24,
-        padding: 30,
+        borderRadius: 12,
         borderWidth: 1,
-        borderColor: '#eee',
-        ...SHADOWS.medium,
-        zIndex: 2,
+        borderColor: C.outlineVariant,
     },
-    receiptCardBack: {
-        position: 'absolute',
-        width: '92%',
-        height: '100%',
-        backgroundColor: '#f5f5f5',
-        top: 15,
-        zIndex: 1,
+    miniBadgeText: {
+        fontSize: 11,
+        color: C.onSurface,
+        fontWeight: '600',
+    },
+
+    // Step 2
+    // Step 2
+    simpleStatusCard: {
+        width: '90%',
+        backgroundColor: C.surfaceContainerLowest,
         borderRadius: 24,
+        borderWidth: 1, borderColor: C.outlineVariant,
+        padding: 24,
+        alignItems: 'center',
+        shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 6,
     },
-    receiptHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
-    receiptId: { color: '#000000', fontSize: 12, fontWeight: '900', opacity: 0.5 },
-    receiptDate: { color: '#000000', fontSize: 10, opacity: 0.4 },
-    divider: { height: 1, backgroundColor: '#f0f0f0', marginVertical: 15 },
-    dashedDivider: { height: 1, borderWidth: 1, borderColor: '#eee', borderStyle: 'dashed', marginVertical: 20 },
-    receiptRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 },
-    itemLabel: { color: '#757575', fontSize: 14 },
-    itemValue: { color: '#000000', fontWeight: 'bold' },
-    totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    totalLabel: { fontWeight: '900', fontSize: 24, color: '#000000' },
-    totalValue: { fontWeight: '900', fontSize: 26, color: '#000000' },
-    paymentBadgeContainer: { marginTop: 30, borderRadius: 15, overflow: 'hidden', backgroundColor: '#000000' },
-    paymentBadge: {
+    radarContainer: {
+        width: 64, height: 64,
+        borderRadius: 32,
+        backgroundColor: C.onPrimary + '22',
+        justifyContent: 'center', alignItems: 'center',
+        marginBottom: 16,
+    },
+    radarPulse: {
+        position: 'absolute',
+        width: 64, height: 64,
+        borderRadius: 32,
+        borderWidth: 1.5, borderColor: C.primary,
+        opacity: 0.4,
+    },
+    statusTitle: {
+        ...TY.headlineSmMobile,
+        color: C.onSurface,
+        fontWeight: '800',
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    statusDesc: {
+        ...TY.bodyMd,
+        color: C.onSurfaceVariant,
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: 24,
+        paddingHorizontal: 8,
+    },
+    timeline: {
+        width: '100%',
+        paddingHorizontal: 16,
+    },
+    timelineRow: {
         flexDirection: 'row',
         alignItems: 'center',
+        gap: 12,
+    },
+    timelineTextDone: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: C.onSurface,
+    },
+    timelineTextPending: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: C.outline,
+    },
+    timelineConnectorDone: {
+        width: 2,
+        height: 20,
+        backgroundColor: C.primary,
+        marginLeft: 8,
+        marginVertical: 4,
+    },
+    timelineConnectorActive: {
+        width: 2,
+        height: 20,
+        backgroundColor: C.outlineVariant,
+        marginLeft: 8,
+        marginVertical: 4,
+    },
+    sliderTray: {
+        width: 300, height: 62,
+        backgroundColor: C.surfaceContainerHigh,
+        borderRadius: 31,
+        borderWidth: 1, borderColor: C.outlineVariant,
+        marginTop: 32,
         justifyContent: 'center',
-        padding: 16,
+        paddingHorizontal: 5,
     },
-    paymentStatusText: { color: 'white', fontWeight: '900', marginLeft: 10, fontSize: 12, letterSpacing: 2 },
-    shineOverlay: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        width: 150,
-        transform: [{ skewX: '-25deg' }],
+    sliderTrack:  { flex: 1, flexDirection: 'row', alignItems: 'center' },
+    sliderThumb:  {
+        width: 52, height: 52, borderRadius: 26,
+        backgroundColor: C.onPrimary,
+        justifyContent: 'center', alignItems: 'center',
+        shadowColor: C.primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6,
     },
-    getStartedBtn: {
-        width: '85%',
-        height: 64,
-        borderRadius: 32,
-        backgroundColor: '#000000',
-        marginTop: 40,
-        ...SHADOWS.medium,
+    sliderText: {
+        position: 'absolute', width: '100%',
+        textAlign: 'center', fontSize: 13,
+        fontWeight: '600', color: C.outline, zIndex: -1,
     },
-    btnGradient: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 15 },
-    btnText: { color: 'white', fontWeight: '900', fontSize: 18, letterSpacing: 1 },
+
+    // Buttons
+    continueBtn: { width: '85%', height: 56, borderRadius: 28, overflow: 'hidden', marginTop: 32, shadowColor: C.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8 },
+    btnGradient: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
+    btnText:     { color: C.onPrimary, fontWeight: '800', fontSize: 16, letterSpacing: 1.5 },
 });

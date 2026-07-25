@@ -56,7 +56,7 @@ router.post('/submit', async (req, res) => {
                 documents: {}
             };
         }
-        
+
         if (!technician.verification.documents) {
             technician.verification.documents = {};
         }
