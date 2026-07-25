@@ -11,62 +11,36 @@ import {
     Dimensions,
     Modal,
     TextInput,
-    ActivityIndicator
+    ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
 import config from '../../constants/config';
+import { DESIGN_COLORS as C, DESIGN_TYPOGRAPHY as TY } from '../../constants/designSystem';
+import BottomNavBar from '../../components/BottomNavBar';
 
-const { width, height } = Dimensions.get('window');
-
-// Uber-Inspired Clean Palette
-const COLORS = {
-    black: '#000000',
-    white: '#ffffff',
-    background: '#f7f7f7',
-    textPrimary: '#000000',
-    textSecondary: '#545454',
-    textTertiary: '#8a8a8a',
-    border: '#e0e0e0',
-    accent: '#06c167',
-    blue: '#276ef1',
-    card: '#ffffff',
-    red: '#e11d48',
-    greyLight: '#F3F3F3',
-    greyMedium: '#AFAFAF',
-};
+const { width } = Dimensions.get('window');
 
 export default function ProfileScreen({ navigation }) {
     const [user, setUser] = useState(null);
     const [showEditModal, setShowEditModal] = useState(false);
-    const [editForm, setEditForm] = useState({
-        name: '',
-        email: '',
-        mobile: ''
-    });
+    const [editForm, setEditForm] = useState({ name: '', email: '', mobile: '' });
     const [saving, setSaving] = useState(false);
 
-    const [addresses, setAddresses] = useState([]);
+    // Modals visibility state
     const [showAddressModal, setShowAddressModal] = useState(false);
     const [showHelpModal, setShowHelpModal] = useState(false);
     const [showSafetyModal, setShowSafetyModal] = useState(false);
     const [showLegalModal, setShowLegalModal] = useState(false);
-    const [loadingAddresses, setLoadingAddresses] = useState(false);
+
+    // Sub-modal states
+    const [addresses, setAddresses] = useState([]);
 
     useEffect(() => {
         loadUser();
-        const unsubscribe = navigation.addListener('focus', () => {
-            fetchAddresses();
-        });
-        return unsubscribe;
-    }, [navigation]);
-
-    useEffect(() => {
-        if (user) {
-            fetchAddresses();
-        }
-    }, [user]);
+        fetchAddresses();
+    }, []);
 
     const loadUser = async () => {
         const userData = await authService.getUser();
@@ -75,84 +49,60 @@ export default function ProfileScreen({ navigation }) {
             setEditForm({
                 name: userData.name || '',
                 email: userData.email || '',
-                mobile: userData.mobile || ''
+                mobile: userData.mobile || '',
             });
         }
     };
 
     const fetchAddresses = async () => {
-        if (!user) return;
-        setLoadingAddresses(true);
         try {
-            const response = await fetch(`${config.BACKEND_URL}/api/auth/addresses/${user.id || user._id}`);
-            const result = await response.json();
-            if (result.success) {
-                setAddresses(result.addresses);
-            }
-        } catch (error) {
-            console.error('Fetch addresses error:', error);
-        } finally {
-            setLoadingAddresses(false);
-        }
-    };
-
-    const handleDeleteAddress = async (addressId) => {
-        try {
-            const response = await fetch(`${config.BACKEND_URL}/api/auth/delete-address/${user.id || user._id}/${addressId}`, {
-                method: 'DELETE'
+            const userData = await authService.getUser();
+            const token = await authService.getToken();
+            if (!userData?._id) return;
+            const res = await fetch(`${config.BACKEND_URL}/api/auth/addresses/${userData._id}`, {
+                headers: { Authorization: `Bearer ${token}` }
             });
-            const result = await response.json();
-            if (result.success) {
-                setAddresses(result.addresses);
+            const data = await res.json();
+            if (data.success) {
+                setAddresses(data.addresses || []);
             }
-        } catch (error) {
-            Alert.alert('Error', 'Failed to delete address');
+        } catch (e) {
+            console.error('Fetch addresses error:', e);
         }
     };
 
     const handleEditProfile = () => {
-        setEditForm({
-            name: user?.name || '',
-            email: user?.email || '',
-            mobile: user?.mobile || ''
-        });
         setShowEditModal(true);
     };
 
     const handleSaveProfile = async () => {
         if (!editForm.name.trim()) {
-            Alert.alert('Error', 'Name cannot be empty');
+            Alert.alert('Required', 'Please enter your name');
             return;
         }
-
         setSaving(true);
         try {
-            const response = await fetch(`${config.BACKEND_URL}/api/auth/update-profile`, {
+            const token = await authService.getToken();
+            const userData = await authService.getUser();
+            const res = await fetch(`${config.BACKEND_URL}/api/auth/update-profile`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
                 },
-                body: JSON.stringify({
-                    userId: user.id || user._id,
-                    name: editForm.name,
-                    email: editForm.email
-                })
+                body: JSON.stringify({ userId: userData?._id, name: editForm.name, email: editForm.email })
             });
-
-            const result = await response.json();
-
-            if (result.success) {
-                const updatedUser = { ...user, ...editForm };
-                setUser(updatedUser);
-                await authService.setUser(updatedUser);
+            const data = await res.json();
+            if (data.success) {
+                await authService.setUser(data.user);
+                setUser(data.user);
                 setShowEditModal(false);
-                Alert.alert('Success', 'Profile updated successfully');
+                Alert.alert('Profile Updated', 'Your profile has been saved successfully!');
             } else {
-                Alert.alert('Error', result.message || 'Failed to update profile');
+                Alert.alert('Error', data.message || 'Failed to update profile');
             }
-        } catch (error) {
-            console.error('Update profile error:', error);
-            Alert.alert('Error', 'Failed to update profile. Please try again.');
+        } catch (e) {
+            Alert.alert('Error', 'Update error: ' + e.message);
         } finally {
             setSaving(false);
         }
@@ -160,94 +110,37 @@ export default function ProfileScreen({ navigation }) {
 
     const handleLogout = () => {
         Alert.alert(
-            "Logout",
-            "Are you sure you want to log out of your account?",
+            'Log Out',
+            'Are you sure you want to log out from Zyro?',
             [
-                { text: "Cancel", style: "cancel" },
+                { text: 'Cancel', style: 'cancel' },
                 {
-                    text: "Logout",
-                    style: "destructive",
+                    text: 'Log Out',
+                    style: 'destructive',
                     onPress: async () => {
                         await authService.logout();
-                        navigation.replace('Auth');
+                        navigation.reset({ index: 0, routes: [{ name: 'Auth' }] });
                     }
                 }
             ]
         );
     };
 
-    const [activeLegalTab, setActiveLegalTab] = useState(null); // 'terms', 'privacy', 'data', 'licenses'
-
-    const legalContent = {
-        terms: {
-            title: 'Terms of Service',
-            content: `Welcome to Realtime Track. By using our application, you agree to the following terms:
-
-1. USE OF SERVICE
-You must be 18+ to use this service. You are responsible for maintaining account confidentiality.
-
-2. SERVICE BOOKINGS
-Bookings are subject to technician availability. We reserve the right to cancel bookings for safety or policy violations.
-
-3. PAYMENTS
-Payments are processed via Razorpay. Cancellations after technician dispatch may incur a fee.
-
-4. LIABILITY
-Realtime Track is a platform connecting users with technicians. While we verify all technicians, we are not liable for individual conduct but will assist in dispute resolution.`
-        },
-        privacy: {
-            title: 'Privacy Policy',
-            content: `Your privacy is important to us.
-
-1. DATA COLLECTION
-We collect your name, mobile number, and email to manage your account.
-
-2. LOCATION DATA
-We collect real-time location data when the app is in use to provide tracking for your technician and ensure accurate service delivery.
-
-3. DATA SHARING
-We share your name and location with the assigned technician only during the active service window.`
-        },
-        data: {
-            title: 'Data Usage Policy',
-            content: `How we handle your data:
-
-1. SERVICE OPTIMIZATION
-Data is used to improve technician routing and reduce wait times.
-
-2. SECURITY
-Your data is encrypted and stored on secure servers. We do not sell your personal information to third parties.
-
-3. YOUR RIGHTS
-You can request account deletion at any time via the Help Center.`
-        },
-        licenses: {
-            title: 'Software Licenses',
-            content: `This application uses the following open-source software:
-
-• React Native (MIT License)
-• Mapbox Maps SDK (Custom License)
-• Socket.IO (MIT License)
-• Ionicons (MIT License)
-• Expo Modules (MIT License)
-
-Full license texts are available upon written request to our legal team.`
-        }
-    };
-
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
+            <StatusBar barStyle="light-content" backgroundColor="#0D0D0D" />
 
+            {/* Dark Theme Header */}
             <SafeAreaView edges={['top']} style={styles.header}>
                 <View style={styles.headerContent}>
                     <TouchableOpacity
                         style={styles.backButton}
-                        onPress={() => navigation.canGoBack() && navigation.goBack()}
+                        onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Home')}
+                        activeOpacity={0.7}
                     >
-                        <Ionicons name="arrow-back" size={24} color={COLORS.black} />
+                        <Ionicons name="chevron-back" size={24} color={C.onSurface} />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Account</Text>
+                    <Text style={styles.headerTitle}>Account & Profile</Text>
                     <View style={{ width: 40 }} />
                 </View>
             </SafeAreaView>
@@ -257,115 +150,145 @@ Full license texts are available upon written request to our legal team.`
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Profile Header */}
+                {/* Profile User Info Header */}
                 <View style={styles.profileSection}>
                     <View style={styles.avatar}>
                         <Text style={styles.avatarText}>{user?.name?.[0]?.toUpperCase() || 'U'}</Text>
                     </View>
                     <View style={styles.userInfo}>
-                        <Text style={styles.userName}>{user?.name || 'User'}</Text>
-                        <Text style={styles.userPhone}>{user?.mobile || '+91 00000 00000'}</Text>
+                        <Text style={styles.userName}>{user?.name || 'Customer'}</Text>
+                        <Text style={styles.userPhone}>{user?.mobile || '+91 98765 43210'}</Text>
                         <TouchableOpacity
                             style={styles.editBadge}
                             onPress={handleEditProfile}
+                            activeOpacity={0.8}
                         >
+                            <Ionicons name="pencil-outline" size={12} color={C.onPrimary} style={{ marginRight: 4 }} />
                             <Text style={styles.editBadgeText}>Edit Profile</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
 
-                {/* Payment Info Section */}
-                <View style={styles.paymentSection}>
-                    <Text style={styles.sectionLabel}>Payment Methods</Text>
+                {/* Payment Methods Section */}
+                <View style={styles.menuSection}>
+                    <Text style={styles.sectionLabel}>Payments & Security</Text>
                     <View style={styles.paymentCard}>
                         <View style={styles.paymentCardHeader}>
-                            <Ionicons name="shield-checkmark" size={20} color={COLORS.accent} />
-                            <Text style={styles.paymentSecureText}>Secure Payments via Razorpay</Text>
+                            <Ionicons name="shield-checkmark" size={18} color={C.primary} />
+                            <Text style={styles.paymentSecureText}>Razorpay SSL 256-Bit Protection</Text>
                         </View>
-                        <Text style={styles.paymentDesc}>We accept all major payment methods</Text>
-                        <View style={styles.paymentIcons}>
-                            <View style={styles.paymentTag}><Text style={styles.paymentTagText}>UPI</Text></View>
-                            <View style={styles.paymentTag}><Text style={styles.paymentTagText}>CARDS</Text></View>
-                            <View style={styles.paymentTag}><Text style={styles.paymentTagText}>NET BANKING</Text></View>
-                            <View style={styles.paymentTag}><Text style={styles.paymentTagText}>WALLETS</Text></View>
-                        </View>
+                        <Text style={styles.paymentDesc}>UPI • Cards • Net Banking • Cash on Service</Text>
                     </View>
                 </View>
 
-                {/* Menu Sections */}
+                {/* Account Preferences */}
                 <View style={styles.menuSection}>
                     <Text style={styles.sectionLabel}>Preferences</Text>
-                    <ProfileMenuItem 
-                        icon="location-outline" 
-                        label="Saved Addresses" 
-                        onPress={() => setShowAddressModal(true)} 
-                    />
-                    {/* <ProfileMenuItem icon="notifications-outline" label="Notifications" /> */}
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => setShowAddressModal(true)}
+                        activeOpacity={0.75}
+                    >
+                        <View style={styles.menuItemLeft}>
+                            <View style={styles.menuIconBox}>
+                                <Ionicons name="location-outline" size={20} color={C.primary} />
+                            </View>
+                            <Text style={styles.menuItemLabel}>Saved Addresses</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={C.onSurfaceVariant} />
+                    </TouchableOpacity>
                 </View>
 
+                {/* Support & Help Menu */}
                 <View style={styles.menuSection}>
-                    <Text style={styles.sectionLabel}>Support</Text>
-                    <ProfileMenuItem 
-                        icon="help-circle-outline" 
-                        label="Help Center" 
-                        onPress={() => setShowHelpModal(true)} 
-                    />
-                    <ProfileMenuItem 
-                        icon="shield-checkmark-outline" 
-                        label="Safety" 
-                        onPress={() => setShowSafetyModal(true)} 
-                    />
-                    <ProfileMenuItem 
-                        icon="information-circle-outline" 
-                        label="Legal" 
-                        onPress={() => setShowLegalModal(true)} 
-                    />
+                    <Text style={styles.sectionLabel}>Support & Safety</Text>
+                    
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => setShowHelpModal(true)}
+                        activeOpacity={0.75}
+                    >
+                        <View style={styles.menuItemLeft}>
+                            <View style={styles.menuIconBox}>
+                                <Ionicons name="help-circle-outline" size={20} color={C.primary} />
+                            </View>
+                            <Text style={styles.menuItemLabel}>Help Center</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={C.onSurfaceVariant} />
+                    </TouchableOpacity>
+
+
+
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => setShowSafetyModal(true)}
+                        activeOpacity={0.75}
+                    >
+                        <View style={styles.menuItemLeft}>
+                            <View style={styles.menuIconBox}>
+                                <Ionicons name="shield-checkmark-outline" size={20} color={C.primary} />
+                            </View>
+                            <Text style={styles.menuItemLabel}>Safety & Protection</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={C.onSurfaceVariant} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => setShowLegalModal(true)}
+                        activeOpacity={0.75}
+                    >
+                        <View style={styles.menuItemLeft}>
+                            <View style={styles.menuIconBox}>
+                                <Ionicons name="information-circle-outline" size={20} color={C.primary} />
+                            </View>
+                            <Text style={styles.menuItemLabel}>Terms & Privacy Policies</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={C.onSurfaceVariant} />
+                    </TouchableOpacity>
                 </View>
 
+                {/* Logout Action */}
                 <TouchableOpacity
                     style={styles.logoutButton}
                     onPress={handleLogout}
+                    activeOpacity={0.8}
                 >
-                    <Text style={styles.logoutButtonText}>Log Out</Text>
+                    <Ionicons name="log-out-outline" size={20} color="#E57373" />
+                    <Text style={styles.logoutButtonText}>Log Out Account</Text>
                 </TouchableOpacity>
 
-                <Text style={styles.versionText}>Version 1.2.0 (Build 24)</Text>
-                <View style={{ height: 40 }} />
+                <Text style={styles.versionText}>Zyro v1.2.0 • Premium Climate Control</Text>
+                <View style={{ height: 110 }} />
             </ScrollView>
 
-            {/* Address Modal */}
-            <Modal visible={showAddressModal} animationType="slide" transparent={true}>
+            <BottomNavBar navigation={navigation} activeTab="profile" />
+
+            {/* Saved Addresses Modal */}
+            <Modal visible={showAddressModal} animationType="slide" transparent={true} onRequestClose={() => setShowAddressModal(false)}>
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>Saved Addresses</Text>
-                            <TouchableOpacity onPress={() => setShowAddressModal(false)}>
-                                <Ionicons name="close" size={26} color={COLORS.black} />
+                            <TouchableOpacity onPress={() => setShowAddressModal(false)} style={styles.closeBtn}>
+                                <Ionicons name="close" size={24} color={C.onSurface} />
                             </TouchableOpacity>
                         </View>
                         <ScrollView style={styles.modalScroll}>
                             {addresses.length === 0 ? (
                                 <View style={styles.emptyState}>
-                                    <Ionicons name="location-outline" size={48} color={COLORS.textTertiary} />
+                                    <Ionicons name="location-outline" size={44} color={C.onSurfaceVariant} />
                                     <Text style={styles.emptyText}>No saved addresses yet</Text>
-                                    <Text style={styles.emptySubtext}>Addresses saved during booking will appear here</Text>
+                                    <Text style={styles.emptySubtext}>Addresses saved during booking appear here</Text>
                                 </View>
                             ) : (
                                 addresses.map((addr) => (
-                                    <View key={addr._id} style={styles.addressItem}>
-                                        <View style={styles.addressIcon}>
-                                            <Ionicons 
-                                                name={addr.label?.toLowerCase() === 'home' ? 'home-outline' : 'business-outline'} 
-                                                size={20} color={COLORS.black} 
-                                            />
-                                        </View>
-                                        <View style={styles.addressInfo}>
-                                            <Text style={styles.addressLabel}>{addr.label}</Text>
+                                    <View key={addr._id || addr.id} style={styles.addressItem}>
+                                        <Ionicons name="location" size={20} color={C.primary} />
+                                        <View style={{ flex: 1, marginHorizontal: 10 }}>
+                                            <Text style={styles.addressLabel}>{addr.label || 'Saved Location'}</Text>
                                             <Text style={styles.addressText} numberOfLines={2}>{addr.address}</Text>
                                         </View>
-                                        <TouchableOpacity onPress={() => handleDeleteAddress(addr._id)}>
-                                            <Ionicons name="trash-outline" size={20} color={COLORS.red} />
-                                        </TouchableOpacity>
                                     </View>
                                 ))
                             )}
@@ -375,146 +298,118 @@ Full license texts are available upon written request to our legal team.`
             </Modal>
 
             {/* Help Center Modal */}
-            <Modal visible={showHelpModal} animationType="fade" transparent={true}>
-                <View style={styles.fullModalOverlay}>
-                    <View style={styles.fullModalContainer}>
-                        <View style={styles.fullModalHeader}>
-                            <Text style={styles.fullModalTitle}>Help Center</Text>
-                            <TouchableOpacity onPress={() => setShowHelpModal(false)}>
-                                <Ionicons name="close" size={26} color={COLORS.black} />
-                            </TouchableOpacity>
-                        </View>
-                        <ScrollView style={styles.fullModalBody}>
-                            <HelpSection title="Common Questions" items={[
-                                { q: "How do I book a technician?", a: "Go to Home, select a service, and confirm your location." },
-                                { q: "Track my technician?", a: "Once assigned, you can track them in real-time on the map." },
-                                { q: "Payment issues?", a: "Refunds are processed within 5-7 business days." }
-                            ]} />
-                            <TouchableOpacity style={styles.contactBtn}>
-                                <Ionicons name="chatbubble-ellipses-outline" size={20} color={COLORS.white} />
-                                <Text style={styles.contactBtnText}>Chat with Support</Text>
-                            </TouchableOpacity>
-                        </ScrollView>
-                    </View>
-                </View>
-            </Modal>
-
-            {/* Safety Modal */}
-            <Modal visible={showSafetyModal} animationType="fade" transparent={true}>
-                <View style={styles.fullModalOverlay}>
-                    <View style={styles.fullModalContainer}>
-                        <View style={styles.fullModalHeader}>
-                            <Text style={styles.fullModalTitle}>Safety</Text>
-                            <TouchableOpacity onPress={() => setShowSafetyModal(false)}>
-                                <Ionicons name="close" size={26} color={COLORS.black} />
-                            </TouchableOpacity>
-                        </View>
-                        <ScrollView style={styles.fullModalBody}>
-                            <View style={styles.safetyCard}>
-                                <Ionicons name="shield-checkmark" size={40} color={COLORS.accent} />
-                                <Text style={styles.safetyTitle}>Your Safety is Priority</Text>
-                                <Text style={styles.safetyDesc}>All our technicians are background-verified and follow strict safety protocols.</Text>
-                            </View>
-                            <SafetyItem icon="call-outline" title="Emergency Contact" desc="Quickly call local authorities or our 24/7 safety line." />
-                            <SafetyItem icon="share-social-outline" title="Share Status" desc="Tell your family or friends where you are." />
-                        </ScrollView>
-                    </View>
-                </View>
-            </Modal>
-
-            {/* Legal Modal */}
-            <Modal visible={showLegalModal} animationType="fade" transparent={true}>
-                <View style={styles.fullModalOverlay}>
-                    <View style={styles.fullModalContainer}>
-                        <View style={styles.fullModalHeader}>
-                            {activeLegalTab ? (
-                                <TouchableOpacity onPress={() => setActiveLegalTab(null)} style={styles.backAction}>
-                                    <Ionicons name="arrow-back" size={24} color={COLORS.black} />
-                                </TouchableOpacity>
-                            ) : null}
-                            <Text style={styles.fullModalTitle}>{activeLegalTab ? legalContent[activeLegalTab].title : 'Legal'}</Text>
-                            <TouchableOpacity onPress={() => { setShowLegalModal(false); setActiveLegalTab(null); }}>
-                                <Ionicons name="close" size={26} color={COLORS.black} />
-                            </TouchableOpacity>
-                        </View>
-                        <ScrollView style={styles.fullModalBody}>
-                            {activeLegalTab ? (
-                                <View style={styles.legalDetail}>
-                                    <Text style={styles.legalDetailText}>{legalContent[activeLegalTab].content}</Text>
-                                </View>
-                            ) : (
-                                <>
-                                    <LegalItem title="Terms of Service" onPress={() => setActiveLegalTab('terms')} />
-                                    <LegalItem title="Privacy Policy" onPress={() => setActiveLegalTab('privacy')} />
-                                    <LegalItem title="Data Usage Policy" onPress={() => setActiveLegalTab('data')} />
-                                    <LegalItem title="Software Licenses" onPress={() => setActiveLegalTab('licenses')} />
-                                </>
-                            )}
-                        </ScrollView>
-                    </View>
-                </View>
-            </Modal>
-
-            {/* Edit Modal */}
-            <Modal
-                visible={showEditModal}
-                animationType="slide"
-                transparent={true}
-                onRequestClose={() => setShowEditModal(false)}
-            >
+            <Modal visible={showHelpModal} animationType="slide" transparent={true} onRequestClose={() => setShowHelpModal(false)}>
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Edit Profile</Text>
-                            <TouchableOpacity onPress={() => setShowEditModal(false)}>
-                                <Ionicons name="close" size={26} color={COLORS.black} />
+                            <Text style={styles.modalTitle}>Help Center</Text>
+                            <TouchableOpacity onPress={() => setShowHelpModal(false)} style={styles.closeBtn}>
+                                <Ionicons name="close" size={24} color={C.onSurface} />
                             </TouchableOpacity>
                         </View>
-
-                        <View style={styles.modalBody}>
-                            <View style={styles.inputGroup}>
-                                <Text style={styles.inputLabel}>Full Name</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    value={editForm.name}
-                                    onChangeText={(text) => setEditForm({ ...editForm, name: text })}
-                                    placeholder="Your Name"
-                                    placeholderTextColor={COLORS.textTertiary}
-                                />
+                        <ScrollView style={styles.modalScroll}>
+                            <View style={styles.faqCard}>
+                                <Text style={styles.faqQ}>How do I book a technician?</Text>
+                                <Text style={styles.faqA}>Select any service on Home screen, pick location on MapPicker, and select instant booking or schedule timing.</Text>
+                            </View>
+                            <View style={styles.faqCard}>
+                                <Text style={styles.faqQ}>How do I track my technician live?</Text>
+                                <Text style={styles.faqA}>Once accepted, open Active Activity tab to view technician live MapBox location and arrival time.</Text>
                             </View>
 
-                            <View style={styles.inputGroup}>
-                                <Text style={styles.inputLabel}>Email Address</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    value={editForm.email}
-                                    onChangeText={(text) => setEditForm({ ...editForm, email: text })}
-                                    placeholder="your@email.com"
-                                    placeholderTextColor={COLORS.textTertiary}
-                                    keyboardType="email-address"
-                                    autoCapitalize="none"
-                                />
-                            </View>
 
-                            <View style={styles.inputGroup}>
-                                <Text style={styles.inputLabel}>Phone Number</Text>
-                                <TextInput
-                                    style={[styles.input, styles.inputDisabled]}
-                                    value={editForm.mobile}
-                                    editable={false}
-                                />
-                                <Text style={styles.inputHint}>Phone number cannot be changed</Text>
+                        </ScrollView>
+                    </View>
+                </View>
+            </Modal>
+
+
+
+            {/* Safety & Protection Modal */}
+            <Modal visible={showSafetyModal} animationType="slide" transparent={true} onRequestClose={() => setShowSafetyModal(false)}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Safety & Security</Text>
+                            <TouchableOpacity onPress={() => setShowSafetyModal(false)} style={styles.closeBtn}>
+                                <Ionicons name="close" size={24} color={C.onSurface} />
+                            </TouchableOpacity>
+                        </View>
+                        <ScrollView style={styles.modalScroll}>
+                            <View style={styles.safetyCard}>
+                                <Ionicons name="shield-checkmark" size={32} color={C.primary} />
+                                <Text style={styles.safetyTitle}>Verified & Background Checked</Text>
+                                <Text style={styles.safetyDesc}>Every technician undergoes police verification, identity check, and certified technical training before assignment.</Text>
                             </View>
+                        </ScrollView>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Legal Terms Modal */}
+            <Modal visible={showLegalModal} animationType="slide" transparent={true} onRequestClose={() => setShowLegalModal(false)}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Terms & Privacy Policies</Text>
+                            <TouchableOpacity onPress={() => setShowLegalModal(false)} style={styles.closeBtn}>
+                                <Ionicons name="close" size={24} color={C.onSurface} />
+                            </TouchableOpacity>
+                        </View>
+                        <ScrollView style={styles.modalScroll}>
+                            <View style={styles.legalItem}>
+                                <Text style={styles.legalTitle}>Terms of Service</Text>
+                                <Text style={styles.legalDesc}>Zyro provides home climate control & AC service booking platform. Standard cancellation policy applies.</Text>
+                            </View>
+                            <View style={styles.legalItem}>
+                                <Text style={styles.legalTitle}>Privacy & Data Policy</Text>
+                                <Text style={styles.legalDesc}>Your contact details and service address are strictly encrypted and used solely for booking fulfillment.</Text>
+                            </View>
+                        </ScrollView>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Edit Profile Modal */}
+            <Modal visible={showEditModal} animationType="slide" transparent={true} onRequestClose={() => setShowEditModal(false)}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Edit Profile Details</Text>
+                            <TouchableOpacity onPress={() => setShowEditModal(false)} style={styles.closeBtn}>
+                                <Ionicons name="close" size={24} color={C.onSurface} />
+                            </TouchableOpacity>
+                        </View>
+                        <View style={styles.formContainer}>
+                            <Text style={styles.inputLabel}>Full Name</Text>
+                            <TextInput
+                                style={styles.formInput}
+                                value={editForm.name}
+                                onChangeText={(text) => setEditForm((prev) => ({ ...prev, name: text }))}
+                                placeholder="Enter full name"
+                                placeholderTextColor={C.onSurfaceVariant}
+                            />
+
+                            <Text style={styles.inputLabel}>Email Address</Text>
+                            <TextInput
+                                style={styles.formInput}
+                                value={editForm.email}
+                                onChangeText={(text) => setEditForm((prev) => ({ ...prev, email: text }))}
+                                placeholder="Enter email"
+                                placeholderTextColor={C.onSurfaceVariant}
+                                keyboardType="email-address"
+                            />
 
                             <TouchableOpacity
-                                style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+                                style={styles.primaryActionBtn}
                                 onPress={handleSaveProfile}
                                 disabled={saving}
+                                activeOpacity={0.8}
                             >
                                 {saving ? (
-                                    <ActivityIndicator color={COLORS.white} />
+                                    <ActivityIndicator color={C.onPrimary} />
                                 ) : (
-                                    <Text style={styles.saveButtonText}>Save Changes</Text>
+                                    <Text style={styles.primaryActionBtnText}>Save Changes</Text>
                                 )}
                             </TouchableOpacity>
                         </View>
@@ -525,62 +420,15 @@ Full license texts are available upon written request to our legal team.`
     );
 }
 
-function ProfileMenuItem({ icon, label, onPress }) {
-    return (
-        <TouchableOpacity style={styles.menuItem} onPress={onPress}>
-            <View style={styles.menuItemLeft}>
-                <Ionicons name={icon} size={20} color={COLORS.black} />
-                <Text style={styles.menuItemLabel}>{label}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={COLORS.textTertiary} />
-        </TouchableOpacity>
-    );
-}
-
-function HelpSection({ title, items }) {
-    return (
-        <View style={styles.helpSection}>
-            <Text style={styles.helpSectionTitle}>{title}</Text>
-            {items.map((item, id) => (
-                <View key={id} style={styles.helpItem}>
-                    <Text style={styles.helpQ}>{item.q}</Text>
-                    <Text style={styles.helpA}>{item.a}</Text>
-                </View>
-            ))}
-        </View>
-    );
-}
-
-function SafetyItem({ icon, title, desc }) {
-    return (
-        <View style={styles.safetyItem}>
-            <Ionicons name={icon} size={24} color={COLORS.black} />
-            <View style={styles.safetyInfo}>
-                <Text style={styles.safetyItemTitle}>{title}</Text>
-                <Text style={styles.safetyItemDesc}>{desc}</Text>
-            </View>
-        </View>
-    );
-}
-
-function LegalItem({ title, onPress }) {
-    return (
-        <TouchableOpacity style={styles.legalItem} onPress={onPress}>
-            <Text style={styles.legalItemText}>{title}</Text>
-            <Ionicons name="chevron-forward" size={18} color={COLORS.textTertiary} />
-        </TouchableOpacity>
-    );
-}
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: COLORS.white,
+        backgroundColor: '#0D0D0D',
     },
     header: {
-        backgroundColor: COLORS.white,
+        backgroundColor: '#0D0D0D',
         borderBottomWidth: 1,
-        borderBottomColor: COLORS.border,
+        borderBottomColor: '#1C1C1C',
     },
     headerContent: {
         flexDirection: 'row',
@@ -592,412 +440,416 @@ const styles = StyleSheet.create({
     backButton: {
         width: 40,
         height: 40,
+        borderRadius: 20,
+        backgroundColor: '#161616',
         justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#262626',
     },
     headerTitle: {
-        fontSize: 17,
+        fontSize: 18,
+        fontFamily: TY.titleMd.fontFamily,
         fontWeight: '600',
-        color: COLORS.black,
+        color: C.onSurface,
     },
     content: {
         flex: 1,
     },
     scrollContent: {
-        padding: 24,
+        padding: 20,
+        gap: 16,
     },
     profileSection: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 32,
+        backgroundColor: '#141414',
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#222222',
+        padding: 20,
     },
     avatar: {
-        width: 72,
-        height: 72,
-        borderRadius: 36,
-        backgroundColor: COLORS.greyLight,
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: C.primary,
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: 20,
+        marginRight: 16,
     },
     avatarText: {
-        fontSize: 28,
-        fontWeight: '700',
-        color: COLORS.black,
+        fontSize: 26,
+        fontWeight: '900',
+        color: C.onPrimary,
     },
     userInfo: {
         flex: 1,
     },
     userName: {
-        fontSize: 22,
-        fontWeight: '700',
-        color: COLORS.black,
+        fontSize: 20,
+        fontWeight: '800',
+        color: C.onSurface,
     },
     userPhone: {
-        fontSize: 14,
-        color: COLORS.textSecondary,
+        fontSize: 13,
+        color: C.onSurfaceVariant,
         marginTop: 2,
     },
     editBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
         alignSelf: 'flex-start',
-        backgroundColor: COLORS.greyLight,
-        paddingHorizontal: 12,
+        backgroundColor: C.primary,
+        paddingHorizontal: 10,
         paddingVertical: 4,
-        borderRadius: 4,
+        borderRadius: 14,
         marginTop: 8,
     },
     editBadgeText: {
-        fontSize: 12,
-        fontWeight: '600',
-        color: COLORS.black,
+        fontSize: 11,
+        fontWeight: '800',
+        color: C.onPrimary,
     },
-
-    // Payment Section
-    paymentSection: {
-        marginBottom: 32,
+    menuSection: {
+        gap: 8,
+    },
+    sectionLabel: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: C.onSurfaceVariant,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+        marginLeft: 4,
     },
     paymentCard: {
-        backgroundColor: COLORS.white,
+        backgroundColor: '#141414',
+        borderRadius: 16,
         borderWidth: 1,
-        borderColor: COLORS.border,
-        borderRadius: 12,
+        borderColor: '#222222',
         padding: 16,
-        marginTop: 8,
-        ...Platform.select({
-            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
-            android: { elevation: 2 }
-        })
     },
     paymentCardHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-        marginBottom: 8,
+        marginBottom: 6,
     },
     paymentSecureText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: COLORS.accent,
+        fontSize: 13,
+        fontWeight: '700',
+        color: C.onSurface,
     },
     paymentDesc: {
         fontSize: 12,
-        color: COLORS.textSecondary,
-        marginBottom: 12,
-    },
-    paymentIcons: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 8,
-    },
-    paymentTag: {
-        backgroundColor: COLORS.greyLight,
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 4,
-    },
-    paymentTagText: {
-        fontSize: 10,
-        fontWeight: '700',
-        color: COLORS.textPrimary,
-    },
-
-    menuSection: {
-        marginBottom: 32,
-    },
-    sectionLabel: {
-        fontSize: 12,
-        fontWeight: '700',
-        color: COLORS.textTertiary,
-        textTransform: 'uppercase',
-        letterSpacing: 1.2,
-        marginBottom: 16,
+        color: C.onSurfaceVariant,
     },
     menuItem: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingVertical: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: COLORS.border,
+        backgroundColor: '#141414',
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#222222',
+        paddingHorizontal: 16,
+        paddingVertical: 14,
     },
     menuItemLeft: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 16,
+        gap: 12,
+    },
+    menuIconBox: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: '#1C1C1C',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     menuItemLabel: {
-        fontSize: 16,
-        fontWeight: '500',
-        color: COLORS.black,
+        fontSize: 15,
+        fontWeight: '600',
+        color: C.onSurface,
     },
     logoutButton: {
-        marginTop: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        backgroundColor: '#1E1414',
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#3D2020',
         paddingVertical: 16,
+        marginTop: 10,
     },
     logoutButtonText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: COLORS.red,
+        fontSize: 15,
+        fontWeight: '800',
+        color: '#E57373',
     },
     versionText: {
+        fontSize: 11,
+        color: C.onSurfaceVariant,
         textAlign: 'center',
-        fontSize: 12,
-        color: COLORS.textTertiary,
-        marginTop: 32,
+        marginTop: 8,
     },
-
-    // Modals
+    bottomNav: {
+        backgroundColor: C.surfaceContainerLow,
+        borderTopWidth: 1,
+        borderColor: C.outlineVariant,
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+    },
+    navContent: {
+        flexDirection: 'row',
+        paddingHorizontal: 20,
+        paddingTop: 10,
+        paddingBottom: Platform.OS === 'ios' ? 0 : 10,
+        justifyContent: 'space-between',
+    },
+    navItem: {
+        flex: 1,
+        alignItems: 'center',
+        paddingVertical: 6,
+    },
+    navTextActive: {
+        fontSize: 10,
+        fontWeight: '800',
+        color: C.primary,
+        marginTop: 4,
+        letterSpacing: 0.5,
+    },
+    navText: {
+        fontSize: 10,
+        fontWeight: '600',
+        color: C.outline,
+        marginTop: 4,
+        letterSpacing: 0.5,
+    },
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: 'rgba(0,0,0,0.8)',
         justifyContent: 'flex-end',
     },
     modalContent: {
-        backgroundColor: COLORS.white,
+        backgroundColor: '#141414',
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
-        height: height * 0.7,
-        paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+        borderWidth: 1,
+        borderColor: '#222222',
+        maxHeight: '80%',
+        padding: 20,
+    },
+    chatModalContent: {
+        backgroundColor: '#141414',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        borderWidth: 1,
+        borderColor: '#222222',
+        height: '75%',
     },
     modalHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 24,
+        paddingBottom: 16,
         borderBottomWidth: 1,
-        borderBottomColor: COLORS.border,
+        borderBottomColor: '#222222',
     },
     modalTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: COLORS.black,
+        fontSize: 17,
+        fontWeight: '800',
+        color: C.onSurface,
+    },
+    closeBtn: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: '#1C1C1C',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     modalScroll: {
-        padding: 24,
+        paddingTop: 16,
     },
     emptyState: {
         alignItems: 'center',
-        marginTop: 60,
+        paddingVertical: 30,
     },
     emptyText: {
         fontSize: 16,
-        fontWeight: '600',
-        color: COLORS.black,
-        marginTop: 16,
+        fontWeight: '700',
+        color: C.onSurface,
+        marginTop: 10,
     },
     emptySubtext: {
-        fontSize: 14,
-        color: COLORS.textSecondary,
-        textAlign: 'center',
-        marginTop: 8,
+        fontSize: 12,
+        color: C.onSurfaceVariant,
+        marginTop: 4,
     },
     addressItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: COLORS.border,
-    },
-    addressIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: COLORS.greyLight,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 16,
-    },
-    addressInfo: {
-        flex: 1,
+        backgroundColor: '#1C1C1C',
+        padding: 14,
+        borderRadius: 14,
+        marginBottom: 10,
     },
     addressLabel: {
-        fontSize: 15,
-        fontWeight: '600',
-        color: COLORS.black,
+        fontSize: 14,
+        fontWeight: '700',
+        color: C.onSurface,
     },
     addressText: {
-        fontSize: 13,
-        color: COLORS.textSecondary,
+        fontSize: 12,
+        color: C.onSurfaceVariant,
         marginTop: 2,
     },
-
-    // Full Screen Modals (Help, Safety, Legal)
-    fullModalOverlay: {
-        flex: 1,
-        backgroundColor: COLORS.white,
+    faqCard: {
+        backgroundColor: '#1C1C1C',
+        padding: 14,
+        borderRadius: 14,
+        marginBottom: 12,
     },
-    fullModalContainer: {
-        flex: 1,
-        paddingTop: Platform.OS === 'ios' ? 50 : 20,
-    },
-    fullModalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 24,
-        borderBottomWidth: 1,
-        borderBottomColor: COLORS.border,
-    },
-    fullModalTitle: {
-        fontSize: 20,
-        fontWeight: '700',
-        color: COLORS.black,
-    },
-    fullModalBody: {
-        flex: 1,
-        padding: 24,
-    },
-    backAction: {
-        width: 40,
-        height: 40,
-        justifyContent: 'center',
-    },
-    helpSection: {
-        marginBottom: 32,
-    },
-    helpSectionTitle: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: COLORS.black,
-        marginBottom: 16,
-    },
-    helpItem: {
-        marginBottom: 20,
-    },
-    helpQ: {
-        fontSize: 15,
-        fontWeight: '600',
-        color: COLORS.black,
-    },
-    helpA: {
+    faqQ: {
         fontSize: 14,
-        color: COLORS.textSecondary,
-        marginTop: 4,
-        lineHeight: 20,
+        fontWeight: '700',
+        color: C.onSurface,
+        marginBottom: 4,
     },
-    contactBtn: {
-        backgroundColor: COLORS.black,
+    faqA: {
+        fontSize: 12,
+        color: C.onSurfaceVariant,
+        lineHeight: 18,
+    },
+    primaryActionBtn: {
+        backgroundColor: C.primary,
+        height: 48,
+        borderRadius: 24,
         flexDirection: 'row',
-        alignItems: 'center',
         justifyContent: 'center',
-        height: 56,
-        borderRadius: 12,
-        gap: 12,
-        marginTop: 20,
+        alignItems: 'center',
+        gap: 8,
+        marginTop: 14,
     },
-    contactBtnText: {
-        color: COLORS.white,
-        fontSize: 16,
-        fontWeight: '600',
+    primaryActionBtnText: {
+        color: C.onPrimary,
+        fontSize: 14,
+        fontWeight: '800',
+    },
+    onlineDot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: '#4CAF50',
+    },
+    chatScroll: {
+        flex: 1,
+    },
+    chatBubble: {
+        maxWidth: '80%',
+        paddingVertical: 10,
+        paddingHorizontal: 14,
+        borderRadius: 16,
+        marginBottom: 4,
+    },
+    chatBubbleSupport: {
+        backgroundColor: '#222222',
+        alignSelf: 'flex-start',
+    },
+    chatBubbleUser: {
+        backgroundColor: C.primary,
+        alignSelf: 'flex-end',
+    },
+    chatText: {
+        fontSize: 13,
+        color: C.onSurface,
+        lineHeight: 18,
+    },
+    chatInputRow: {
+        flexDirection: 'row',
+        padding: 12,
+        gap: 10,
+        borderTopWidth: 1,
+        borderColor: '#222222',
+        backgroundColor: '#141414',
+    },
+    chatTextInput: {
+        flex: 1,
+        height: 44,
+        backgroundColor: '#1C1C1C',
+        borderRadius: 22,
+        paddingHorizontal: 16,
+        color: C.onSurface,
+        fontSize: 14,
+    },
+    sendBtn: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: C.primary,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     safetyCard: {
-        backgroundColor: COLORS.greyLight,
+        backgroundColor: '#1C1C1C',
+        padding: 20,
         borderRadius: 16,
-        padding: 24,
         alignItems: 'center',
-        marginBottom: 32,
+        marginBottom: 14,
     },
     safetyTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: COLORS.black,
-        marginTop: 16,
-        marginBottom: 8,
+        fontSize: 16,
+        fontWeight: '800',
+        color: C.onSurface,
+        marginTop: 10,
+        marginBottom: 4,
     },
     safetyDesc: {
-        fontSize: 14,
-        color: COLORS.textSecondary,
-        textAlign: 'center',
-        lineHeight: 20,
-    },
-    safetyItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 20,
-        marginBottom: 24,
-        padding: 16,
-        backgroundColor: COLORS.white,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: COLORS.border,
-    },
-    safetyInfo: {
-        flex: 1,
-    },
-    safetyItemTitle: {
-        fontSize: 15,
-        fontWeight: '600',
-        color: COLORS.black,
-    },
-    safetyItemDesc: {
         fontSize: 13,
-        color: COLORS.textSecondary,
-        marginTop: 2,
+        color: C.onSurfaceVariant,
+        textAlign: 'center',
+        lineHeight: 18,
     },
     legalItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingVertical: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: COLORS.border,
+        backgroundColor: '#1C1C1C',
+        padding: 14,
+        borderRadius: 14,
+        marginBottom: 10,
     },
-    legalItemText: {
-        fontSize: 16,
-        color: COLORS.black,
+    legalTitle: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: C.onSurface,
+        marginBottom: 4,
     },
-    legalDetail: {
-        paddingTop: 8,
+    legalDesc: {
+        fontSize: 12,
+        color: C.onSurfaceVariant,
+        lineHeight: 18,
     },
-    legalDetailText: {
-        fontSize: 15,
-        color: COLORS.textSecondary,
-        lineHeight: 24,
-    },
-
-    // Edit Profile Specific
-    modalBody: {
-        padding: 24,
-    },
-    inputGroup: {
-        marginBottom: 20,
+    formContainer: {
+        paddingTop: 16,
+        gap: 10,
     },
     inputLabel: {
-        fontSize: 13,
-        fontWeight: '600',
-        color: COLORS.textSecondary,
-        marginBottom: 8,
+        fontSize: 12,
+        fontWeight: '700',
+        color: C.onSurfaceVariant,
     },
-    input: {
-        backgroundColor: COLORS.background,
-        borderRadius: 8,
-        padding: 16,
-        fontSize: 16,
-        color: COLORS.black,
+    formInput: {
+        height: 46,
+        backgroundColor: '#1C1C1C',
+        borderRadius: 12,
+        paddingHorizontal: 14,
+        color: C.onSurface,
+        fontSize: 14,
         borderWidth: 1,
-        borderColor: COLORS.border,
-    },
-    inputDisabled: {
-        opacity: 0.6,
-    },
-    inputHint: {
-        fontSize: 11,
-        color: COLORS.textTertiary,
-        marginTop: 6,
-    },
-    saveButton: {
-        backgroundColor: COLORS.black,
-        height: 56,
-        borderRadius: 10,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: 12,
-    },
-    saveButtonDisabled: {
-        opacity: 0.7,
-    },
-    saveButtonText: {
-        color: COLORS.white,
-        fontSize: 16,
-        fontWeight: '600',
+        borderColor: '#2D2D2D',
     },
 });

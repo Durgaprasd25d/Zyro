@@ -5,10 +5,9 @@
   "scripts": {
     "start": "react-native start",
     "android": "react-native run-android",
-    "ios": "react-native run-ios",
-    "web": "expo start --web",
-    "test": "jest.js",
-    "wireless-debug": "adb connect $(grep -E '^ADB_WIFI_IP=' .env | cut -d'=' -f2 | tr -d '\\\"' | tr -d \"'\")",
+    "connect-wireless": "adb connect $(grep -E '^ADB_WIFI_IP=' .env | cut -d'=' -f2 | tr -d '\"' | tr -d \"'\")",
+    "test": "jest",
+    "wireless-debug": "npm run connect-wireless",
     "postinstall": "npx patch-package"
   },
   "dependencies": {

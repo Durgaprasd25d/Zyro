@@ -7,15 +7,21 @@ const jwt = require('jsonwebtoken');
 router.post('/register', async (req, res) => {
     try {
         const { mobile, password, name, role } = req.body;
+        const cleanMobile = (mobile || '').toString().replace(/^\+91/, '').replace(/\s+/g, '').trim();
 
         // Check if user exists
-        let user = await User.findOne({ mobile });
+        let user = await User.findOne({
+            $or: [
+                { mobile: cleanMobile },
+                { mobile: `+91${cleanMobile}` }
+            ]
+        });
         if (user) {
             return res.status(400).json({ success: false, error: 'Mobile number already registered' });
         }
 
         user = new User({
-            mobile,
+            mobile: cleanMobile,
             password,
             name,
             role: role || 'customer'
@@ -45,15 +51,22 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
     try {
         const { mobile, password } = req.body;
+        const cleanMobile = (mobile || '').toString().replace(/^\+91/, '').replace(/\s+/g, '').trim();
 
-        const user = await User.findOne({ mobile });
-        console.log(`Login attempt for ${mobile}. User found: ${!!user}`);
+        const user = await User.findOne({
+            $or: [
+                { mobile: cleanMobile },
+                { mobile: `+91${cleanMobile}` },
+                { mobile: mobile }
+            ]
+        });
+        console.log(`Login attempt for ${mobile} (clean: ${cleanMobile}). User found: ${!!user}`);
         if (!user) {
             return res.status(401).json({ success: false, error: 'Invalid mobile number or password' });
         }
 
         const isMatch = await user.comparePassword(password);
-        console.log(`Password match for ${mobile}: ${isMatch}`);
+        console.log(`Password match for ${cleanMobile}: ${isMatch}`);
         if (!isMatch) {
             return res.status(401).json({ success: false, error: 'Invalid mobile number or password' });
         }

@@ -32,7 +32,11 @@ router.post('/request', async (req, res) => {
 
         const ride = new Ride({
             rideId,
-            pickup,
+            pickup: {
+                address: pickup?.address || pickup?.description || 'No address provided',
+                lat: Number(pickup?.lat ?? pickup?.latitude ?? 0),
+                lng: Number(pickup?.lng ?? pickup?.longitude ?? 0)
+            },
             destination: destination || { address: 'TBD', lat: 0, lng: 0 },
             serviceType: serviceType || 'service',
             customerId,
@@ -438,7 +442,7 @@ router.post('/end-service', async (req, res) => {
         const rideData = ride.toObject();
         delete rideData.completionOtp;
 
-        res.json({ success: true, data: rideData, technician: technicianData });
+        res.json({ success: true, data: rideData });
     } catch (error) {
         res.status(500).json({ success: false, error: 'Database error' });
     }

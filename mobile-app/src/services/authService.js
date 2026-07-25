@@ -100,18 +100,16 @@ const authService = {
       }
       return response.data;
     } catch (error) {
-      console.error("Login Error:", error);
       if (error.code === "ECONNABORTED") {
         return {
           success: false,
           error: "Connection timeout. Is the server reachable?",
         };
       }
+      const errorMessage = error.response?.data?.error || "Invalid mobile number or password.";
       return {
         success: false,
-        error:
-          error.response?.data?.error ||
-          "Login failed. Check server connection.",
+        error: errorMessage,
       };
     }
   },
@@ -136,6 +134,10 @@ const authService = {
   getUser: async () => {
     const user = await AsyncStorage.getItem("userData");
     return user ? JSON.parse(user) : null;
+  },
+
+  getToken: async () => {
+    return await AsyncStorage.getItem("userToken");
   },
 
   setUser: async (user) => {

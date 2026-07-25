@@ -278,15 +278,18 @@ export default function ServiceStatusScreen({ route, navigation }) {
               ref={cameraRef}
               zoomLevel={14}
               centerCoordinate={[
-                liveStatus?.pickup?.lng || 77.209,
-                liveStatus?.pickup?.lat || 28.6139,
+                Number(liveStatus?.pickup?.lng ?? liveStatus?.pickup?.longitude ?? 77.209),
+                Number(liveStatus?.pickup?.lat ?? liveStatus?.pickup?.latitude ?? 28.6139),
               ]}
             />
 
-            {liveStatus?.pickup && (
+            {(liveStatus?.pickup?.lng !== undefined || liveStatus?.pickup?.longitude !== undefined) && (
               <MapboxGL.PointAnnotation
                 id="customer-pickup"
-                coordinate={[liveStatus.pickup.lng, liveStatus.pickup.lat]}
+                coordinate={[
+                  Number(liveStatus.pickup.lng ?? liveStatus.pickup.longitude),
+                  Number(liveStatus.pickup.lat ?? liveStatus.pickup.latitude)
+                ]}
               >
                 <View style={styles.customerMarker}>
                   <Ionicons name="home" size={20} color={COLORS.white} />

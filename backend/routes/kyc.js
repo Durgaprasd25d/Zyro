@@ -10,10 +10,7 @@ router.get('/status', async (req, res) => {
             return res.status(400).json({ success: false, error: 'User ID required' });
         }
 
-        const technician = await Technician.findOne({ userId });
-        if (!technician) {
-            return res.status(404).json({ success: false, error: 'Technician not found' });
-        }
+        const technician = await Technician.getOrCreate(userId);
 
         res.json({
             success: true,
@@ -31,17 +28,14 @@ router.get('/status', async (req, res) => {
 // Submit KYC for verification
 router.post('/submit', async (req, res) => {
     try {
-        const userId = req.query.userId || req.user?.id;
+        const userId = req.query.userId || req.body.userId || req.user?.id;
         const { documents, bankDetails } = req.body;
 
         if (!userId) {
             return res.status(400).json({ success: false, error: 'User ID required' });
         }
 
-        const technician = await Technician.findOne({ userId });
-        if (!technician) {
-            return res.status(404).json({ success: false, error: 'Technician not found' });
-        }
+        const technician = await Technician.getOrCreate(userId);
 
         // Check if already verified or pending
         if (technician.verification.kycStatus === 'VERIFIED') {
@@ -57,14 +51,20 @@ router.post('/submit', async (req, res) => {
             };
         }
 
-        if (!technician.verification.documents) {
-            technician.verification.documents = {};
+        if (documents) {
+            if (!technician.verification.documents) {
+                technician.verification.documents = {};
+            }
+            for (let [key, val] of Object.entries(documents)) {
+                if (key === 'aadharFront') key = 'aadhaarFront';
+                if (key === 'aadharBack') key = 'aadhaarBack';
+                if (typeof val === 'string' && val) {
+                    technician.verification.documents[key] = { url: val, publicId: `doc_${Date.now()}` };
+                } else if (val && typeof val === 'object' && val.url) {
+                    technician.verification.documents[key] = val;
+                }
+            }
         }
-
-        technician.verification.documents = {
-            ...technician.verification.documents,
-            ...documents
-        };
 
         if (bankDetails) {
             if (!technician.verification.bankDetails) {

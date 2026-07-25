@@ -67,9 +67,9 @@ export default function BookingSummaryScreen({ route, navigation }) {
     fetchFees();
   }, []);
 
-  const basePrice = Math.round(parseFloat(service.price));
-  const platformFeeVal = Math.round(parseFloat(fees.platformFee || 49));
-  const taxPercent = fees.gst || 18;
+  const basePrice = Math.round(parseFloat(service?.price ?? 1));
+  const platformFeeVal = Math.round(parseFloat(fees.platformFee ?? 0));
+  const taxPercent = fees.gst ?? 0;
   const taxVal = Math.round(basePrice * (taxPercent / 100));
   const total = Math.round(basePrice + platformFeeVal + taxVal);
 
@@ -128,11 +128,6 @@ export default function BookingSummaryScreen({ route, navigation }) {
             resizeMode="cover"
           />
           <View style={styles.serviceInfo}>
-            <View style={styles.premiumTagContainer}>
-              <View style={styles.premiumTag}>
-                <Text style={styles.premiumTagText}>PREMIUM SERVICE</Text>
-              </View>
-            </View>
             <Text style={styles.serviceName} numberOfLines={2}>
               {service?.name}
             </Text>
@@ -169,35 +164,24 @@ export default function BookingSummaryScreen({ route, navigation }) {
           </View>
         </View>
 
-        {/* Service Location Card with Embedded Static Non-Editable Mapbox map */}
+        {/* Service Location Card with Lightweight Mapbox Static Image Preview */}
         <View style={styles.locationCard}>
           <View style={styles.mapWrapper}>
-            <MapboxGL.MapView
+            <Image
+              source={{
+                uri: `https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/pin-s+e6beab(${Number(
+                  currentAddress?.location?.lng ?? currentAddress?.lng ?? currentAddress?.longitude ?? 77.209
+                )},${Number(
+                  currentAddress?.location?.lat ?? currentAddress?.lat ?? currentAddress?.latitude ?? 28.6139
+                )})/${Number(
+                  currentAddress?.location?.lng ?? currentAddress?.lng ?? currentAddress?.longitude ?? 77.209
+                )},${Number(
+                  currentAddress?.location?.lat ?? currentAddress?.lat ?? currentAddress?.latitude ?? 28.6139
+                )},14.5,0/600x300@2x?access_token=${config.MAPBOX_ACCESS_TOKEN}`
+              }}
               style={styles.previewMap}
-              styleURL={MapboxGL.StyleURL.Dark}
-              scrollEnabled={false}
-              zoomEnabled={false}
-              pitchEnabled={false}
-              rotateEnabled={false}
-            >
-              <MapboxGL.Camera
-                zoomLevel={14.5}
-                centerCoordinate={[
-                  currentAddress?.location?.lng || 77.209,
-                  currentAddress?.location?.lat || 28.6139,
-                ]}
-              />
-              {currentAddress?.location && (
-                <MapboxGL.PointAnnotation
-                  id="static-address-pin"
-                  coordinate={[currentAddress.location.lng, currentAddress.location.lat]}
-                >
-                  <View style={styles.mapPinBg}>
-                    <Ionicons name="location" size={24} color={C.primary} />
-                  </View>
-                </MapboxGL.PointAnnotation>
-              )}
-            </MapboxGL.MapView>
+              resizeMode="cover"
+            />
 
             {/* Static Map overlay details */}
             <View style={styles.mapOverlayHeader}>

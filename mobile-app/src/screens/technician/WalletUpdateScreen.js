@@ -27,8 +27,8 @@ export default function WalletUpdateScreen({ route, navigation }) {
                     <Ionicons name="checkmark-circle" size={80} color={COLORS.earningsGreen} />
                 </Animated.View>
 
-                <Text style={styles.title}>Wallet Update Success!</Text>
-                <Text style={styles.subtitle}>Your payment has been confirmed</Text>
+                <Text style={styles.title}>Service Done Successfully!</Text>
+                <Text style={styles.subtitle}>OTP verified and service completed</Text>
 
                 <View style={styles.earningsCard}>
                     <Text style={styles.earningsLabel}>Net Earnings Credited</Text>
@@ -55,9 +55,9 @@ export default function WalletUpdateScreen({ route, navigation }) {
             <View style={styles.footer}>
                 <TouchableOpacity
                     style={styles.walletBtn}
-                    onPress={() => navigation.navigate('TechnicianWallet')}
+                    onPress={() => navigation.reset({ index: 0, routes: [{ name: 'TechnicianDashboard' }] })}
                 >
-                    <Text style={styles.walletBtnText}>Go to Wallet</Text>
+                    <Text style={styles.walletBtnText}>Back to Home</Text>
                 </TouchableOpacity>
             </View>
         </SafeAreaView>

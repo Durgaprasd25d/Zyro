@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import {
     View,
     Text,
@@ -17,30 +17,80 @@ import { DESIGN_COLORS as C } from '../../constants/designSystem';
 
 const { width } = Dimensions.get('window');
 
-// Dynamic Service Image Mapping matching the exact backend seeded services
-const SERVICE_IMAGES = {
-    'gas leak fix': require('../../../assets/gas_leak_fix.png'),
-    'cooling issue': require('../../../assets/cooling_issue.png'),
-    'deep cleaning': require('../../../assets/deep_cleaning.png'),
-    'standard checkup': require('../../../assets/standard_checkup.png'),
-    'unit installation': require('../../../assets/unit_installation.png'),
-    'fast repair': require('../../../assets/fast_repair.png'),
+// Dynamic Unique 4-Photo Work Gallery for each distinct service
+const SERVICE_GALLERIES = {
+    'gas leak fix': [
+        require('../../../assets/gas_leak_fix_1.png'),
+        require('../../../assets/gas_leak_fix_2.png'),
+        require('../../../assets/gas_leak_fix_3.png'),
+        require('../../../assets/gas_leak_fix_4.png'),
+    ],
+    'cooling issue': [
+        require('../../../assets/cooling_issue_1.png'),
+        require('../../../assets/cooling_issue_2.png'),
+        require('../../../assets/cooling_issue_3.png'),
+        require('../../../assets/cooling_issue_4.png'),
+    ],
+    'deep cleaning': [
+        require('../../../assets/deep_cleaning.png'),
+        require('../../../assets/standard_checkup.png'),
+        require('../../../assets/gas_leak_fix_1.png'),
+        require('../../../assets/cooling_issue_3.png'),
+    ],
+    'standard checkup': [
+        require('../../../assets/standard_checkup.png'),
+        require('../../../assets/cooling_issue_3.png'),
+        require('../../../assets/gas_leak_fix_1.png'),
+        require('../../../assets/cooling_issue_1.png'),
+    ],
+    'unit installation': [
+        require('../../../assets/unit_installation.png'),
+        require('../../../assets/cooling_issue_1.png'),
+        require('../../../assets/gas_leak_fix_3.png'),
+        require('../../../assets/gas_leak_fix_1.png'),
+    ],
+    'fast repair': [
+        require('../../../assets/cooling_issue_2.png'),
+        require('../../../assets/cooling_issue_1.png'),
+        require('../../../assets/gas_leak_fix_4.png'),
+        require('../../../assets/cooling_issue_4.png'),
+    ],
 };
 
-const getServiceImage = (name) => {
-    if (!name) return SERVICE_IMAGES['standard checkup'];
+const getServiceGallery = (name) => {
+    if (!name) return SERVICE_GALLERIES['standard checkup'];
     const normalized = name.toLowerCase().trim();
-    if (normalized.includes('gas') || normalized.includes('leak')) return SERVICE_IMAGES['gas leak fix'];
-    if (normalized.includes('cooling') || normalized.includes('issue') || normalized.includes('cool')) return SERVICE_IMAGES['cooling issue'];
-    if (normalized.includes('deep') || normalized.includes('clean') || normalized.includes('chemical')) return SERVICE_IMAGES['deep cleaning'];
-    if (normalized.includes('checkup') || normalized.includes('standard') || normalized.includes('maintenance')) return SERVICE_IMAGES['standard checkup'];
-    if (normalized.includes('installation') || normalized.includes('unit') || normalized.includes('install')) return SERVICE_IMAGES['unit installation'];
-    if (normalized.includes('fast') || normalized.includes('emergency') || normalized.includes('repair')) return SERVICE_IMAGES['fast repair'];
-    return SERVICE_IMAGES['standard checkup'];
+    if (normalized.includes('gas') || normalized.includes('leak')) return SERVICE_GALLERIES['gas leak fix'];
+    if (normalized.includes('cooling') || normalized.includes('issue') || normalized.includes('cool')) return SERVICE_GALLERIES['cooling issue'];
+    if (normalized.includes('deep') || normalized.includes('clean') || normalized.includes('chemical')) return SERVICE_GALLERIES['deep cleaning'];
+    if (normalized.includes('checkup') || normalized.includes('standard') || normalized.includes('maintenance')) return SERVICE_GALLERIES['standard checkup'];
+    if (normalized.includes('installation') || normalized.includes('unit') || normalized.includes('install')) return SERVICE_GALLERIES['unit installation'];
+    if (normalized.includes('fast') || normalized.includes('emergency') || normalized.includes('repair')) return SERVICE_GALLERIES['fast repair'];
+    return SERVICE_GALLERIES['standard checkup'];
 };
 
 export default function ServiceDetailScreen({ route, navigation }) {
     const { service } = route.params;
+    const galleryPhotos = getServiceGallery(service?.name);
+    const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+    const bannerScrollRef = useRef(null);
+
+    const handlePhotoSelect = (index) => {
+        setActivePhotoIndex(index);
+        if (bannerScrollRef.current) {
+            bannerScrollRef.current.scrollTo({ x: index * width, animated: true });
+        }
+    };
+
+    const handleNextPhoto = () => {
+        const nextIdx = (activePhotoIndex + 1) % galleryPhotos.length;
+        handlePhotoSelect(nextIdx);
+    };
+
+    const handlePrevPhoto = () => {
+        const prevIdx = (activePhotoIndex - 1 + galleryPhotos.length) % galleryPhotos.length;
+        handlePhotoSelect(prevIdx);
+    };
 
     const handleSchedule = () => {
         navigation.navigate('Schedule', { service });
@@ -54,16 +104,53 @@ export default function ServiceDetailScreen({ route, navigation }) {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
             >
-                {/* Stunning HD Banner Header Section */}
+                {/* 4-Photo Swipeable Banner Section with Paging & Navigation Buttons */}
                 <View style={styles.bannerContainer}>
-                    <Image
-                        source={getServiceImage(service?.name)}
-                        style={styles.bannerImage}
-                        resizeMode="cover"
-                    />
+                    <ScrollView
+                        ref={bannerScrollRef}
+                        horizontal
+                        pagingEnabled
+                        showsHorizontalScrollIndicator={false}
+                        onMomentumScrollEnd={(e) => {
+                            const slide = Math.round(e.nativeEvent.contentOffset.x / width);
+                            if (slide >= 0 && slide < galleryPhotos.length) {
+                                setActivePhotoIndex(slide);
+                            }
+                        }}
+                        scrollEventThrottle={16}
+                    >
+                        {galleryPhotos.map((img, idx) => (
+                            <Image
+                                key={idx}
+                                source={img}
+                                style={styles.bannerImage}
+                                resizeMode="cover"
+                            />
+                        ))}
+                    </ScrollView>
+
+                    {/* Left Navigation Arrow Button */}
+                    <TouchableOpacity
+                        style={styles.arrowButtonLeft}
+                        onPress={handlePrevPhoto}
+                        activeOpacity={0.7}
+                    >
+                        <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
+                    </TouchableOpacity>
+
+                    {/* Right Navigation Arrow Button */}
+                    <TouchableOpacity
+                        style={styles.arrowButtonRight}
+                        onPress={handleNextPhoto}
+                        activeOpacity={0.7}
+                    >
+                        <Ionicons name="chevron-forward" size={24} color="#FFFFFF" />
+                    </TouchableOpacity>
+
                     <LinearGradient
-                        colors={['rgba(19, 19, 19, 0.4)', 'rgba(19, 19, 19, 0.95)']}
+                        colors={['rgba(19, 19, 19, 0.4)', 'transparent', 'rgba(19, 19, 19, 0.95)']}
                         style={styles.bannerGradient}
+                        pointerEvents="box-none"
                     >
                         <View style={styles.bannerHeaderRow}>
                             <TouchableOpacity
@@ -73,7 +160,7 @@ export default function ServiceDetailScreen({ route, navigation }) {
                             >
                                 <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
                             </TouchableOpacity>
-                            <Text style={styles.floatingHeaderTitle}>Details</Text>
+                            <Text style={styles.floatingHeaderTitle}>Service Details</Text>
                             <View style={{ width: 42 }} />
                         </View>
 
@@ -82,13 +169,32 @@ export default function ServiceDetailScreen({ route, navigation }) {
                             <View style={styles.badgeRow}>
                                 <View style={styles.categoryBadge}>
                                     <Text style={styles.categoryBadgeText}>
-                                        {service?.category?.name || service?.category || 'Premium Service'}
+                                        {service?.category?.name || service?.category || 'AC Service'}
                                     </Text>
                                 </View>
                                 <View style={styles.ratingBadge}>
                                     <Ionicons name="star" size={12} color="#FFD54F" />
                                     <Text style={styles.ratingBadgeText}>4.9</Text>
                                 </View>
+                            </View>
+
+                            {/* Interactive Tap-Scrollable Pagination Dots */}
+                            <View style={styles.paginationRow}>
+                                {galleryPhotos.map((_, i) => (
+                                    <TouchableOpacity
+                                        key={i}
+                                        onPress={() => handlePhotoSelect(i)}
+                                        activeOpacity={0.7}
+                                        style={styles.dotTouchArea}
+                                    >
+                                        <View
+                                            style={[
+                                                styles.paginationDot,
+                                                activePhotoIndex === i && styles.paginationDotActive,
+                                            ]}
+                                        />
+                                    </TouchableOpacity>
+                                ))}
                             </View>
                         </View>
                     </LinearGradient>
@@ -100,13 +206,38 @@ export default function ServiceDetailScreen({ route, navigation }) {
                     <View style={styles.statsCard}>
                         <View style={styles.statBox}>
                             <Text style={styles.statLabel}>Service Price</Text>
-                            <Text style={styles.statValue}>₹{service?.price || 499}</Text>
+                            <Text style={styles.statValue}>₹{service?.price || 1}</Text>
                         </View>
                         <View style={styles.statDivider} />
                         <View style={styles.statBox}>
                             <Text style={styles.statLabel}>Duration</Text>
-                            <Text style={styles.statValue}>{service?.time || service?.duration || '1.5 hrs'}</Text>
+                            <Text style={styles.statValue}>{service?.time || service?.duration || '1-2 hrs'}</Text>
                         </View>
+                    </View>
+
+                    {/* 4-Photo Work Procedure Gallery */}
+                    <View style={styles.infoCard}>
+                        <Text style={styles.cardTitle}>Service Procedure Photos ({galleryPhotos.length})</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }}>
+                            {galleryPhotos.map((photo, index) => (
+                                <TouchableOpacity
+                                    key={index}
+                                    activeOpacity={0.8}
+                                    onPress={() => handlePhotoSelect(index)}
+                                    style={[
+                                        styles.thumbnailContainer,
+                                        activePhotoIndex === index && styles.thumbnailContainerActive,
+                                    ]}
+                                >
+                                    <Image source={photo} style={styles.thumbnailImage} resizeMode="cover" />
+                                    {activePhotoIndex === index && (
+                                        <View style={styles.activeCheckBadge}>
+                                            <Ionicons name="checkmark-circle" size={16} color={C.primary} />
+                                        </View>
+                                    )}
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
                     </View>
 
                     {/* About Section */}
@@ -114,7 +245,7 @@ export default function ServiceDetailScreen({ route, navigation }) {
                         <Text style={styles.cardTitle}>About This Service</Text>
                         <Text style={styles.description}>
                             {service?.description ||
-                                'Premium climate control maintenance. Our certified technicians carry out high-grade inspections, filter washing, coolant tests, and complete mechanical checks to ensure peak efficiency.'}
+                                'Comprehensive climate control maintenance. Our certified technicians carry out thorough inspections, filter washing, coolant pressure tests, and complete mechanical checks to ensure peak efficiency.'}
                         </Text>
                     </View>
 
@@ -122,11 +253,11 @@ export default function ServiceDetailScreen({ route, navigation }) {
                     <View style={styles.infoCard}>
                         <Text style={styles.cardTitle}>What's Included</Text>
                         {[
-                            'Full diagnostic diagnostics run-up',
-                            'Chemical coil sanitation & dirt purging',
+                            'Full diagnostic run-up check',
+                            'Coil sanitation & dirt purging',
                             'Coolant level testing & gas leak survey',
-                            '30-day premium service assurance warranty',
-                            'No hidden fees - standard platform rates'
+                            '30-day service assurance warranty',
+                            'Transparent pricing - standard rates'
                         ].map((item, index) => (
                             <View key={index} style={styles.checklistItem}>
                                 <Ionicons name="checkmark-circle" size={18} color={C.primary} style={{ marginTop: 2 }} />
@@ -152,8 +283,8 @@ export default function ServiceDetailScreen({ route, navigation }) {
                         <View style={styles.detailRow}>
                             <Ionicons name="sparkles" size={20} color={C.outline} />
                             <View style={styles.detailTextCol}>
-                                <Text style={styles.detailTitle}>Zero Damage Guarantee</Text>
-                                <Text style={styles.detailSubtitle}>Premium insurance coverage for all active cleaning sessions.</Text>
+                                <Text style={styles.detailTitle}>Quality Assurance</Text>
+                                <Text style={styles.detailSubtitle}>Complete satisfaction guarantee on all service sessions.</Text>
                             </View>
                         </View>
                     </View>
@@ -167,7 +298,7 @@ export default function ServiceDetailScreen({ route, navigation }) {
                 <View style={styles.footerContent}>
                     <View style={styles.footerPriceSection}>
                         <Text style={styles.footerPriceLabel}>Total Cost</Text>
-                        <Text style={styles.footerPrice}>₹{service?.price || 499}</Text>
+                        <Text style={styles.footerPrice}>₹{service?.price || 1}</Text>
                     </View>
                     <TouchableOpacity
                         style={styles.scheduleButton}
@@ -197,8 +328,38 @@ const styles = StyleSheet.create({
         backgroundColor: C.background,
     },
     bannerImage: {
-        width: '100%',
-        height: '100%',
+        width: width,
+        height: 310,
+    },
+    arrowButtonLeft: {
+        position: 'absolute',
+        left: 14,
+        top: '50%',
+        marginTop: -20,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(0, 0, 0, 0.55)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 25,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.2)',
+    },
+    arrowButtonRight: {
+        position: 'absolute',
+        right: 14,
+        top: '50%',
+        marginTop: -20,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(0, 0, 0, 0.55)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 25,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.2)',
     },
     bannerGradient: {
         position: 'absolute',
@@ -210,6 +371,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingTop: Platform.OS === 'ios' ? 56 : 40,
         paddingBottom: 20,
+        zIndex: 10,
     },
     bannerHeaderRow: {
         flexDirection: 'row',
@@ -236,7 +398,7 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     serviceName: {
-        fontSize: 28,
+        fontSize: 26,
         fontWeight: '850',
         color: '#FFFFFF',
         marginBottom: 8,
@@ -246,6 +408,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
+        marginBottom: 12,
     },
     categoryBadge: {
         backgroundColor: 'rgba(255, 255, 255, 0.12)',
@@ -276,6 +439,25 @@ const styles = StyleSheet.create({
         fontSize: 11,
         fontWeight: '700',
         color: '#FFFFFF',
+    },
+    paginationRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    dotTouchArea: {
+        paddingVertical: 6,
+        paddingHorizontal: 2,
+    },
+    paginationDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    },
+    paginationDotActive: {
+        width: 22,
+        backgroundColor: C.primary,
     },
     bodyContainer: {
         paddingHorizontal: 20,
@@ -317,11 +499,35 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         padding: 20,
     },
+    thumbnailContainer: {
+        width: 72,
+        height: 72,
+        borderRadius: 14,
+        marginRight: 10,
+        overflow: 'hidden',
+        borderWidth: 2,
+        borderColor: 'transparent',
+        position: 'relative',
+    },
+    thumbnailContainerActive: {
+        borderColor: C.primary,
+    },
+    thumbnailImage: {
+        width: '100%',
+        height: '100%',
+    },
+    activeCheckBadge: {
+        position: 'absolute',
+        top: 4,
+        right: 4,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        borderRadius: 10,
+    },
     cardTitle: {
         fontSize: 16,
         fontWeight: '800',
         color: C.onSurface,
-        marginBottom: 12,
+        marginBottom: 10,
         letterSpacing: 0.1,
     },
     description: {

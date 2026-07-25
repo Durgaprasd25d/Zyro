@@ -10,6 +10,7 @@ import {
     Platform,
     StatusBar,
     Image,
+    PermissionsAndroid,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -19,6 +20,8 @@ import authService from '../../services/authService';
 import rideService from '../../services/rideService';
 import customerSocketService from '../../services/customerSocketService';
 import { DESIGN_COLORS as C, DESIGN_TYPOGRAPHY as TY } from '../../constants/designSystem';
+import BottomNavBar from '../../components/BottomNavBar';
+import * as Location from 'expo-location';
 
 const { width } = Dimensions.get('window');
 
@@ -70,10 +73,12 @@ export default function HomeScreen({ navigation }) {
     const [activeRide, setActiveRide] = useState(null);
 
     // Current address location summary
-    const [locationAddress, setLocationAddress] = useState('New Delhi, India');
+    const [locationAddress, setLocationAddress] = useState('');
+    const [locationLoading, setLocationLoading] = useState(false);
 
     useEffect(() => {
         initHome();
+        fetchCurrentLocation();
         const unsubscribe = navigation.addListener('focus', () => {
             checkActiveRide();
             loadUser();
@@ -83,6 +88,34 @@ export default function HomeScreen({ navigation }) {
             customerSocketService.disconnect();
         };
     }, [navigation]);
+
+    const fetchCurrentLocation = async () => {
+        try {
+            setLocationLoading(true);
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                setLocationAddress('Location permission denied');
+                setLocationLoading(false);
+                return;
+            }
+            const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+            const [geo] = await Location.reverseGeocodeAsync({
+                latitude: loc.coords.latitude,
+                longitude: loc.coords.longitude,
+            });
+            if (geo) {
+                const addr = [geo.name, geo.street, geo.district, geo.city]
+                    .filter(Boolean)
+                    .join(', ')
+                    .substring(0, 45);
+                setLocationAddress(addr || 'Location detected');
+            }
+        } catch (e) {
+            setLocationAddress('Unable to detect location');
+        } finally {
+            setLocationLoading(false);
+        }
+    };
 
     const initHome = async () => {
         const userData = await authService.getUser();
@@ -118,6 +151,40 @@ export default function HomeScreen({ navigation }) {
             }
         } else {
             setActiveRide(null);
+        }
+    };
+
+    const handleActiveBookingPress = () => {
+        if (!activeRide) return;
+        const rideId = activeRide.rideId || activeRide._id;
+        const status = activeRide.status;
+
+        if (status === 'REQUESTED') {
+            navigation.navigate('TechnicianWaiting', {
+                rideId,
+                total: activeRide.price || activeRide.fare,
+                service: { name: activeRide.serviceType },
+                address: activeRide.pickup?.address || locationAddress,
+                paymentTiming: activeRide.paymentTiming
+            });
+        } else if (status === 'ACCEPTED' || status === 'ARRIVED') {
+            navigation.navigate('ServiceStatus', {
+                rideId,
+                otp: activeRide.arrivalOtp || activeRide.otp,
+                serviceType: activeRide.serviceType,
+                pricing: { price: activeRide.price || activeRide.fare },
+                paymentTiming: activeRide.paymentTiming
+            });
+        } else if (status === 'IN_PROGRESS' || status === 'SERVICE_ENDED') {
+            navigation.navigate('ServiceStatus', {
+                rideId,
+                otp: activeRide.completionOtp || activeRide.otp,
+                serviceType: activeRide.serviceType,
+                initialStep: status === 'SERVICE_ENDED' ? 'service_ended' : 'in_progress',
+                pricing: { price: activeRide.price || activeRide.fare }
+            });
+        } else {
+            navigation.navigate('History');
         }
     };
 
@@ -169,18 +236,13 @@ export default function HomeScreen({ navigation }) {
             {/* Custom Top Navigation Bar */}
             <SafeAreaView edges={['top']} style={styles.header}>
                 <View style={styles.headerContent}>
-                    <View style={styles.leftHeader}>
-                        <TouchableOpacity style={styles.menuBtn} activeOpacity={0.7}>
-                            <Ionicons name="menu-outline" size={24} color={C.onSurface} />
-                        </TouchableOpacity>
-                        <Text style={styles.brandTitle}>ZYRO</Text>
-                    </View>
+                    <Text style={styles.brandTitle}>ZYRO</Text>
 
                     <View style={styles.rightHeader}>
-                        <TouchableOpacity style={styles.notificationBtn} activeOpacity={0.7}>
+                        {/* <TouchableOpacity style={styles.notificationBtn} activeOpacity={0.7}>
                             <Ionicons name="notifications-outline" size={22} color={C.onSurface} />
                             <View style={styles.notificationBadge} />
-                        </TouchableOpacity>
+                        </TouchableOpacity> */}
                         <TouchableOpacity 
                             style={styles.profileBtn}
                             onPress={() => navigation.navigate('Profile')}
@@ -198,21 +260,28 @@ export default function HomeScreen({ navigation }) {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
             >
-                {/* Location Picker Row */}
+                {/* Location Row showing live device address */}
                 <TouchableOpacity 
                     style={styles.locationContainer} 
                     activeOpacity={0.7}
-                    onPress={() => navigation.navigate('MapPicker')}
+                    onPress={fetchCurrentLocation}
                 >
                     <Ionicons name="location" size={14} color={C.primary} />
-                    <Text style={styles.locationText}>{locationAddress}</Text>
+                    {locationLoading ? (
+                        <ActivityIndicator size="small" color={C.primary} style={{ marginLeft: 6 }} />
+                    ) : (
+                        <Text style={styles.locationText} numberOfLines={1}>
+                            {locationAddress || 'Tap to detect location'}
+                        </Text>
+                    )}
+                    <Ionicons name="chevron-forward" size={13} color={C.onSurfaceVariant} style={{ marginLeft: 'auto' }} />
                 </TouchableOpacity>
 
                 {/* Greeting Section */}
                 <View style={styles.greetingSection}>
                     <Text style={styles.greetingText}>
                         {getGreeting()},{' '}
-                        <Text style={styles.greetingName}>{user?.name?.split(' ')[0] || 'Durga'} 👋</Text>
+                        <Text style={styles.greetingName}>{user?.name?.split(' ')[0] || 'there'}</Text>
                     </Text>
                 </View>
 
@@ -301,9 +370,7 @@ export default function HomeScreen({ navigation }) {
                     <TouchableOpacity 
                         style={styles.activeBookingCard} 
                         activeOpacity={0.9}
-                        onPress={() => navigation.navigate('ServiceProgress', {
-                            rideId: activeRide.rideId || activeRide._id
-                        })}
+                        onPress={handleActiveBookingPress}
                     >
                         <View style={styles.activeCardHeader}>
                             <View style={styles.activeIconCircle}>
@@ -311,15 +378,20 @@ export default function HomeScreen({ navigation }) {
                             </View>
                             <View style={styles.activeCardTitleCol}>
                                 <Text style={styles.activeCardTitle} numberOfLines={1}>
-                                    {activeRide.serviceType?.toUpperCase() || 'AC CLEANING'} SERVICE
+                                    {(activeRide.serviceType || 'AC SERVICE').toUpperCase()}
                                 </Text>
                                 <Text style={styles.activeCardTime}>
-                                    Scheduled for Today, 2:00 PM
+                                    {activeRide.pickup?.address ? activeRide.pickup.address.split(',')[0] : 'Active Service'}
                                 </Text>
                             </View>
                             <View style={styles.activeBadge}>
                                 <Text style={styles.activeBadgeText}>
-                                    {activeRide.status === 'REQUESTED' ? 'FINDING TECH' : activeRide.status.replace('_', ' ')}
+                                    {activeRide.status === 'REQUESTED' ? 'SEARCHING TECH' :
+                                     activeRide.status === 'ACCEPTED' ? 'TECH ASSIGNED' :
+                                     activeRide.status === 'ARRIVED' ? 'TECH ARRIVED' :
+                                     activeRide.status === 'IN_PROGRESS' ? 'IN PROGRESS' :
+                                     activeRide.status === 'SERVICE_ENDED' ? 'PAYMENT DUE' :
+                                     activeRide.status.replace('_', ' ')}
                                 </Text>
                             </View>
                         </View>
@@ -331,43 +403,27 @@ export default function HomeScreen({ navigation }) {
                                 { 
                                     width: activeRide.status === 'REQUESTED' ? '25%' : 
                                            activeRide.status === 'ACCEPTED' ? '50%' : 
-                                           activeRide.status === 'ARRIVED' ? '75%' : '90%' 
+                                           activeRide.status === 'ARRIVED' ? '75%' : 
+                                           activeRide.status === 'IN_PROGRESS' ? '90%' : '100%' 
                                 }
                             ]} />
                         </View>
 
                         <View style={styles.activeCardFooter}>
                             <Text style={styles.footerLeftText}>
-                                {activeRide.status === 'REQUESTED' ? 'Searching nearby experts' : 'Technician Assigned'}
+                                {activeRide.status === 'REQUESTED' ? 'Searching nearby experts...' :
+                                 activeRide.status === 'ACCEPTED' ? 'Technician en route to location' :
+                                 activeRide.status === 'ARRIVED' ? 'Technician arrived at location' :
+                                 activeRide.status === 'IN_PROGRESS' ? 'Service currently ongoing' :
+                                 'Tap to view status details'}
                             </Text>
-                            <Text style={styles.footerRightText}>Arriving Soon</Text>
+                            <Ionicons name="chevron-forward" size={16} color={C.primary} />
                         </View>
                     </TouchableOpacity>
                 ) : (
-                    // Beautiful Default active booking card (exactly matching the mock illustration!)
-                    <View style={styles.activeBookingCard}>
-                        <View style={styles.activeCardHeader}>
-                            <View style={styles.activeIconCircle}>
-                                <Ionicons name="snow" size={18} color={C.primary} />
-                            </View>
-                            <View style={styles.activeCardTitleCol}>
-                                <Text style={styles.activeCardTitle}>Deep Cleaning Service</Text>
-                                <Text style={styles.activeCardTime}>Scheduled for Today, 2:00 PM</Text>
-                            </View>
-                            <View style={styles.activeBadge}>
-                                <Text style={styles.activeBadgeText}>IN PROGRESS</Text>
-                            </View>
-                        </View>
-
-                        {/* Progress Bar */}
-                        <View style={styles.progressTrack}>
-                            <View style={[styles.progressBarFill, { width: '55%' }]} />
-                        </View>
-
-                        <View style={styles.activeCardFooter}>
-                            <Text style={styles.footerLeftText}>Technician Assigned</Text>
-                            <Text style={styles.footerRightText}>Arriving Soon</Text>
-                        </View>
+                    <View style={styles.noActiveCard}>
+                        <Ionicons name="shield-checkmark-outline" size={22} color={C.primary} />
+                        <Text style={styles.noActiveText}>No active service bookings right now</Text>
                     </View>
                 )}
 
@@ -416,42 +472,7 @@ export default function HomeScreen({ navigation }) {
                 <View style={{ height: 120 }} />
             </ScrollView>
 
-            {/* Custom Tab Bar exactly replicating Climate active tab design */}
-            <SafeAreaView edges={['bottom']} style={styles.bottomNav}>
-                <View style={styles.navContent}>
-                    <TouchableOpacity style={styles.navItem} activeOpacity={0.7}>
-                        <Ionicons name="snow-outline" size={22} color={C.primary} />
-                        <Text style={styles.navTextActive}>Climate</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={styles.navItem}
-                        activeOpacity={0.7}
-                        onPress={() => navigation.navigate('History')}
-                    >
-                        <Ionicons name="construct-outline" size={22} color={C.outline} />
-                        <Text style={styles.navText}>Service</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={styles.navItem}
-                        activeOpacity={0.7}
-                        onPress={() => navigation.navigate('History')}
-                    >
-                        <Ionicons name="time-outline" size={22} color={C.outline} />
-                        <Text style={styles.navText}>History</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={styles.navItem}
-                        activeOpacity={0.7}
-                        onPress={() => navigation.navigate('Profile')}
-                    >
-                        <Ionicons name="person-outline" size={22} color={C.outline} />
-                        <Text style={styles.navText}>Profile</Text>
-                    </TouchableOpacity>
-                </View>
-            </SafeAreaView>
+            <BottomNavBar navigation={navigation} activeTab="climate" />
         </View>
     );
 }
@@ -728,6 +749,21 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+    },
+    noActiveCard: {
+        backgroundColor: '#141414',
+        borderWidth: 1,
+        borderColor: '#222222',
+        borderRadius: 16,
+        padding: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    noActiveText: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: C.onSurfaceVariant,
     },
     footerLeftText: {
         fontSize: 12,

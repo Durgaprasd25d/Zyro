@@ -179,10 +179,7 @@ router.post('/technicians/:userId/verify-kyc', async (req, res) => {
         const { status, reason } = req.body; // 'VERIFIED' or 'REJECTED'
         const { userId } = req.params;
 
-        const technician = await Technician.findOne({ userId });
-        if (!technician) {
-            return res.status(404).json({ success: false, error: 'Technician not found' });
-        }
+        const technician = await Technician.getOrCreate(userId);
 
         technician.verification.kycStatus = status;
         if (status === 'VERIFIED') {
@@ -210,10 +207,7 @@ router.post('/technicians/:userId/verify-payout', async (req, res) => {
         const { isVerified } = req.body; // true or false
         const { userId } = req.params;
 
-        const technician = await Technician.findOne({ userId });
-        if (!technician) {
-            return res.status(404).json({ success: false, error: 'Technician not found' });
-        }
+        const technician = await Technician.getOrCreate(userId);
 
         technician.verification.adminVerified = isVerified;
         await technician.save();

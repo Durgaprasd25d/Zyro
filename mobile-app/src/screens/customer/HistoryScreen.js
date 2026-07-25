@@ -9,36 +9,24 @@ import {
     StatusBar,
     ScrollView,
     Dimensions,
+    Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import rideService from '../../services/rideService';
+import { DESIGN_COLORS as C, DESIGN_TYPOGRAPHY as TY } from '../../constants/designSystem';
+import BottomNavBar from '../../components/BottomNavBar';
 
 const { width } = Dimensions.get('window');
 
-const COLORS = {
-    black: '#000000',
-    white: '#ffffff',
-    background: '#f7f7f7',
-    textPrimary: '#000000',
-    textSecondary: '#545454',
-    textTertiary: '#8a8a8a',
-    border: '#e0e0e0',
-    accent: '#06c167',
-    blue: '#276ef1',
-    card: '#ffffff',
-    red: '#e11d48',
-    orange: '#f59e0b',
-};
-
 const STATUS_CONFIG = {
-    'ALL': { label: 'All', color: COLORS.black, icon: 'list-outline' },
-    'REQUESTED': { label: 'Requested', color: COLORS.blue, icon: 'time-outline' },
-    'ACCEPTED': { label: 'Assigned', color: COLORS.blue, icon: 'person-outline' },
-    'ARRIVED': { label: 'Arrived', color: COLORS.orange, icon: 'location-outline' },
-    'IN_PROGRESS': { label: 'In Progress', color: COLORS.blue, icon: 'construct-outline' },
-    'COMPLETED': { label: 'Completed', color: COLORS.accent, icon: 'checkmark-circle-outline' },
-    'CANCELLED': { label: 'Cancelled', color: COLORS.red, icon: 'close-circle-outline' },
+    'ALL': { label: 'All', color: C.onSurface, icon: 'list-outline' },
+    'REQUESTED': { label: 'Requested', color: C.primary, icon: 'time-outline' },
+    'ACCEPTED': { label: 'Assigned', color: C.primary, icon: 'person-outline' },
+    'ARRIVED': { label: 'Arrived', color: '#FFD54F', icon: 'location-outline' },
+    'IN_PROGRESS': { label: 'In Progress', color: '#64B5F6', icon: 'construct-outline' },
+    'COMPLETED': { label: 'Completed', color: '#81C784', icon: 'checkmark-circle-outline' },
+    'CANCELLED': { label: 'Cancelled', color: '#E57373', icon: 'close-circle-outline' },
 };
 
 export default function HistoryScreen({ navigation }) {
@@ -128,12 +116,12 @@ export default function HistoryScreen({ navigation }) {
             >
                 <View style={styles.cardTop}>
                     <View style={styles.serviceBox}>
-                        <View style={[styles.iconBox, { backgroundColor: `${status.color}10` }]}>
+                        <View style={[styles.iconBox, { backgroundColor: `${status.color}20` }]}>
                             <Ionicons name="construct" size={20} color={status.color} />
                         </View>
-                        <View>
-                            <Text style={styles.serviceType}>
-                                {item.serviceType || 'Cooling Expert'}
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.serviceType} numberOfLines={1}>
+                                {(item.serviceType || 'AC Service').toUpperCase()}
                             </Text>
                             <Text style={styles.cardDate}>
                                 {date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })} • {date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
@@ -141,8 +129,8 @@ export default function HistoryScreen({ navigation }) {
                         </View>
                     </View>
                     <View style={styles.priceBox}>
-                        <Text style={styles.cardPrice}>₹{Math.round(item.price || 0)}</Text>
-                        <View style={[styles.miniStatus, { backgroundColor: `${status.color}15` }]}>
+                        <Text style={styles.cardPrice}>₹{Math.round(item.price || item.fare || 1)}</Text>
+                        <View style={[styles.miniStatus, { backgroundColor: `${status.color}22` }]}>
                             <Text style={[styles.miniStatusText, { color: status.color }]}>{status.label}</Text>
                         </View>
                     </View>
@@ -160,36 +148,36 @@ export default function HistoryScreen({ navigation }) {
                 <View style={styles.cardFooter}>
                     <View style={styles.bookingIdBox}>
                         <Text style={styles.idLabel}>ID:</Text>
-                        <Text style={styles.idText}>{item.rideId?.substring(0, 8).toUpperCase()}</Text>
+                        <Text style={styles.idText}>{(item.rideId || item._id || '').substring(0, 8).toUpperCase()}</Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={16} color={COLORS.textTertiary} />
+                    <Ionicons name="chevron-forward" size={16} color={C.onSurfaceVariant} />
                 </View>
             </TouchableOpacity>
         );
     };
 
-    if (loading) {
-        return (
-            <View style={styles.loadingContainer}>
-                <StatusBar barStyle="dark-content" />
-                <ActivityIndicator size="large" color={COLORS.black} />
-            </View>
-        );
-    }
-
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="dark-content" />
+            <StatusBar barStyle="light-content" backgroundColor="#0D0D0D" />
 
             <SafeAreaView edges={['top']} style={styles.header}>
                 <View style={styles.headerContent}>
-                    <Text style={styles.headerTitle}>Activity</Text>
+                    <TouchableOpacity
+                        style={styles.backButton}
+                        onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Home')}
+                        activeOpacity={0.7}
+                    >
+                        <Ionicons name="chevron-back" size={24} color={C.onSurface} />
+                    </TouchableOpacity>
+
+                    <Text style={styles.headerTitle}>Activity & History</Text>
+
                     <TouchableOpacity
                         style={styles.refreshBadge}
                         onPress={handleRefresh}
+                        activeOpacity={0.7}
                     >
-                        <Ionicons name="refresh" size={16} color={COLORS.black} />
-                        <Text style={styles.refreshText}>Updated Just Now</Text>
+                        <Ionicons name="refresh" size={15} color={C.primary} />
                     </TouchableOpacity>
                 </View>
 
@@ -206,12 +194,16 @@ export default function HistoryScreen({ navigation }) {
             </SafeAreaView>
 
             {/* List Content */}
-            {filteredHistory.length === 0 ? (
+            {loading ? (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={C.primary} />
+                </View>
+            ) : filteredHistory.length === 0 ? (
                 <View style={styles.emptyState}>
                     <View style={styles.emptyIconBox}>
-                        <Ionicons name="receipt-outline" size={48} color={COLORS.textTertiary} />
+                        <Ionicons name="receipt-outline" size={44} color={C.onSurfaceVariant} />
                     </View>
-                    <Text style={styles.emptyTitle}>No Activity Yet</Text>
+                    <Text style={styles.emptyTitle}>No Activity Found</Text>
                     <Text style={styles.emptySubtitle}>
                         {selectedFilter === 'ALL'
                             ? 'Bookings and services you request will appear here.'
@@ -228,9 +220,10 @@ export default function HistoryScreen({ navigation }) {
                     refreshing={refreshing}
                     onRefresh={handleRefresh}
                     showsVerticalScrollIndicator={false}
-                    ItemSeparatorComponent={() => <View style={styles.listSeparator} />}
                 />
             )}
+
+            <BottomNavBar navigation={navigation} activeTab="history" />
         </View>
     );
 }
@@ -238,91 +231,119 @@ export default function HistoryScreen({ navigation }) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: COLORS.background,
+        backgroundColor: '#0D0D0D',
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: COLORS.white,
     },
     header: {
-        backgroundColor: COLORS.white,
+        backgroundColor: '#0D0D0D',
+        borderBottomWidth: 1,
+        borderBottomColor: '#1C1C1C',
     },
     headerContent: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        paddingTop: 16,
-        paddingBottom: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+    },
+    backButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#161616',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#262626',
     },
     headerTitle: {
-        fontSize: 32,
-        fontWeight: '700',
-        color: COLORS.black,
-        letterSpacing: -0.5,
+        fontSize: 18,
+        fontFamily: TY.titleMd.fontFamily,
+        fontWeight: '600',
+        color: C.onSurface,
     },
     refreshBadge: {
-        flexDirection: 'row',
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: '#161616',
+        justifyContent: 'center',
         alignItems: 'center',
-        gap: 6,
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 16,
-        backgroundColor: COLORS.background,
-    },
-    refreshText: {
-        fontSize: 11,
-        fontWeight: '600',
-        color: COLORS.textSecondary,
+        borderWidth: 1,
+        borderColor: '#262626',
     },
     filterWrapper: {
-        backgroundColor: COLORS.white,
-        paddingTop: 16,
-        paddingBottom: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: COLORS.border,
+        paddingVertical: 10,
     },
     filterContent: {
-        paddingHorizontal: 20,
-        gap: 10,
+        paddingHorizontal: 16,
+        gap: 8,
     },
     filterChip: {
-        paddingHorizontal: 18,
-        paddingVertical: 10,
-        borderRadius: 24,
-        backgroundColor: COLORS.background,
-        marginRight: 8,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 20,
+        backgroundColor: '#141414',
+        borderWidth: 1,
+        borderColor: '#222222',
     },
     filterChipSelected: {
-        backgroundColor: COLORS.black,
+        backgroundColor: C.primary,
+        borderColor: C.primary,
     },
     filterText: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: '600',
-        color: COLORS.textPrimary,
+        color: C.onSurfaceVariant,
     },
     filterTextSelected: {
-        color: COLORS.white,
+        color: C.onPrimary,
+        fontWeight: '800',
+    },
+    emptyState: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 40,
+    },
+    emptyIconBox: {
+        width: 72,
+        height: 72,
+        borderRadius: 36,
+        backgroundColor: '#141414',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: '#222222',
+    },
+    emptyTitle: {
+        fontSize: 17,
+        fontWeight: '700',
+        color: C.onSurface,
+        marginBottom: 6,
+    },
+    emptySubtitle: {
+        fontSize: 13,
+        color: C.onSurfaceVariant,
+        textAlign: 'center',
+        lineHeight: 18,
     },
     listContent: {
-        padding: 20,
-    },
-    listSeparator: {
-        height: 12,
+        padding: 16,
+        paddingBottom: 110,
     },
     card: {
-        backgroundColor: COLORS.white,
+        backgroundColor: '#141414',
         borderRadius: 16,
         padding: 16,
+        marginBottom: 12,
         borderWidth: 1,
-        borderColor: COLORS.border,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 3,
-        elevation: 2,
+        borderColor: '#222222',
     },
     cardTop: {
         flexDirection: 'row',
@@ -335,73 +356,72 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 12,
         flex: 1,
+        marginRight: 10,
     },
     iconBox: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
+        width: 42,
+        height: 42,
+        borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
     },
     serviceType: {
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: '700',
-        color: COLORS.black,
-        marginBottom: 4,
+        color: C.onSurface,
     },
     cardDate: {
         fontSize: 12,
-        color: COLORS.textSecondary,
-        fontWeight: '500',
+        color: C.onSurfaceVariant,
+        marginTop: 2,
     },
     priceBox: {
         alignItems: 'flex-end',
-        gap: 6,
     },
     cardPrice: {
-        fontSize: 20,
-        fontWeight: '700',
-        color: COLORS.black,
+        fontSize: 17,
+        fontWeight: '800',
+        color: C.primary,
     },
     miniStatus: {
-        paddingHorizontal: 8,
         paddingVertical: 3,
-        borderRadius: 6,
+        paddingHorizontal: 8,
+        borderRadius: 10,
+        marginTop: 4,
     },
     miniStatusText: {
         fontSize: 10,
-        fontWeight: '700',
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
+        fontWeight: '800',
     },
     addressBox: {
+        backgroundColor: '#1B1B1B',
+        padding: 10,
+        borderRadius: 10,
         marginBottom: 12,
-        paddingLeft: 4,
     },
     addressLine: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 10,
+        gap: 8,
     },
     addressDot: {
         width: 6,
         height: 6,
         borderRadius: 3,
-        backgroundColor: COLORS.textTertiary,
+        backgroundColor: C.primary,
     },
     addressText: {
+        fontSize: 12,
+        color: C.onSurfaceVariant,
         flex: 1,
-        fontSize: 13,
-        color: COLORS.textSecondary,
-        lineHeight: 18,
     },
     cardFooter: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingTop: 12,
         borderTopWidth: 1,
-        borderTopColor: COLORS.border,
+        borderColor: '#1C1C1C',
+        paddingTop: 10,
     },
     bookingIdBox: {
         flexDirection: 'row',
@@ -410,41 +430,46 @@ const styles = StyleSheet.create({
     },
     idLabel: {
         fontSize: 11,
-        fontWeight: '600',
-        color: COLORS.textTertiary,
-        textTransform: 'uppercase',
+        color: C.onSurfaceVariant,
     },
     idText: {
         fontSize: 11,
         fontWeight: '700',
-        color: COLORS.black,
-        fontFamily: 'monospace',
+        color: C.onSurface,
     },
-    emptyState: {
+    bottomNav: {
+        backgroundColor: C.surfaceContainerLow,
+        borderTopWidth: 1,
+        borderColor: C.outlineVariant,
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+    },
+    navContent: {
+        flexDirection: 'row',
+        paddingHorizontal: 20,
+        paddingTop: 10,
+        paddingBottom: Platform.OS === 'ios' ? 0 : 10,
+        justifyContent: 'space-between',
+    },
+    navItem: {
         flex: 1,
-        justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 40,
+        paddingVertical: 6,
     },
-    emptyIconBox: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        backgroundColor: COLORS.background,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 20,
+    navTextActive: {
+        fontSize: 10,
+        fontWeight: '800',
+        color: C.primary,
+        marginTop: 4,
+        letterSpacing: 0.5,
     },
-    emptyTitle: {
-        fontSize: 22,
-        fontWeight: '700',
-        color: COLORS.black,
-        marginBottom: 8,
-    },
-    emptySubtitle: {
-        fontSize: 14,
-        color: COLORS.textSecondary,
-        textAlign: 'center',
-        lineHeight: 20,
+    navText: {
+        fontSize: 10,
+        fontWeight: '600',
+        color: C.outline,
+        marginTop: 4,
+        letterSpacing: 0.5,
     },
 });

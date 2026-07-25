@@ -55,12 +55,12 @@ export default function MapPickerScreen({ navigation, route }) {
     loadCurrentLocation();
   }, []);
 
-  const loadCurrentLocation = async () => {
+  const loadCurrentLocation = async (forceGps = false) => {
     try {
       setLoading(true);
       
-      // If a previously selected location is passed, load that directly!
-      if (route.params?.initialLocation) {
+      // If a previously selected location is passed, load that directly unless forceGps is requested
+      if (!forceGps && route.params?.initialLocation) {
         const { lat, lng, description } = route.params.initialLocation;
         setCameraCenter([lng, lat]);
         setRegion({
@@ -93,8 +93,18 @@ export default function MapPickerScreen({ navigation, route }) {
       const newLng = location.coords.longitude;
       const newLat = location.coords.latitude;
 
-      // Update camera and region states simultaneously
-      setCameraCenter([newLng, newLat]);
+      // Smoothly animate camera directly to high-accuracy GPS coordinates
+      if (cameraRef.current) {
+        cameraRef.current.setCamera({
+          centerCoordinate: [newLng, newLat],
+          zoomLevel: 15,
+          animationDuration: 800,
+          animationMode: "flyTo",
+        });
+      } else {
+        setCameraCenter([newLng, newLat]);
+      }
+
       setRegion({
         latitude: newLat,
         longitude: newLng,
@@ -138,21 +148,44 @@ export default function MapPickerScreen({ navigation, route }) {
     }, 500);
   };
 
+  const isSelectingFromSearch = useRef(false);
+
   const selectSearchResult = (item) => {
     const [lng, lat] = item.center;
     
-    setCameraCenter([lng, lat]);
+    // Set lock flag so camera flight doesn't trigger reverse geocoding to overwrite the chosen name
+    isSelectingFromSearch.current = true;
+    
+    // Instantly update address name in 0ms!
+    const selectedAddressName = item.place_name || item.text || "";
+    setAddress(selectedAddressName);
+    setSearchText(item.text || item.place_name);
+    setSearchResults([]);
+
     setRegion({
       latitude: lat,
       longitude: lng,
       latitudeDelta: 0.01,
       longitudeDelta: 0.01,
     });
-    setAddress(item.place_name);
-    setSearchText(item.text || item.place_name);
-    setSearchResults([]);
+
+    if (cameraRef.current) {
+      cameraRef.current.setCamera({
+        centerCoordinate: [lng, lat],
+        zoomLevel: 15,
+        animationDuration: 800,
+        animationMode: "flyTo",
+      });
+    } else {
+      setCameraCenter([lng, lat]);
+    }
 
     Keyboard.dismiss();
+
+    // Release selection lock after camera finishes gliding
+    setTimeout(() => {
+      isSelectingFromSearch.current = false;
+    }, 1000);
   };
 
   const getAddressFromCoords = async (latitude, longitude) => {
@@ -162,7 +195,7 @@ export default function MapPickerScreen({ navigation, route }) {
       );
       const data = await response.json();
 
-      if (data.features && data.features.length > 0) {
+      if (data.features && data.features.length > 0 && !isSelectingFromSearch.current) {
         setAddress(data.features[0].place_name);
       }
     } catch (error) {
@@ -170,24 +203,38 @@ export default function MapPickerScreen({ navigation, route }) {
     }
   };
 
+  const geocodeDebounceTimer = useRef(null);
+
   const handleRegionChangeComplete = (newRegion) => {
     setRegion(newRegion);
-    getAddressFromCoords(newRegion.latitude, newRegion.longitude);
 
-    // Bounce center marker to mimic Uber/premium pin feel
-    Animated.sequence([
-      Animated.timing(markerAnimation, {
-        toValue: -12,
-        duration: 120,
-        useNativeDriver: true,
-      }),
-      Animated.spring(markerAnimation, {
-        toValue: 0,
-        friction: 3.5,
-        tension: 45,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    if (isSelectingFromSearch.current) return;
+
+    if (geocodeDebounceTimer.current) {
+      clearTimeout(geocodeDebounceTimer.current);
+    }
+
+    // Debounce reverse geocoding until camera comes to a steady stop
+    geocodeDebounceTimer.current = setTimeout(() => {
+      if (!isSelectingFromSearch.current) {
+        getAddressFromCoords(newRegion.latitude, newRegion.longitude);
+      }
+
+      // Bounce center marker once camera rests
+      Animated.sequence([
+        Animated.timing(markerAnimation, {
+          toValue: -12,
+          duration: 120,
+          useNativeDriver: true,
+        }),
+        Animated.spring(markerAnimation, {
+          toValue: 0,
+          friction: 3.5,
+          tension: 45,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }, 350);
   };
 
   const handleConfirm = () => {
@@ -204,7 +251,7 @@ export default function MapPickerScreen({ navigation, route }) {
   };
 
   const handleMyLocation = async () => {
-    await loadCurrentLocation();
+    await loadCurrentLocation(true);
   };
 
   const handleClearLocation = () => {
@@ -280,7 +327,7 @@ export default function MapPickerScreen({ navigation, route }) {
                         <Text style={styles.rowMainText} numberOfLines={1}>
                           {item.text}
                         </Text>
-                        <Text style={styles.rowSubText} numberOfLines={1}>
+                        <Text style={styles.rowSubText} numberOfLines={2}>
                           {item.place_name}
                         </Text>
                       </View>
@@ -289,6 +336,9 @@ export default function MapPickerScreen({ navigation, route }) {
                 )}
                 ItemSeparatorComponent={() => <View style={styles.rowSeparator} />}
                 keyboardShouldPersistTaps="always"
+                nestedScrollEnabled={true}
+                showsVerticalScrollIndicator={true}
+                style={{ maxHeight: 250 }}
               />
             </View>
           )}
@@ -301,15 +351,13 @@ export default function MapPickerScreen({ navigation, route }) {
           style={styles.map}
           styleURL={MapboxGL.StyleURL.Dark} // Styled in matching premium dark mode theme color!
           onRegionDidChange={(e) => {
-            // Only update coordinates when it results from direct user finger drag gesture!
-            // This prevents cyclical loops and snaps camera perfectly to center locations.
-            if (!e.properties.isUserInteraction) return;
-            
-            const center = e.geometry.coordinates;
-            handleRegionChangeComplete({
-              latitude: center[1],
-              longitude: center[0],
-            });
+            const coords = e?.geometry?.coordinates || e?.properties?.center;
+            if (coords && Array.isArray(coords) && coords.length >= 2) {
+              handleRegionChangeComplete({
+                latitude: coords[1],
+                longitude: coords[0],
+              });
+            }
           }}
           onDidFinishLoadingMap={() => setIsMapReady(true)}
         >
@@ -402,7 +450,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#0D0D0D",
     borderBottomWidth: 1,
     borderBottomColor: "#1C1C1C",
-    zIndex: 10,
+    zIndex: 999,
+    elevation: 10,
   },
   headerContent: {
     flexDirection: "row",
@@ -430,7 +479,9 @@ const styles = StyleSheet.create({
   searchContainer: {
     paddingHorizontal: 16,
     paddingBottom: 12,
-    zIndex: 1000,
+    position: "relative",
+    zIndex: 9999,
+    elevation: 15,
   },
   searchInputContainer: {
     backgroundColor: "#161616",
@@ -454,18 +505,22 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   searchResultsDropdown: {
-    backgroundColor: "#161616",
+    backgroundColor: "#1A1A1A",
     borderRadius: 12,
-    marginTop: 8,
+    marginTop: 6,
     borderWidth: 1,
-    borderColor: "#262626",
+    borderColor: "#333333",
     position: "absolute",
     top: 52,
-    left: 0,
-    right: 0,
-    elevation: 10,
-    zIndex: 2000,
-    maxHeight: 220,
+    left: 16,
+    right: 16,
+    maxHeight: 260,
+    elevation: 25,
+    zIndex: 99999,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.6,
+    shadowRadius: 12,
     overflow: "hidden",
   },
   searchRow: {

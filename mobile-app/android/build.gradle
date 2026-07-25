@@ -39,60 +39,17 @@ apply plugin: "com.facebook.react.rootproject"
 subprojects {
     configurations.all {
         resolutionStrategy {
-            force 'com.mapbox.maps:android-ndk27:11.16.2'
-            force 'com.mapbox.maps:base-ndk27:11.16.2'
-            force 'com.mapbox.plugin:maps-animation-ndk27:11.16.2'
-            force 'com.mapbox.plugin:maps-annotation-ndk27:11.16.2'
-            force 'com.mapbox.plugin:maps-attribution-ndk27:11.16.2'
-            force 'com.mapbox.plugin:maps-compass-ndk27:11.16.2'
-            force 'com.mapbox.plugin:maps-gestures-ndk27:11.16.2'
-            force 'com.mapbox.plugin:maps-lifecycle-ndk27:11.16.2'
-            force 'com.mapbox.plugin:maps-locationcomponent-ndk27:11.16.2'
-            force 'com.mapbox.plugin:maps-logo-ndk27:11.16.2'
-            force 'com.mapbox.plugin:maps-overlay-ndk27:11.16.2'
-            force 'com.mapbox.plugin:maps-scalebar-ndk27:11.16.2'
-            force 'com.mapbox.plugin:maps-viewport-ndk27:11.16.2'
-            
-            force 'com.mapbox.common:common-ndk27:24.16.2'
-            force 'com.mapbox.navigationcore:android-ndk27:3.11.0'
-            force 'com.mapbox.navigationcore:ui-components-ndk27:3.11.0'
-
+            dependencySubstitution {
+                substitute module('com.mapbox.maps:android') using module('com.mapbox.maps:android-ndk27:11.23.1')
+                substitute module('com.mapbox.maps:base') using module('com.mapbox.maps:base-ndk27:11.23.1')
+                substitute module('com.mapbox.common:common') using module('com.mapbox.common:common-ndk27:24.23.1')
+                substitute module('com.mapbox.module:maps-telemetry') using module('com.mapbox.module:maps-telemetry-ndk27:11.23.1')
+            }
             eachDependency { details ->
-                if (details.requested.group == 'com.mapbox.common' && details.requested.name == 'common') {
-                    details.useTarget("com.mapbox.common:common-ndk27:24.16.2")
-                }
-                if (details.requested.group == 'com.mapbox.maps' && details.requested.name == 'android') {
-                    details.useTarget("com.mapbox.maps:android-ndk27:11.16.2")
-                }
-                if (details.requested.group == 'com.mapbox.navigationcore' && details.requested.name == 'android') {
-                    details.useTarget("com.mapbox.navigationcore:android-ndk27:3.11.0")
-                }
-                if (details.requested.group == 'com.mapbox.navigationcore' && details.requested.name == 'ui-components') {
-                    details.useTarget("com.mapbox.navigationcore:ui-components-ndk27:3.11.0")
-                }
-                // Force to cached version to avoid network download failures
                 if (details.requested.group == 'org.jetbrains.kotlinx' && details.requested.name == 'kotlinx-coroutines-play-services') {
                     details.useVersion("1.9.0")
                 }
             }
         }
-        
-        exclude group: 'com.mapbox.maps', module: 'android'
-        exclude group: 'com.mapbox.maps', module: 'base'
-        exclude group: 'com.mapbox.plugin', module: 'maps-animation'
-        exclude group: 'com.mapbox.plugin', module: 'maps-annotation'
-        exclude group: 'com.mapbox.plugin', module: 'maps-attribution'
-        exclude group: 'com.mapbox.plugin', module: 'maps-compass'
-        exclude group: 'com.mapbox.plugin', module: 'maps-gestures'
-        exclude group: 'com.mapbox.plugin', module: 'maps-lifecycle'
-        exclude group: 'com.mapbox.plugin', module: 'maps-locationcomponent'
-        exclude group: 'com.mapbox.plugin', module: 'maps-logo'
-        exclude group: 'com.mapbox.plugin', module: 'maps-overlay'
-        exclude group: 'com.mapbox.plugin', module: 'maps-scalebar'
-        exclude group: 'com.mapbox.plugin', module: 'maps-viewport'
-        
-        exclude group: 'com.mapbox.common', module: 'common'
-        exclude group: 'com.mapbox.navigationcore', module: 'android'
-        exclude group: 'com.mapbox.navigationcore', module: 'ui-components'
     }
 }

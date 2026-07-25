@@ -1,8 +1,9 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
+import config from '../constants/config';
 
-const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://10.195.224.236:4000';
+const API_URL = config.BACKEND_URL;
 
 let _cachedUser = null;
 

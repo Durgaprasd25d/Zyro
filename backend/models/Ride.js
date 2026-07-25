@@ -19,7 +19,6 @@ const RideSchema = new mongoose.Schema({
     },
     serviceType: {
         type: String,
-        enum: ['repair', 'service', 'install', 'emergency'],
         default: 'service'
     },
     customerId: {
