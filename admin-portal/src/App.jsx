@@ -9,6 +9,7 @@ import Settings from './pages/Settings';
 import Transactions from './pages/Transactions';
 import Login from './pages/Login';
 import LiveMap from './pages/LiveMap';
+import SupportChat from './pages/SupportChat';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -35,6 +36,7 @@ function App() {
           <Route path="kyc" element={<KYCCenter />} />
           <Route path="payouts" element={<Withdrawals />} />
           <Route path="map" element={<LiveMap />} />
+          <Route path="support-chat" element={<SupportChat />} />
           <Route path="services" element={<Services />} />
           <Route path="transactions" element={<Transactions />} />
           <Route path="settings" element={<Settings />} />

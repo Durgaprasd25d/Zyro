@@ -11,7 +11,8 @@ import {
     Menu,
     ShieldCheck,
     Briefcase,
-    Sparkles
+    Sparkles,
+    Headphones
 } from 'lucide-react';
 
 export default function AdminLayout() {
@@ -30,6 +31,7 @@ export default function AdminLayout() {
             items: [
                 { name: 'Dashboard', path: '/', icon: LayoutDashboard },
                 { name: 'Live Map', path: '/map', icon: MapPin },
+                { name: 'Live Support Desk', path: '/support-chat', icon: Headphones },
             ]
         },
         {

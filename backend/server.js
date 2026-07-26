@@ -28,6 +28,7 @@ const settlementRoutes = require('./routes/settlement');
 const adminRoutes = require('./routes/admin');
 const payoutRoutes = require('./routes/payout');
 const kycRoutes = require('./routes/kyc');
+const chatRoutes = require('./routes/chat');
 const initializeLocationSocket = require('./sockets/locationSocket');
 const seedDatabase = require('./utils/seeder');
 
@@ -79,6 +80,7 @@ app.use('/api/settlement', settlementRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/payout', payoutRoutes);
 app.use('/api/kyc', kycRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Initialize Socket.IO handlers
 initializeLocationSocket(io);

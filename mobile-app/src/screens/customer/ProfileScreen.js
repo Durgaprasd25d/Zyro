@@ -12,6 +12,7 @@ import {
     Modal,
     TextInput,
     ActivityIndicator,
+    KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -49,10 +50,88 @@ export default function ProfileScreen({ navigation }) {
     // Sub-modal states
     const [addresses, setAddresses] = useState([]);
 
+    // Live Support Chat State
+    const [chatMessages, setChatMessages] = useState([]);
+    const [chatInput, setChatInput] = useState('');
+    const [chatSocket, setChatSocket] = useState(null);
+
     useEffect(() => {
         loadUser();
         fetchAddresses();
     }, []);
+
+    useEffect(() => {
+        if (showHelpModal && user) {
+            fetchChatHistory();
+            initChatSocket();
+        }
+    }, [showHelpModal, user]);
+
+    const fetchChatHistory = async () => {
+        try {
+            const uid = user?._id || user?.id;
+            if (!uid) return;
+            const res = await fetch(`${config.BACKEND_URL}/api/chat/messages/${uid}`);
+            const data = await res.json();
+            if (data.success) {
+                setChatMessages(data.messages || []);
+            }
+            await fetch(`${config.BACKEND_URL}/api/chat/mark-read`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: uid, role: 'customer' })
+            });
+        } catch (e) {
+            console.error('Fetch chat error:', e);
+        }
+    };
+
+    const initChatSocket = () => {
+        const io = require('socket.io-client');
+        const socket = io(config.SOCKET_URL, {
+            transports: ['websocket', 'polling']
+        });
+
+        const uid = user?._id || user?.id;
+        socket.emit('chat:join', { userId: uid });
+
+        socket.on('chat:new_message', (msg) => {
+            setChatMessages((prev) => {
+                if (prev.some((m) => m._id === msg._id)) return prev;
+                return [...prev, msg];
+            });
+        });
+
+        setChatSocket(socket);
+    };
+
+    const handleSendCustomerMessage = async () => {
+        if (!chatInput.trim() || !user) return;
+        const text = chatInput.trim();
+        setChatInput('');
+
+        const uid = user._id || user.id;
+        const payload = {
+            userId: uid,
+            text,
+            senderRole: 'customer'
+        };
+
+        if (chatSocket) {
+            chatSocket.emit('chat:send_message', payload);
+        } else {
+            try {
+                await fetch(`${config.BACKEND_URL}/api/chat/send`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                fetchChatHistory();
+            } catch (e) {
+                console.error('Send customer msg error:', e);
+            }
+        }
+    };
 
     const loadUser = async () => {
         const userData = await authService.getUser();
@@ -349,7 +428,7 @@ export default function ProfileScreen({ navigation }) {
                     <Text style={styles.logoutText}>Log Out Account</Text>
                 </TouchableOpacity>
 
-                <View style={{ height: 40 }} />
+                <View style={{ height: 120 }} />
             </ScrollView>
 
             {/* Shared Reusable BottomNavBar */}
@@ -391,24 +470,83 @@ export default function ProfileScreen({ navigation }) {
             {/* Help Center Modal */}
             <Modal visible={showHelpModal} animationType="slide" transparent={true} onRequestClose={() => setShowHelpModal(false)}>
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
+                    <KeyboardAvoidingView 
+                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                        style={[styles.modalContent, { height: '85%' }]}
+                    >
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Help & Support Center</Text>
+                            <View>
+                                <Text style={styles.modalTitle}>Help & Live Support</Text>
+                                <Text style={{ fontSize: 11, color: '#4CAF50', fontWeight: '700', marginTop: 2 }}>🟢 Admin Support Online</Text>
+                            </View>
                             <TouchableOpacity onPress={() => setShowHelpModal(false)} style={styles.closeBtn}>
                                 <Ionicons name="close" size={24} color={C.onSurface} />
                             </TouchableOpacity>
                         </View>
-                        <ScrollView style={styles.modalScroll}>
+
+                        {/* FAQs & Live Chat Section */}
+                        <ScrollView style={styles.chatScroll} showsVerticalScrollIndicator={false}>
+                            <Text style={[styles.sectionLabel, { marginTop: 10, marginBottom: 6 }]}>Frequently Asked Questions</Text>
                             <View style={styles.faqCard}>
                                 <Text style={styles.faqQ}>How do I track my active technician?</Text>
-                                <Text style={styles.faqA}>Open the active booking card from the home screen or history screen to see live GPS navigation.</Text>
+                                <Text style={styles.faqA}>Open the active booking card from the home screen to see real-time GPS movement.</Text>
                             </View>
-                            <View style={styles.faqCard}>
-                                <Text style={styles.faqQ}>What if I need to cancel my service?</Text>
-                                <Text style={styles.faqA}>You can cancel anytime before the technician arrives directly from the active booking screen.</Text>
-                            </View>
+
+                            <Text style={[styles.sectionLabel, { marginTop: 14, marginBottom: 8 }]}>Live Chat with Admin</Text>
+                            {chatMessages.length === 0 ? (
+                                <View style={styles.emptyState}>
+                                    <Ionicons name="chatbubbles-outline" size={36} color={C.primary} />
+                                    <Text style={styles.emptyText}>Need Immediate Assistance?</Text>
+                                    <Text style={styles.emptySubtext}>Type a message below to chat with Super Admin in real-time.</Text>
+                                </View>
+                            ) : (
+                                chatMessages.map((msg, idx) => {
+                                    const isCustomer = msg.senderRole === 'customer';
+                                    return (
+                                        <View
+                                            key={msg._id || idx}
+                                            style={[
+                                                styles.chatMessageRow,
+                                                isCustomer ? styles.chatRowRight : styles.chatRowLeft
+                                            ]}
+                                        >
+                                            <View
+                                                style={[
+                                                    styles.chatBubble,
+                                                    isCustomer ? styles.chatBubbleRight : styles.chatBubbleLeft
+                                                ]}
+                                            >
+                                                <Text style={[styles.chatText, isCustomer ? styles.chatTextRight : styles.chatTextLeft]}>
+                                                    {msg.text}
+                                                </Text>
+                                                <Text style={[styles.chatTime, isCustomer ? styles.chatTimeRight : styles.chatTimeLeft]}>
+                                                    {new Date(msg.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    );
+                                })
+                            )}
                         </ScrollView>
-                    </View>
+
+                        {/* Chat Input Bar */}
+                        <View style={styles.chatInputRow}>
+                            <TextInput
+                                style={styles.chatTextInput}
+                                value={chatInput}
+                                onChangeText={setChatInput}
+                                placeholder="Message Zyro Admin..."
+                                placeholderTextColor={C.onSurfaceVariant}
+                            />
+                            <TouchableOpacity
+                                style={styles.sendBtn}
+                                onPress={handleSendCustomerMessage}
+                                activeOpacity={0.8}
+                            >
+                                <Ionicons name="send" size={18} color={C.onPrimary} />
+                            </TouchableOpacity>
+                        </View>
+                    </KeyboardAvoidingView>
                 </View>
             </Modal>
 
@@ -904,6 +1042,86 @@ const styles = StyleSheet.create({
     },
     genderPillTextActive: {
         color: C.onPrimary,
+    },
+    chatScroll: {
+        paddingTop: 10,
+    },
+    chatMessageRow: {
+        width: '100%',
+        marginVertical: 4,
+        flexDirection: 'row',
+    },
+    chatRowRight: {
+        justifyContent: 'flex-end',
+    },
+    chatRowLeft: {
+        justifyContent: 'flex-start',
+    },
+    chatBubble: {
+        maxWidth: '78%',
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        borderRadius: 18,
+    },
+    chatBubbleRight: {
+        backgroundColor: C.primary,
+        borderBottomRightRadius: 4,
+    },
+    chatBubbleLeft: {
+        backgroundColor: '#262626',
+        borderBottomLeftRadius: 4,
+    },
+    chatText: {
+        fontSize: 13,
+        fontWeight: '600',
+        lineHeight: 18,
+    },
+    chatTextRight: {
+        color: C.onPrimary,
+    },
+    chatTextLeft: {
+        color: C.onSurface,
+    },
+    chatTime: {
+        fontSize: 9,
+        fontWeight: '700',
+        marginTop: 4,
+        alignSelf: 'flex-end',
+    },
+    chatTimeRight: {
+        color: 'rgba(67, 43, 30, 0.75)',
+    },
+    chatTimeLeft: {
+        color: C.onSurfaceVariant,
+    },
+    chatInputRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        paddingTop: 10,
+        borderTopWidth: 1,
+        borderTopColor: '#222222',
+        backgroundColor: '#141414',
+    },
+    chatTextInput: {
+        flex: 1,
+        height: 44,
+        backgroundColor: '#1C1C1C',
+        borderRadius: 22,
+        paddingHorizontal: 16,
+        color: C.onSurface,
+        fontSize: 13,
+        fontWeight: '600',
+        borderWidth: 1,
+        borderColor: '#2A2A2A',
+    },
+    sendBtn: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: C.primary,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     emptyState: {
         alignItems: 'center',
