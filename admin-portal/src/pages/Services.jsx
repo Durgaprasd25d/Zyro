@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import config from '../config';
+import ADMIN_COLORS from '../theme/colors';
 import {
     Plus,
     Edit2,
@@ -9,8 +10,6 @@ import {
     Package,
     X,
     Save,
-    AlertCircle,
-    ChevronRight,
     Search
 } from 'lucide-react';
 
@@ -89,8 +88,8 @@ export default function Services() {
         }
     };
 
-    const deleteService = async (id) => {
-        if (!window.confirm('Delete this service?')) return;
+    const handleDeleteService = async (id) => {
+        if (!window.confirm('Delete service item?')) return;
         try {
             await axios.delete(`${API_BASE}/${id}`);
             fetchData();
@@ -99,277 +98,294 @@ export default function Services() {
         }
     };
 
-    const deleteCategory = async (id) => {
-        if (!window.confirm('Delete this category? This will not delete the services inside but they will be unassigned.')) return;
-        try {
-            await axios.delete(`${API_BASE}/categories/${id}`);
-            fetchData();
-        } catch (error) {
-            alert('Error deleting category');
+    const openServiceModal = (item = null) => {
+        setEditingItem(item);
+        if (item) {
+            setServiceForm({
+                name: item.name,
+                price: item.price,
+                time: item.time || '1 hr',
+                description: item.description || '',
+                category: item.category?._id || item.category
+            });
+        } else {
+            setServiceForm({ name: '', price: '', time: '1 hr', description: '', category: activeTab });
         }
+        setShowServiceModal(true);
     };
 
-    const filteredServices = services.filter(s =>
-        (activeTab === 'all' || s.category?._id === activeTab) &&
-        s.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const openCategoryModal = (cat = null) => {
+        setEditingItem(cat);
+        if (cat) {
+            setCategoryForm({ name: cat.name, slug: cat.slug, icon: cat.icon });
+        } else {
+            setCategoryForm({ name: '', slug: '', icon: 'build-outline' });
+        }
+        setShowCategoryModal(true);
+    };
+
+    const filteredServices = services.filter(s => {
+        const matchesCategory = activeTab ? (s.category?._id === activeTab || s.category === activeTab) : true;
+        const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesCategory && matchesSearch;
+    });
 
     return (
-        <div className="flex flex-col gap-6 max-w-7xl mx-auto">
+        <div className="space-y-6 max-w-7xl mx-auto pb-10 font-sans">
+            {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-800">Service Management</h2>
-                    <p className="text-slate-500 text-sm">Configure your service catalog, categories and pricing</p>
+                    <h2 className="text-3xl font-extrabold tracking-tight" style={{ color: ADMIN_COLORS.textPrimary }}>
+                        Service Catalog Management
+                    </h2>
+                    <p className="text-sm font-medium mt-1" style={{ color: ADMIN_COLORS.textSecondary }}>
+                        Configure pricing, categories & AC service details offered on Zyro customer app
+                    </p>
                 </div>
-                <div className="flex gap-2">
+
+                <div className="flex gap-3">
                     <button
-                        onClick={() => {
-                            setEditingItem(null);
-                            setCategoryForm({ name: '', slug: '', icon: 'build-outline' });
-                            setShowCategoryModal(true);
-                        }}
-                        className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-700 font-semibold text-sm transition-all"
+                        onClick={() => openCategoryModal()}
+                        className="px-4 py-2.5 rounded-2xl text-xs font-extrabold border flex items-center gap-2 transition-all active:scale-95"
+                        style={{ backgroundColor: ADMIN_COLORS.surfaceElevated, borderColor: ADMIN_COLORS.border, color: ADMIN_COLORS.textPrimary }}
                     >
-                        <LayoutGrid size={18} />
-                        New Category
+                        <Plus size={16} />
+                        <span>Add Category</span>
                     </button>
+
                     <button
-                        onClick={() => {
-                            setEditingItem(null);
-                            setServiceForm({ name: '', price: '', time: '1 hr', description: '', category: activeTab });
-                            setShowServiceModal(true);
-                        }}
-                        className="flex items-center gap-2 bg-blue-600 px-5 py-2 rounded-xl text-white font-semibold text-sm hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all"
+                        onClick={() => openServiceModal()}
+                        className="px-4 py-2.5 rounded-2xl text-xs font-extrabold border flex items-center gap-2 transition-all active:scale-95 shadow-lg"
+                        style={{ backgroundColor: ADMIN_COLORS.primary, borderColor: ADMIN_COLORS.borderGold, color: '#432B1E' }}
                     >
-                        <Plus size={18} />
-                        New Service
+                        <Plus size={16} />
+                        <span>Add Service</span>
                     </button>
                 </div>
             </div>
 
-            {/* Content Area */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-                {/* Left: Categories List */}
-                <div className="lg:col-span-3 space-y-4">
-                    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                        <div className="p-4 border-b border-slate-50 bg-slate-50/50">
-                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Categories</h3>
-                        </div>
-                        <div className="p-2 space-y-1">
-                            <button
-                                onClick={() => setActiveTab('all')}
-                                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === 'all' ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50'
-                                    }`}
+            {/* Categories Horizontal Tabs */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                {categories.map((cat) => {
+                    const isActive = activeTab === cat._id;
+                    return (
+                        <button
+                            key={cat._id}
+                            onClick={() => setActiveTab(cat._id)}
+                            className="px-5 py-3 rounded-2xl text-xs font-extrabold transition-all border whitespace-nowrap flex items-center gap-2"
+                            style={{ 
+                                backgroundColor: isActive ? ADMIN_COLORS.primary : ADMIN_COLORS.surface,
+                                borderColor: isActive ? ADMIN_COLORS.primary : ADMIN_COLORS.border,
+                                color: isActive ? '#432B1E' : ADMIN_COLORS.textSecondary
+                            }}
+                        >
+                            <span>{cat.name}</span>
+                            <span 
+                                className="px-2 py-0.5 rounded-full text-[10px] font-black"
+                                style={{ 
+                                    backgroundColor: isActive ? 'rgba(67, 43, 30, 0.15)' : '#222222',
+                                    color: isActive ? '#432B1E' : ADMIN_COLORS.textPrimary
+                                }}
                             >
-                                <span className="flex items-center gap-3">
-                                    <Package size={18} className={activeTab === 'all' ? 'text-blue-600' : 'text-slate-400'} />
-                                    All Services
-                                </span>
-                                <span className={`text-[10px] px-2 py-0.5 rounded-full ${activeTab === 'all' ? 'bg-blue-200' : 'bg-slate-100'}`}>
-                                    {services.length}
-                                </span>
-                            </button>
-
-                            {categories.map((cat) => (
-                                <div key={cat._id} className="group relative">
-                                    <div
-                                        onClick={() => setActiveTab(cat._id)}
-                                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${activeTab === cat._id ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50'
-                                            }`}
-                                    >
-                                        <span className="flex items-center gap-3">
-                                            <span className="text-lg opacity-80">{cat.icon === 'build-outline' ? '🔧' : '🛠️'}</span>
-                                            {cat.name}
-                                        </span>
-                                        <div className="flex items-center gap-2">
-                                            <span className={`text-[10px] px-2 py-0.5 rounded-full ${activeTab === cat._id ? 'bg-blue-200' : 'bg-slate-100'}`}>
-                                                {services.filter(s => s.category?._id === cat._id).length}
-                                            </span>
-                                            <div className="opacity-0 group-hover:opacity-100 flex gap-1 ml-2 transition-opacity">
-                                                <button onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setEditingItem(cat);
-                                                    setCategoryForm({ name: cat.name, slug: cat.slug, icon: cat.icon });
-                                                    setShowCategoryModal(true);
-                                                }} className="p-1 hover:text-blue-600"><Edit2 size={12} /></button>
-                                                <button onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    deleteCategory(cat._id);
-                                                }} className="p-1 hover:text-red-500"><Trash2 size={12} /></button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Right: Services Grid */}
-                <div className="lg:col-span-9 space-y-4">
-                    <div className="relative">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                        <input
-                            type="text"
-                            placeholder="Search services..."
-                            className="w-full pl-12 pr-4 py-3 bg-white rounded-2xl border border-slate-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all font-medium text-slate-700"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {loading ? (
-                            Array(4).fill(0).map((_, i) => (
-                                <div key={i} className="h-32 bg-slate-50 animate-pulse rounded-2xl" />
-                            ))
-                        ) : filteredServices.length === 0 ? (
-                            <div className="col-span-full py-20 bg-white rounded-2xl border border-dashed border-slate-200 flex flex-col items-center text-slate-400">
-                                <Package size={48} className="mb-4 opacity-20" />
-                                <p>No services found in this category</p>
-                            </div>
-                        ) : (
-                            filteredServices.map((service) => (
-                                <div key={service._id} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all group">
-                                    <div className="flex justify-between items-start mb-3">
-                                        <div>
-                                            <h4 className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors uppercase tracking-tight">
-                                                {service.name}
-                                            </h4>
-                                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{service.category?.name}</span>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={() => {
-                                                    setEditingItem(service);
-                                                    setServiceForm({
-                                                        name: service.name,
-                                                        price: service.price,
-                                                        time: service.time || '1 hr',
-                                                        description: service.description || '',
-                                                        category: service.category?._id
-                                                    });
-                                                    setShowServiceModal(true);
-                                                }}
-                                                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                                            >
-                                                <Edit2 size={16} />
-                                            </button>
-                                            <button
-                                                onClick={() => deleteService(service._id)}
-                                                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-50">
-                                        <div className="flex items-center gap-4">
-                                            <span className="text-lg font-black text-slate-900">₹{service.price}</span>
-                                            <span className="text-xs text-slate-400 font-medium">{service.time || '1 hr'}</span>
-                                        </div>
-                                        <span className="text-[10px] bg-slate-50 text-slate-500 px-2 py-1 rounded-md font-bold">READY</span>
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                    </div>
-                </div>
+                                {services.filter(s => s.category?._id === cat._id || s.category === cat._id).length}
+                            </span>
+                        </button>
+                    );
+                })}
             </div>
 
-            {/* Service Modal */}
-            {showServiceModal && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-                        <div className="px-6 py-6 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
-                            <h3 className="text-xl font-bold text-slate-800">{editingItem ? 'Edit Service' : 'New Service'}</h3>
-                            <button onClick={() => setShowServiceModal(false)} className="text-slate-400 hover:text-slate-600"><X /></button>
-                        </div>
-                        <form onSubmit={handleServiceSubmit} className="p-6 space-y-5">
+            {/* Services Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {loading ? (
+                    <div className="col-span-full py-16 text-center text-sm font-semibold" style={{ color: ADMIN_COLORS.textMuted }}>
+                        Loading services catalog...
+                    </div>
+                ) : filteredServices.length === 0 ? (
+                    <div 
+                        className="col-span-full p-12 rounded-3xl border text-center"
+                        style={{ backgroundColor: ADMIN_COLORS.surface, borderColor: ADMIN_COLORS.border }}
+                    >
+                        <Package size={40} className="mx-auto mb-3" style={{ color: ADMIN_COLORS.primary }} />
+                        <p className="font-bold text-white text-base">No services found</p>
+                        <p className="text-xs mt-1" style={{ color: ADMIN_COLORS.textMuted }}>
+                            Click "Add Service" above to add items to this category.
+                        </p>
+                    </div>
+                ) : (
+                    filteredServices.map((service) => (
+                        <div
+                            key={service._id}
+                            className="p-6 rounded-3xl border flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:border-[#E6BEAB]/40 group"
+                            style={{ backgroundColor: ADMIN_COLORS.surface, borderColor: ADMIN_COLORS.border }}
+                        >
                             <div>
-                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Service Name</label>
+                                <div className="flex items-start justify-between mb-3">
+                                    <h3 className="font-extrabold text-base text-white">{service.name}</h3>
+                                    <span className="text-lg font-black text-white" style={{ color: ADMIN_COLORS.primary }}>
+                                        ₹{service.price}
+                                    </span>
+                                </div>
+                                <p className="text-xs line-clamp-2 mb-4 leading-relaxed" style={{ color: ADMIN_COLORS.textSecondary }}>
+                                    {service.description || 'Professional technician diagnostic & resolution.'}
+                                </p>
+                            </div>
+
+                            <div className="pt-4 border-t flex items-center justify-between" style={{ borderColor: ADMIN_COLORS.border }}>
+                                <span className="text-xs font-semibold" style={{ color: ADMIN_COLORS.textMuted }}>
+                                    Est. Time: {service.time || '1 hr'}
+                                </span>
+
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => openServiceModal(service)}
+                                        className="p-2 rounded-xl border transition-all active:scale-95"
+                                        style={{ backgroundColor: '#1C1C1C', borderColor: '#2D2D2D', color: ADMIN_COLORS.primary }}
+                                    >
+                                        <Edit2 size={14} />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteService(service._id)}
+                                        className="p-2 rounded-xl border transition-all active:scale-95"
+                                        style={{ backgroundColor: ADMIN_COLORS.errorBg, borderColor: 'rgba(248, 113, 113, 0.3)', color: ADMIN_COLORS.error }}
+                                    >
+                                        <Trash2 size={14} />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
+
+            {/* Service Edit / Add Modal */}
+            {showServiceModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                    <div 
+                        className="w-full max-w-lg p-7 rounded-3xl border shadow-2xl space-y-5"
+                        style={{ backgroundColor: ADMIN_COLORS.surface, borderColor: ADMIN_COLORS.border }}
+                    >
+                        <div className="flex justify-between items-center border-b pb-4" style={{ borderColor: ADMIN_COLORS.border }}>
+                            <h3 className="text-lg font-extrabold text-white">
+                                {editingItem ? 'Edit Service Details' : 'Create New Service'}
+                            </h3>
+                            <button onClick={() => setShowServiceModal(false)} className="p-1 rounded-full text-gray-400 hover:text-white">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleServiceSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold uppercase mb-1.5" style={{ color: ADMIN_COLORS.textSecondary }}>Service Name</label>
                                 <input
+                                    type="text"
                                     required
-                                    className="w-full px-4 py-3 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500/20 text-slate-800 font-medium"
                                     value={serviceForm.name}
-                                    placeholder="e.g. Split AC Repair"
-                                    onChange={e => setServiceForm({ ...serviceForm, name: e.target.value })}
+                                    onChange={(e) => setServiceForm({ ...serviceForm, name: e.target.value })}
+                                    className="w-full px-4 py-3 rounded-2xl border text-sm font-medium outline-none"
+                                    style={{ backgroundColor: '#1C1C1C', borderColor: ADMIN_COLORS.border, color: ADMIN_COLORS.textPrimary }}
+                                    placeholder="e.g. Deep Foam Jet Wash"
                                 />
                             </div>
+
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Base Price (₹)</label>
+                                    <label className="block text-xs font-bold uppercase mb-1.5" style={{ color: ADMIN_COLORS.textSecondary }}>Base Price (₹)</label>
                                     <input
-                                        type="number" required
-                                        className="w-full px-4 py-3 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500/20 text-slate-800 font-medium"
+                                        type="number"
+                                        required
                                         value={serviceForm.price}
-                                        placeholder="500"
-                                        onChange={e => setServiceForm({ ...serviceForm, price: e.target.value })}
+                                        onChange={(e) => setServiceForm({ ...serviceForm, price: e.target.value })}
+                                        className="w-full px-4 py-3 rounded-2xl border text-sm font-medium outline-none"
+                                        style={{ backgroundColor: '#1C1C1C', borderColor: ADMIN_COLORS.border, color: ADMIN_COLORS.textPrimary }}
+                                        placeholder="e.g. 499"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Duration</label>
+                                    <label className="block text-xs font-bold uppercase mb-1.5" style={{ color: ADMIN_COLORS.textSecondary }}>Est. Duration</label>
                                     <input
-                                        className="w-full px-4 py-3 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500/20 text-slate-800 font-medium"
+                                        type="text"
                                         value={serviceForm.time}
-                                        placeholder="1 hr"
-                                        onChange={e => setServiceForm({ ...serviceForm, time: e.target.value })}
+                                        onChange={(e) => setServiceForm({ ...serviceForm, time: e.target.value })}
+                                        className="w-full px-4 py-3 rounded-2xl border text-sm font-medium outline-none"
+                                        style={{ backgroundColor: '#1C1C1C', borderColor: ADMIN_COLORS.border, color: ADMIN_COLORS.textPrimary }}
+                                        placeholder="e.g. 45 mins"
                                     />
                                 </div>
                             </div>
+
                             <div>
-                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Description</label>
+                                <label className="block text-xs font-bold uppercase mb-1.5" style={{ color: ADMIN_COLORS.textSecondary }}>Description</label>
                                 <textarea
-                                    className="w-full px-4 py-3 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500/20 text-slate-800 font-medium min-h-[100px]"
+                                    rows={3}
                                     value={serviceForm.description}
-                                    placeholder="Tell customers what is included..."
-                                    onChange={e => setServiceForm({ ...serviceForm, description: e.target.value })}
+                                    onChange={(e) => setServiceForm({ ...serviceForm, description: e.target.value })}
+                                    className="w-full px-4 py-3 rounded-2xl border text-sm font-medium outline-none"
+                                    style={{ backgroundColor: '#1C1C1C', borderColor: ADMIN_COLORS.border, color: ADMIN_COLORS.textPrimary }}
+                                    placeholder="Service inclusions and procedure..."
                                 />
                             </div>
-                            <button type="submit" className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg shadow-blue-200 transition-all flex items-center justify-center gap-2 mt-4">
-                                <Save size={20} />
-                                {editingItem ? 'Update Service' : 'Create Service'}
+
+                            <button
+                                type="submit"
+                                className="w-full py-3.5 rounded-2xl text-xs font-extrabold uppercase tracking-wider transition-all shadow-lg mt-2"
+                                style={{ backgroundColor: ADMIN_COLORS.primary, color: '#432B1E' }}
+                            >
+                                Save Service Details
                             </button>
                         </form>
                     </div>
                 </div>
             )}
 
-            {/* Category Modal */}
+            {/* Category Edit / Add Modal */}
             {showCategoryModal && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-                        <div className="px-6 py-6 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
-                            <h3 className="text-xl font-bold text-slate-800">{editingItem ? 'Edit Category' : 'New Category'}</h3>
-                            <button onClick={() => setShowCategoryModal(false)} className="text-slate-400 hover:text-slate-600"><X /></button>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                    <div 
+                        className="w-full max-w-md p-7 rounded-3xl border shadow-2xl space-y-5"
+                        style={{ backgroundColor: ADMIN_COLORS.surface, borderColor: ADMIN_COLORS.border }}
+                    >
+                        <div className="flex justify-between items-center border-b pb-4" style={{ borderColor: ADMIN_COLORS.border }}>
+                            <h3 className="text-lg font-extrabold text-white">
+                                {editingItem ? 'Edit Category' : 'Create Category'}
+                            </h3>
+                            <button onClick={() => setShowCategoryModal(false)} className="p-1 rounded-full text-gray-400 hover:text-white">
+                                <X size={20} />
+                            </button>
                         </div>
-                        <form onSubmit={handleCategorySubmit} className="p-6 space-y-5">
+
+                        <form onSubmit={handleCategorySubmit} className="space-y-4">
                             <div>
-                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Category Name</label>
+                                <label className="block text-xs font-bold uppercase mb-1.5" style={{ color: ADMIN_COLORS.textSecondary }}>Category Name</label>
                                 <input
+                                    type="text"
                                     required
-                                    className="w-full px-4 py-3 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500/20 text-slate-800 font-medium"
                                     value={categoryForm.name}
-                                    placeholder="e.g. AC Repair"
-                                    onChange={e => {
-                                        const val = e.target.value;
-                                        setCategoryForm({ ...categoryForm, name: val, slug: val.toLowerCase().replace(/ /g, '-') })
-                                    }}
+                                    onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })}
+                                    className="w-full px-4 py-3 rounded-2xl border text-sm font-medium outline-none"
+                                    style={{ backgroundColor: '#1C1C1C', borderColor: ADMIN_COLORS.border, color: ADMIN_COLORS.textPrimary }}
+                                    placeholder="e.g. Chemical Cleaning"
                                 />
                             </div>
+
                             <div>
-                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">URL Slug</label>
+                                <label className="block text-xs font-bold uppercase mb-1.5" style={{ color: ADMIN_COLORS.textSecondary }}>Slug</label>
                                 <input
+                                    type="text"
                                     required
-                                    className="w-full px-4 py-3 bg-slate-100 border-none rounded-2xl text-slate-400 font-mono text-sm"
                                     value={categoryForm.slug}
-                                    disabled
+                                    onChange={(e) => setCategoryForm({ ...categoryForm, slug: e.target.value })}
+                                    className="w-full px-4 py-3 rounded-2xl border text-sm font-medium outline-none"
+                                    style={{ backgroundColor: '#1C1C1C', borderColor: ADMIN_COLORS.border, color: ADMIN_COLORS.textPrimary }}
+                                    placeholder="e.g. chemical-cleaning"
                                 />
                             </div>
-                            <button type="submit" className="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 mt-4">
-                                <Save size={20} />
-                                {editingItem ? 'Update Category' : 'Create Category'}
+
+                            <button
+                                type="submit"
+                                className="w-full py-3.5 rounded-2xl text-xs font-extrabold uppercase tracking-wider transition-all shadow-lg mt-2"
+                                style={{ backgroundColor: ADMIN_COLORS.primary, color: '#432B1E' }}
+                            >
+                                Save Category
                             </button>
                         </form>
                     </div>

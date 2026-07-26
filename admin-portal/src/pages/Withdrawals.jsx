@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { CreditCard, CheckCircle, XCircle } from 'lucide-react';
+import { CreditCard, CheckCircle, XCircle, Clock } from 'lucide-react';
 import config from '../config';
+import ADMIN_COLORS from '../theme/colors';
 
 export default function Withdrawals() {
     const [requests, setRequests] = useState([]);
@@ -57,148 +58,125 @@ export default function Withdrawals() {
         }
     };
 
-    const processAutomatedPayout = async (id) => {
-        if (!window.confirm('Initiate real money transfer via RazorpayX?')) return;
-
-        try {
-            const response = await axios.post(`${config.API_URL}/payout/process-payout`, {
-                withdrawalId: id
-            });
-            if (response.data.success) {
-                alert('Payout initiated! Transaction ID: ' + response.data.payoutId);
-                fetchRequests();
-            }
-        } catch (error) {
-            alert('Automated Payout Failed: ' + (error.response?.data?.error || error.message));
-        }
-    };
-
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-slate-800">Payout Requests</h2>
+        <div className="space-y-6 max-w-7xl mx-auto pb-10 font-sans">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 className="text-3xl font-extrabold tracking-tight" style={{ color: ADMIN_COLORS.textPrimary }}>
+                        Payout Requests
+                    </h2>
+                    <p className="text-sm font-medium mt-1" style={{ color: ADMIN_COLORS.textSecondary }}>
+                        Approve technician earnings withdrawal requests & transfer payouts
+                    </p>
+                </div>
 
-                <div className="flex bg-gray-100 p-1 rounded-xl">
-                    {['pending', 'approved', 'completed', 'rejected'].map((s) => (
+                <div 
+                    className="flex gap-1.5 p-1.5 rounded-2xl border self-start md:self-auto"
+                    style={{ backgroundColor: ADMIN_COLORS.surface, borderColor: ADMIN_COLORS.border }}
+                >
+                    {['pending', 'approved', 'rejected'].map((tab) => (
                         <button
-                            key={s}
-                            onClick={() => setFilter(s)}
-                            className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${filter === s ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                                }`}
+                            key={tab}
+                            onClick={() => setFilter(tab)}
+                            className="px-4 py-2 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all"
+                            style={{ 
+                                backgroundColor: filter === tab ? ADMIN_COLORS.primary : 'transparent',
+                                color: filter === tab ? '#432B1E' : ADMIN_COLORS.textSecondary
+                            }}
                         >
-                            {s.toUpperCase()}
+                            {tab}
                         </button>
                     ))}
                 </div>
             </div>
 
-            <div className="grid gap-4">
-                {loading ? (
-                    <div className="bg-white p-12 rounded-2xl border border-gray-100 text-center text-gray-500">
-                        Loading requests...
-                    </div>
-                ) : requests.length === 0 ? (
-                    <div className="bg-white p-12 rounded-2xl border border-gray-100 text-center text-gray-500">
-                        No {filter} requests found.
-                    </div>
-                ) : (
-                    requests.map((req) => (
-                        <div key={req._id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:border-blue-200 transition-colors">
-                            <div className="flex gap-4">
-                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${req.payoutMethod === 'upi' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'
-                                    }`}>
-                                    <CreditCard size={24} />
-                                </div>
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <h3 className="font-bold text-slate-900">₹{req.amount.toLocaleString()}</h3>
-                                        <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase ${req.status === 'pending' ? 'bg-amber-100 text-amber-700' :
-                                            req.status === 'approved' ? 'bg-blue-100 text-blue-700' :
-                                                req.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
-                                            }`}>
-                                            {req.status}
-                                        </span>
-                                    </div>
-                                    <p className="text-sm font-medium text-slate-600">
-                                        {req.technician?.userId?.name || req.technician?.name} ({req.technician?.userId?.mobile || req.technician?.mobile})
-                                    </p>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${req.technician?.verification?.kycVerified ? 'bg-green-50 text-green-700 border-green-100' : 'bg-red-50 text-red-700 border-red-100'
-                                            }`}>
-                                            KYC: {req.technician?.verification?.kycStatus || 'UNKNOWN'}
-                                        </span>
-                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${req.technician?.verification?.adminVerified ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-amber-50 text-amber-700 border-amber-100'
-                                            }`}>
-                                            PAYOUT ACCESS: {req.technician?.verification?.adminVerified ? 'VERIFIED' : 'PENDING'}
-                                        </span>
-                                    </div>
-                                    <p className="text-xs text-gray-400 mt-1">Requested on {new Date(req.createdAt).toLocaleString()}</p>
-                                </div>
-                            </div>
-
-                            <div className="flex-1 max-w-sm px-6 border-l border-r border-gray-50 flex flex-col justify-center">
-                                {req.payoutMethod === 'upi' ? (
-                                    <div>
-                                        <p className="text-xs text-gray-500 font-bold uppercase mb-1">UPI ID</p>
-                                        <p className="text-sm font-mono text-slate-800">{req.upiId}</p>
-                                    </div>
-                                ) : (
-                                    <div>
-                                        <p className="text-xs text-gray-500 font-bold uppercase mb-1">Bank Details</p>
-                                        <p className="text-sm font-medium text-slate-800">{req.bankDetails?.accountHolderName}</p>
-                                        <p className="text-xs text-gray-600">A/C: {req.bankDetails?.accountNumber} | IFSC: {req.bankDetails?.ifscCode}</p>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="flex items-center gap-3">
-                                {req.status === 'pending' && (
-                                    <>
-                                        <button
-                                            onClick={() => updateStatus(req._id, 'approved')}
-                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
-                                            title="Approve Request"
-                                        >
-                                            <CheckCircle size={24} />
-                                        </button>
-                                        <button
-                                            onClick={() => updateStatus(req._id, 'rejected')}
-                                            className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors"
-                                            title="Reject Request"
-                                        >
-                                            <XCircle size={24} />
-                                        </button>
-                                    </>
-                                )}
-
-                                {req.status === 'approved' && (
-                                    <div className="flex flex-col gap-2">
-                                        <button
-                                            onClick={() => processAutomatedPayout(req._id)}
-                                            className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-blue-700 shadow-lg shadow-blue-600/20"
-                                        >
-                                            Process RazorpayX
-                                        </button>
-                                        <button
-                                            onClick={() => markPaid(req._id)}
-                                            className="text-emerald-600 border border-emerald-100 px-4 py-2 rounded-xl text-sm font-bold hover:bg-emerald-50"
-                                        >
-                                            Mark Manual
-                                        </button>
-                                    </div>
-                                )}
-
-                                {(req.status === 'completed' || req.status === 'rejected') && (
-                                    <div className="text-right">
-                                        <p className="text-xs font-bold text-gray-400 uppercase">Processed At</p>
-                                        <p className="text-sm text-slate-600 font-medium">{new Date(req.processedAt || req.updatedAt).toLocaleDateString()}</p>
-                                        {req.transactionId && <p className="text-[10px] text-gray-400">Ref: {req.transactionId}</p>}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    ))
-                )}
+            {/* Table */}
+            <div 
+                className="rounded-3xl border overflow-hidden shadow-xl"
+                style={{ backgroundColor: ADMIN_COLORS.surface, borderColor: ADMIN_COLORS.border }}
+            >
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr style={{ backgroundColor: '#1A1A1A', borderBottom: `1px solid ${ADMIN_COLORS.border}` }}>
+                                <th className="px-6 py-4 text-xs font-black uppercase tracking-wider" style={{ color: ADMIN_COLORS.textSecondary }}>TECHNICIAN</th>
+                                <th className="px-6 py-4 text-xs font-black uppercase tracking-wider" style={{ color: ADMIN_COLORS.textSecondary }}>AMOUNT</th>
+                                <th className="px-6 py-4 text-xs font-black uppercase tracking-wider" style={{ color: ADMIN_COLORS.textSecondary }}>BANK / UPI DETAILS</th>
+                                <th className="px-6 py-4 text-xs font-black uppercase tracking-wider" style={{ color: ADMIN_COLORS.textSecondary }}>STATUS</th>
+                                <th className="px-6 py-4 text-xs font-black uppercase tracking-wider text-right" style={{ color: ADMIN_COLORS.textSecondary }}>ACTIONS</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y" style={{ borderColor: ADMIN_COLORS.border }}>
+                            {loading ? (
+                                <tr>
+                                    <td colSpan="5" className="px-6 py-12 text-center text-sm font-medium" style={{ color: ADMIN_COLORS.textMuted }}>
+                                        Loading payout requests...
+                                    </td>
+                                </tr>
+                            ) : requests.length === 0 ? (
+                                <tr>
+                                    <td colSpan="5" className="px-6 py-12 text-center text-sm font-medium" style={{ color: ADMIN_COLORS.textMuted }}>
+                                        No {filter} withdrawal requests.
+                                    </td>
+                                </tr>
+                            ) : (
+                                requests.map((req) => (
+                                    <tr key={req._id} className="hover:bg-[#1A1A1A] transition-colors">
+                                        <td className="px-6 py-4">
+                                            <p className="font-bold text-sm text-white">{req.technicianId?.userId?.name || 'Technician'}</p>
+                                            <p className="text-xs font-mono" style={{ color: ADMIN_COLORS.textMuted }}>{req.technicianId?.userId?.mobile}</p>
+                                        </td>
+                                        <td className="px-6 py-4 font-black text-base" style={{ color: ADMIN_COLORS.primary }}>
+                                            ₹{req.amount?.toLocaleString()}
+                                        </td>
+                                        <td className="px-6 py-4 text-xs font-medium text-white">
+                                            {req.payoutDetails?.upiId ? (
+                                                <span>UPI: {req.payoutDetails.upiId}</span>
+                                            ) : req.payoutDetails?.accountNumber ? (
+                                                <span>Acc: {req.payoutDetails.accountNumber} • IFSC: {req.payoutDetails.ifscCode}</span>
+                                            ) : (
+                                                <span style={{ color: ADMIN_COLORS.textMuted }}>Manual Transfer</span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span 
+                                                className="px-3 py-1 rounded-full text-xs font-bold uppercase border"
+                                                style={{ 
+                                                    backgroundColor: req.status === 'APPROVED' ? ADMIN_COLORS.successBg : req.status === 'REJECTED' ? ADMIN_COLORS.errorBg : ADMIN_COLORS.warningBg,
+                                                    borderColor: req.status === 'APPROVED' ? 'rgba(74, 222, 128, 0.3)' : req.status === 'REJECTED' ? 'rgba(248, 113, 113, 0.3)' : 'rgba(251, 191, 36, 0.3)',
+                                                    color: req.status === 'APPROVED' ? ADMIN_COLORS.success : req.status === 'REJECTED' ? ADMIN_COLORS.error : ADMIN_COLORS.warning
+                                                }}
+                                            >
+                                                {req.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            {req.status === 'PENDING' && (
+                                                <div className="flex gap-2 justify-end">
+                                                    <button
+                                                        onClick={() => markPaid(req._id)}
+                                                        className="px-3 py-1.5 rounded-xl text-xs font-extrabold border transition-all active:scale-95 shadow-md"
+                                                        style={{ backgroundColor: ADMIN_COLORS.primary, borderColor: ADMIN_COLORS.borderGold, color: '#432B1E' }}
+                                                    >
+                                                        Mark Paid
+                                                    </button>
+                                                    <button
+                                                        onClick={() => updateStatus(req._id, 'REJECTED')}
+                                                        className="px-3 py-1.5 rounded-xl text-xs font-extrabold border transition-all active:scale-95"
+                                                        style={{ backgroundColor: ADMIN_COLORS.errorBg, borderColor: 'rgba(248, 113, 113, 0.3)', color: ADMIN_COLORS.error }}
+                                                    >
+                                                        Reject
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );

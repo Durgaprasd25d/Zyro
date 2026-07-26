@@ -238,25 +238,8 @@ class DriverLocationService {
         // ========== STATIONARY DETECTION ==========
         // Check if we're actually moving using SPEED + DISTANCE
 
-        const currentSpeed = speed || 0; // m/s
-        const speedKmh = currentSpeed * 3.6; // convert to km/h
-
-        let distanceMoved = 0;
-        if (this.lastSentLocation) {
-            distanceMoved = calculateDistance(
-                this.lastSentLocation,
-                { latitude, longitude }
-            );
-        }
-
-        // UBER-STYLE STATIONARY FILTER:
-        // If speed < 2 km/h AND distance < 5m → STATIONARY, don't broadcast
-        const isStationary = speedKmh < 2 && distanceMoved < 5;
-
-        if (isStationary && this.lastSentLocation) {
-            console.log(`🛑 STATIONARY: Speed ${speedKmh.toFixed(1)} km/h, Moved ${distanceMoved.toFixed(1)}m - NOT broadcasting`);
-            return;
-        }
+        const currentSpeed = speed || 0;
+        const speedKmh = currentSpeed * 3.6;
 
         const locationData = {
             lat: latitude,
@@ -267,13 +250,13 @@ class DriverLocationService {
             accuracy,
         };
 
-        // Update last position for next comparison
         this.lastLocation = { latitude, longitude };
         this.lastSentLocation = { latitude, longitude };
 
+        console.log(`📡 BROADCASTING GPS: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} | Speed: ${speedKmh.toFixed(1)} km/h`);
+
         // Notify callback
         if (this.onLocationUpdate) {
-            console.log(`✅ MOVING: Speed ${speedKmh.toFixed(1)} km/h, Dist ${distanceMoved.toFixed(1)}m, Acc ${accuracy.toFixed(0)}m → BROADCASTING`);
             this.onLocationUpdate(locationData);
         }
     }

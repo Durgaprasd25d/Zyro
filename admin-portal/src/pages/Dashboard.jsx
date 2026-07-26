@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import config from '../config';
-import { Users, Briefcase, IndianRupee, Activity, TrendingUp, Calendar } from 'lucide-react';
+import ADMIN_COLORS from '../theme/colors';
+import { Users, Briefcase, IndianRupee, Activity, TrendingUp, Calendar, ArrowUpRight } from 'lucide-react';
 import {
     AreaChart,
     Area,
@@ -10,9 +11,7 @@ import {
     YAxis,
     CartesianGrid,
     Tooltip,
-    ResponsiveContainer,
-    BarChart,
-    Bar
+    ResponsiveContainer
 } from 'recharts';
 
 export default function Dashboard() {
@@ -61,19 +60,25 @@ export default function Dashboard() {
     };
 
     const statCards = [
-        { label: 'Total Customers', value: stats.users, icon: Users, color: 'bg-blue-500', trend: '+12%' },
-        { label: 'Technicians', value: stats.technicians, icon: Briefcase, color: 'bg-indigo-500', trend: '+5%' },
-        { label: 'Active Services', value: activeJobs, icon: Activity, color: 'bg-rose-500', trend: 'Live' },
-        { label: 'Total Earnings', value: `₹${(stats.revenue / 1000).toFixed(1)}K`, icon: IndianRupee, color: 'bg-emerald-500', trend: '+18%' },
+        { label: 'Total Customers', value: stats.users, icon: Users, color: '#60A5FA', bg: 'rgba(96, 165, 250, 0.12)', trend: '+12%' },
+        { label: 'Technicians', value: stats.technicians, icon: Briefcase, color: '#C084FC', bg: 'rgba(192, 132, 252, 0.12)', trend: '+5%' },
+        { label: 'Active Services', value: activeJobs, icon: Activity, color: '#F87171', bg: 'rgba(248, 113, 113, 0.12)', trend: 'Live' },
+        { label: 'Total Revenue', value: `₹${(stats.revenue / 1000).toFixed(1)}K`, icon: IndianRupee, color: ADMIN_COLORS.primary, bg: 'rgba(230, 190, 171, 0.12)', trend: '+18%' },
     ];
 
     const CustomTooltip = ({ active, payload, label }) => {
         if (active && payload && payload.length) {
             return (
-                <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-2xl">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{label}</p>
-                    <p className="text-sm font-bold text-white">₹{payload[0].value.toLocaleString()}</p>
-                    <p className="text-[10px] text-emerald-400 font-bold">{payload[1]?.value || 0} Jobs Completed</p>
+                <div 
+                    className="p-4 rounded-2xl border shadow-2xl backdrop-blur-md"
+                    style={{ 
+                        backgroundColor: '#1C1C1C', 
+                        borderColor: '#2D2D2D' 
+                    }}
+                >
+                    <p className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: ADMIN_COLORS.textMuted }}>{label}</p>
+                    <p className="text-base font-black text-white">₹{payload[0].value.toLocaleString()}</p>
+                    <p className="text-xs font-bold" style={{ color: ADMIN_COLORS.primary }}>{payload[1]?.value || 0} Services Finished</p>
                 </div>
             );
         }
@@ -81,127 +86,187 @@ export default function Dashboard() {
     };
 
     return (
-        <div className="flex flex-col gap-8 max-w-7xl mx-auto">
-            <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-10 font-sans">
+            {/* Header Title Section */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-3xl font-black text-slate-800 tracking-tight text-neutral-800">Platform Overview</h2>
-                    <p className="text-slate-500 font-medium">Real-time snapshots of your service network</p>
+                    <h2 className="text-3xl font-extrabold tracking-tight" style={{ color: ADMIN_COLORS.textPrimary }}>
+                        Platform Overview
+                    </h2>
+                    <p className="text-sm font-medium mt-1" style={{ color: ADMIN_COLORS.textSecondary }}>
+                        Real-time metrics, live fleet activity & platform revenue
+                    </p>
                 </div>
-                <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-2xl border border-slate-100 shadow-sm text-xs font-bold text-slate-500">
-                    <Calendar size={14} />
-                    Last 7 Days
+
+                <div 
+                    className="flex items-center gap-2 px-4 py-2 rounded-2xl border text-xs font-bold self-start sm:self-auto"
+                    style={{ 
+                        backgroundColor: ADMIN_COLORS.surface,
+                        borderColor: ADMIN_COLORS.border,
+                        color: ADMIN_COLORS.textSecondary
+                    }}
+                >
+                    <Calendar size={14} style={{ color: ADMIN_COLORS.primary }} />
+                    <span>Last 7 Days</span>
                 </div>
             </div>
 
+            {/* Stat Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {statCards.map((stat, index) => (
-                    <div key={index} className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
+                    <div 
+                        key={index} 
+                        className="p-6 rounded-3xl border transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl group"
+                        style={{ 
+                            backgroundColor: ADMIN_COLORS.surface,
+                            borderColor: ADMIN_COLORS.border,
+                        }}
+                    >
                         <div className="flex items-start justify-between mb-4">
-                            <div className={`p-4 rounded-2xl ${stat.color} bg-opacity-10 group-hover:scale-110 transition-transform`}>
-                                <stat.icon size={24} className={stat.color.replace('bg-', 'text-')} />
+                            <div 
+                                className="p-3.5 rounded-2xl transition-transform group-hover:scale-110"
+                                style={{ backgroundColor: stat.bg }}
+                            >
+                                <stat.icon size={22} style={{ color: stat.color }} />
                             </div>
-                            <span className={`text-[10px] font-black px-2 py-1 rounded-lg ${stat.label === 'Active Services' ? 'bg-rose-50 text-rose-600 animate-pulse' : 'bg-emerald-50 text-emerald-600'}`}>
+                            <span 
+                                className="text-[10px] font-black px-2.5 py-1 rounded-full border uppercase tracking-wider"
+                                style={{ 
+                                    backgroundColor: stat.label === 'Active Services' ? ADMIN_COLORS.errorBg : 'rgba(74, 222, 128, 0.1)',
+                                    borderColor: stat.label === 'Active Services' ? 'rgba(248, 113, 113, 0.3)' : 'rgba(74, 222, 128, 0.3)',
+                                    color: stat.label === 'Active Services' ? ADMIN_COLORS.error : ADMIN_COLORS.success
+                                }}
+                            >
                                 {stat.trend}
                             </span>
                         </div>
-                        <h3 className="text-3xl font-black text-slate-900 mb-1">{stat.value}</h3>
-                        <p className="text-sm font-bold text-slate-400 uppercase tracking-wider">{stat.label}</p>
+
+                        <h3 className="text-3xl font-black mb-1 text-white tracking-tight">
+                            {loading ? <span className="opacity-40 animate-pulse">...</span> : stat.value}
+                        </h3>
+                        <p className="text-xs font-bold uppercase tracking-wider" style={{ color: ADMIN_COLORS.textSecondary }}>
+                            {stat.label}
+                        </p>
                     </div>
                 ))}
             </div>
 
+            {/* Main Content Grid: Chart + Live Fleet */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Main Activity Chart */}
-                <div className="lg:col-span-2 bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col min-h-[450px]">
-                    <div className="flex items-center justify-between mb-8">
+                {/* Revenue Chart */}
+                <div 
+                    className="lg:col-span-2 p-7 rounded-3xl border flex flex-col min-h-[440px]"
+                    style={{ 
+                        backgroundColor: ADMIN_COLORS.surface,
+                        borderColor: ADMIN_COLORS.border
+                    }}
+                >
+                    <div className="flex items-center justify-between mb-6">
                         <div>
-                            <h3 className="text-xl font-black text-slate-800">Revenue Velocity</h3>
-                            <p className="text-sm text-slate-400 font-medium flex items-center gap-1">
-                                <TrendingUp size={14} className="text-emerald-500" /> 
-                                Daily platform earnings performance
+                            <h3 className="text-lg font-bold" style={{ color: ADMIN_COLORS.textPrimary }}>
+                                Revenue Velocity
+                            </h3>
+                            <p className="text-xs font-medium flex items-center gap-1.5 mt-1" style={{ color: ADMIN_COLORS.textSecondary }}>
+                                <TrendingUp size={14} style={{ color: ADMIN_COLORS.primary }} /> 
+                                Daily platform income & service velocity
                             </p>
                         </div>
                     </div>
                     
-                    <div className="flex-1 w-full mt-4">
-                        <ResponsiveContainer width="100%" height={300}>
-                            <AreaChart data={stats.recentActivity}>
+                    <div className="flex-1 w-full mt-2">
+                        <ResponsiveContainer width="100%" height={290}>
+                            <AreaChart data={stats.recentActivity || []}>
                                 <defs>
                                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+                                        <stop offset="5%" stopColor={ADMIN_COLORS.primary} stopOpacity={0.35} />
+                                        <stop offset="95%" stopColor={ADMIN_COLORS.primary} stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#222222" />
                                 <XAxis 
                                     dataKey="label" 
                                     axisLine={false} 
                                     tickLine={false} 
-                                    tick={{fill: '#94A3B8', fontSize: 10, fontWeight: 700}}
+                                    tick={{ fill: ADMIN_COLORS.textSecondary, fontSize: 11, fontWeight: 600 }}
                                     dy={10}
                                 />
-                                <YAxis 
-                                    hide 
-                                />
-                                <Tooltip content={<CustomTooltip />} cursor={{stroke: '#3B82F6', strokeWidth: 2}} />
+                                <YAxis hide />
+                                <Tooltip content={<CustomTooltip />} cursor={{ stroke: ADMIN_COLORS.primary, strokeWidth: 1.5, strokeDasharray: '4 4' }} />
                                 <Area 
                                     type="monotone" 
                                     dataKey="revenue" 
-                                    stroke="#3B82F6" 
-                                    strokeWidth={4}
+                                    stroke={ADMIN_COLORS.primary} 
+                                    strokeWidth={3}
                                     fillOpacity={1} 
                                     fill="url(#colorRevenue)" 
-                                    animationDuration={1500}
-                                />
-                                <Area 
-                                    type="monotone" 
-                                    dataKey="jobs" 
-                                    stroke="transparent" 
-                                    fill="transparent" 
+                                    animationDuration={1200}
                                 />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
 
-                {/* Map Preview Card */}
+                {/* Live Fleet Overview Card */}
                 <div
-                    className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col justify-between cursor-pointer hover:border-blue-200 hover:shadow-2xl transition-all group overflow-hidden relative"
+                    className="p-7 rounded-3xl border flex flex-col justify-between cursor-pointer transition-all duration-300 hover:border-[#E6BEAB]/40 group"
+                    style={{ 
+                        backgroundColor: ADMIN_COLORS.surface,
+                        borderColor: ADMIN_COLORS.border
+                    }}
                     onClick={() => navigate('/map')}
                 >
-                    <div className="relative z-10">
+                    <div>
                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Live Fleet</h3>
-                            <span className="text-xs bg-blue-600 text-white px-3 py-1 rounded-full font-bold shadow-lg shadow-blue-200">ACTIVE</span>
+                            <h3 className="text-base font-extrabold uppercase tracking-wider text-white">
+                                Live Fleet
+                            </h3>
+                            <span 
+                                className="text-[10px] px-3 py-1 rounded-full font-extrabold uppercase tracking-widest border"
+                                style={{ 
+                                    backgroundColor: 'rgba(74, 222, 128, 0.15)',
+                                    borderColor: 'rgba(74, 222, 128, 0.3)',
+                                    color: ADMIN_COLORS.success
+                                }}
+                            >
+                                ACTIVE
+                            </span>
                         </div>
                         
                         <div className="mb-8">
-                            <h4 className="text-5xl font-black text-slate-900 mb-2">{activeJobs}</h4>
-                            <p className="text-sm font-bold text-slate-400 uppercase">Technicians on Duty</p>
+                            <h4 className="text-5xl font-black text-white mb-2">{activeJobs}</h4>
+                            <p className="text-xs font-bold uppercase tracking-wider" style={{ color: ADMIN_COLORS.textSecondary }}>
+                                Technicians On Duty
+                            </p>
                         </div>
                         
                         <div className="space-y-4">
                             <div className="flex items-center justify-between text-xs font-bold">
-                                <span className="text-slate-500">Operational Efficiency</span>
-                                <span className="text-emerald-600">{stats.jobs > 0 ? ((stats.completedJobs / stats.jobs) * 100).toFixed(0) : 0}%</span>
+                                <span style={{ color: ADMIN_COLORS.textSecondary }}>Completion Efficiency</span>
+                                <span style={{ color: ADMIN_COLORS.primary }}>
+                                    {stats.jobs > 0 ? ((stats.completedJobs / stats.jobs) * 100).toFixed(0) : 0}%
+                                </span>
                             </div>
-                            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: '#222222' }}>
                                 <div 
-                                    className="h-full bg-blue-600 rounded-full transition-all duration-1000" 
-                                    style={{ width: `${stats.jobs > 0 ? (stats.completedJobs / stats.jobs) * 100 : 0}%` }}
+                                    className="h-full rounded-full transition-all duration-1000" 
+                                    style={{ 
+                                        backgroundColor: ADMIN_COLORS.primary,
+                                        width: `${stats.jobs > 0 ? (stats.completedJobs / stats.jobs) * 100 : 0}%` 
+                                    }}
                                 />
                             </div>
                         </div>
                     </div>
 
-                    <div className="mt-8 pt-8 border-t border-slate-50 relative z-10">
-                        <span className="text-sm text-blue-600 font-black group-hover:translate-x-2 inline-flex items-center gap-2 transition-transform">
-                            Open Command Center <TrendingUp size={16} />
+                    <div className="mt-8 pt-6 border-t" style={{ borderColor: ADMIN_COLORS.border }}>
+                        <span 
+                            className="text-xs font-extrabold group-hover:translate-x-1 inline-flex items-center gap-1.5 transition-transform"
+                            style={{ color: ADMIN_COLORS.primary }}
+                        >
+                            <span>Open Live Map Command Center</span>
+                            <ArrowUpRight size={16} />
                         </span>
                     </div>
-
-                    {/* Decorative Background Icon */}
-                    <Activity size={120} className="absolute -bottom-10 -right-10 text-slate-50 opacity-10 group-hover:scale-125 transition-transform" />
                 </div>
             </div>
         </div>

@@ -140,11 +140,48 @@ router.get('/stats', async (req, res) => {
 router.get('/technicians', async (req, res) => {
     try {
         const technicians = await Technician.find({})
-            .populate('userId', 'name mobile role isActive');
+            .populate('userId', 'name mobile role isActive lastLocation addresses');
+
+        // Format technicians location hierarchy (currentLocation -> user lastLocation -> saved address -> Odisha center)
+        const formatted = technicians.map(t => {
+            const doc = t.toObject();
+            const userObj = doc.userId || {};
+
+            let lat = doc.currentLocation?.lat || userObj.lastLocation?.lat;
+            let lng = doc.currentLocation?.lng || userObj.lastLocation?.lng;
+            let address = doc.currentLocation?.address || userObj.lastLocation?.address;
+            let lastUpdated = doc.currentLocation?.lastUpdated || userObj.lastLocation?.lastUpdated;
+
+            // Fallback to user's saved default address if available
+            if ((!lat || !lng) && userObj.addresses && userObj.addresses.length > 0) {
+                const defaultAddr = userObj.addresses.find(a => a.isDefault) || userObj.addresses[0];
+                if (defaultAddr && defaultAddr.lat && defaultAddr.lng) {
+                    lat = defaultAddr.lat;
+                    lng = defaultAddr.lng;
+                    address = defaultAddr.address || 'Saved Address Location';
+                }
+            }
+
+            // Default region fallback to DLF Cyber City, Patia, Bhubaneswar (20.3533, 85.8185)
+            if (!lat || !lng) {
+                lat = 20.3533;
+                lng = 85.8185;
+                address = 'DLF Cyber City, Patia, Bhubaneswar, Odisha 751024';
+            }
+
+            doc.currentLocation = {
+                lat: parseFloat(lat),
+                lng: parseFloat(lng),
+                address: address || 'Last Known Location',
+                lastUpdated: lastUpdated || doc.updatedAt || new Date()
+            };
+
+            return doc;
+        });
 
         res.json({
             success: true,
-            technicians
+            technicians: formatted
         });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });

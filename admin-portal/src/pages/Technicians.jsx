@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { UserCheck, UserX, Search, Filter } from 'lucide-react';
+import { UserCheck, UserX, Search, ShieldCheck, Lock, Unlock } from 'lucide-react';
 import config from '../config';
+import ADMIN_COLORS from '../theme/colors';
 
 export default function Technicians() {
     const [technicians, setTechnicians] = useState([]);
@@ -58,103 +59,155 @@ export default function Technicians() {
     );
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 max-w-7xl mx-auto pb-10 font-sans">
+            {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <h2 className="text-2xl font-bold text-slate-800">Technician Management</h2>
+                <div>
+                    <h2 className="text-3xl font-extrabold tracking-tight" style={{ color: ADMIN_COLORS.textPrimary }}>
+                        Technician Fleet
+                    </h2>
+                    <p className="text-sm font-medium mt-1" style={{ color: ADMIN_COLORS.textSecondary }}>
+                        Manage partner verifications, wallet balances & payout permissions
+                    </p>
+                </div>
 
-                <div className="flex gap-3">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                        <input
-                            type="text"
-                            placeholder="Search name or mobile..."
-                            className="pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none w-64"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-                    {/* <button className="p-2 border border-gray-200 rounded-xl hover:bg-gray-50">
-                        <Filter size={20} className="text-gray-600" />
-                    </button> */}
+                <div className="relative">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2" size={16} style={{ color: ADMIN_COLORS.textMuted }} />
+                    <input
+                        type="text"
+                        placeholder="Search by name or mobile..."
+                        className="pl-10 pr-4 py-2.5 rounded-2xl border text-sm font-medium outline-none transition-all w-72"
+                        style={{ 
+                            backgroundColor: ADMIN_COLORS.surface,
+                            borderColor: ADMIN_COLORS.border,
+                            color: ADMIN_COLORS.textPrimary
+                        }}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
                 </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            {/* Table Container */}
+            <div 
+                className="rounded-3xl border overflow-hidden shadow-xl"
+                style={{ 
+                    backgroundColor: ADMIN_COLORS.surface,
+                    borderColor: ADMIN_COLORS.border
+                }}
+            >
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead className="bg-gray-50 border-b border-gray-100">
-                            <tr>
-                                <th className="px-6 py-4 text-sm font-semibold text-gray-600 font-black">TECHNICIAN</th>
-                                <th className="px-6 py-4 text-sm font-semibold text-gray-600 font-black">CONTACT</th>
-                                <th className="px-6 py-4 text-sm font-semibold text-gray-600 font-black">WALLET</th>
-                                <th className="px-6 py-4 text-sm font-semibold text-gray-600 font-black">KYC STATUS</th>
-                                <th className="px-6 py-4 text-sm font-semibold text-gray-600 font-black">PAYOUTS</th>
-                                <th className="px-6 py-4 text-sm font-semibold text-gray-600 font-black">ACTIONS</th>
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr style={{ backgroundColor: '#1A1A1A', borderBottom: `1px solid ${ADMIN_COLORS.border}` }}>
+                                <th className="px-6 py-4 text-xs font-black uppercase tracking-wider" style={{ color: ADMIN_COLORS.textSecondary }}>TECHNICIAN</th>
+                                <th className="px-6 py-4 text-xs font-black uppercase tracking-wider" style={{ color: ADMIN_COLORS.textSecondary }}>CONTACT</th>
+                                <th className="px-6 py-4 text-xs font-black uppercase tracking-wider" style={{ color: ADMIN_COLORS.textSecondary }}>WALLET</th>
+                                <th className="px-6 py-4 text-xs font-black uppercase tracking-wider" style={{ color: ADMIN_COLORS.textSecondary }}>KYC STATUS</th>
+                                <th className="px-6 py-4 text-xs font-black uppercase tracking-wider" style={{ color: ADMIN_COLORS.textSecondary }}>PAYOUTS</th>
+                                <th className="px-6 py-4 text-xs font-black uppercase tracking-wider text-right" style={{ color: ADMIN_COLORS.textSecondary }}>ACTIONS</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y" style={{ borderColor: ADMIN_COLORS.border }}>
                             {loading ? (
                                 <tr>
-                                    <td colSpan="5" className="px-6 py-8 text-center text-gray-500">Loading technicians...</td>
+                                    <td colSpan="6" className="px-6 py-12 text-center text-sm font-medium" style={{ color: ADMIN_COLORS.textMuted }}>
+                                        Loading technician registry...
+                                    </td>
                                 </tr>
                             ) : filteredTechs.length === 0 ? (
                                 <tr>
-                                    <td colSpan="5" className="px-6 py-8 text-center text-gray-500">No technicians found.</td>
+                                    <td colSpan="6" className="px-6 py-12 text-center text-sm font-medium" style={{ color: ADMIN_COLORS.textMuted }}>
+                                        No technicians found matching criteria.
+                                    </td>
                                 </tr>
                             ) : (
                                 filteredTechs.map((tech) => (
-                                    <tr key={tech._id} className="hover:bg-gray-50 transition-colors">
+                                    <tr key={tech._id} className="hover:bg-[#1A1A1A] transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-600">
+                                                <div 
+                                                    className="w-10 h-10 rounded-2xl flex items-center justify-center font-black text-sm border"
+                                                    style={{ 
+                                                        backgroundColor: ADMIN_COLORS.surfaceElevated,
+                                                        borderColor: ADMIN_COLORS.border,
+                                                        color: ADMIN_COLORS.primary
+                                                    }}
+                                                >
                                                     {tech.userId?.name?.charAt(0) || 'T'}
                                                 </div>
                                                 <div>
-                                                    <p className="font-semibold text-slate-900">{tech.userId?.name || 'N/A'}</p>
-                                                    <p className="text-xs text-gray-500">ID: {tech.userId?._id?.substring(0, 8)}</p>
+                                                    <p className="font-bold text-sm text-white">{tech.userId?.name || 'N/A'}</p>
+                                                    <p className="text-xs font-mono mt-0.5" style={{ color: ADMIN_COLORS.textMuted }}>
+                                                        ID: {tech.userId?._id?.substring(0, 8)}
+                                                    </p>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <p className="text-sm text-slate-700">{tech.userId?.mobile}</p>
-                                            <p className="text-xs text-gray-400">Joined: {new Date(tech.createdAt).toLocaleDateString()}</p>
+                                            <p className="text-sm font-semibold text-white">{tech.userId?.mobile || 'N/A'}</p>
+                                            <p className="text-xs mt-0.5" style={{ color: ADMIN_COLORS.textMuted }}>
+                                                Joined: {new Date(tech.createdAt).toLocaleDateString()}
+                                            </p>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <p className="font-bold text-emerald-600">₹{tech.wallet?.balance?.toLocaleString() || 0}</p>
-                                            <p className="text-xs text-slate-500 font-medium">Locked: ₹{tech.wallet?.lockedAmount?.toLocaleString() || 0}</p>
+                                            <p className="font-extrabold text-sm text-white">₹{tech.wallet?.balance?.toLocaleString() || 0}</p>
+                                            <p className="text-xs font-medium mt-0.5" style={{ color: ADMIN_COLORS.textMuted }}>
+                                                Locked: ₹{tech.wallet?.lockedAmount?.toLocaleString() || 0}
+                                            </p>
                                         </td>
                                         <td className="px-6 py-4">
                                             {tech.verification?.kycStatus === 'VERIFIED' ? (
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                                                <span 
+                                                    className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border"
+                                                    style={{ backgroundColor: ADMIN_COLORS.successBg, borderColor: 'rgba(74, 222, 128, 0.3)', color: ADMIN_COLORS.success }}
+                                                >
                                                     Verified
                                                 </span>
                                             ) : tech.verification?.kycStatus === 'PENDING' ? (
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-orange-100 text-orange-800">
-                                                    Pending Rev.
+                                                <span 
+                                                    className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border"
+                                                    style={{ backgroundColor: ADMIN_COLORS.warningBg, borderColor: 'rgba(251, 191, 36, 0.3)', color: ADMIN_COLORS.warning }}
+                                                >
+                                                    Pending Review
                                                 </span>
                                             ) : (
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-800">
+                                                <span 
+                                                    className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border"
+                                                    style={{ backgroundColor: '#222222', borderColor: '#333333', color: ADMIN_COLORS.textSecondary }}
+                                                >
                                                     {tech.verification?.kycStatus || 'Not Started'}
                                                 </span>
                                             )}
                                         </td>
                                         <td className="px-6 py-4">
                                             {tech.verification?.adminVerified ? (
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
-                                                    Enabled
+                                                <span 
+                                                    className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border"
+                                                    style={{ backgroundColor: ADMIN_COLORS.infoBg, borderColor: 'rgba(96, 165, 250, 0.3)', color: ADMIN_COLORS.info }}
+                                                >
+                                                    Payout Enabled
                                                 </span>
                                             ) : (
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-800">
-                                                    Locked
+                                                <span 
+                                                    className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border"
+                                                    style={{ backgroundColor: '#222222', borderColor: '#333333', color: ADMIN_COLORS.textMuted }}
+                                                >
+                                                    Payout Locked
                                                 </span>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex flex-col gap-2">
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="inline-flex flex-col gap-1.5 items-end">
                                                 {tech.verification?.kycStatus !== 'VERIFIED' && (
                                                     <button
                                                         onClick={() => handleKycVerify(tech.userId?._id, 'VERIFIED')}
-                                                        className="text-[10px] font-black uppercase text-emerald-600 hover:bg-emerald-50 px-2 py-1 rounded-md border border-emerald-200 text-center"
+                                                        className="px-3 py-1.5 rounded-xl text-xs font-extrabold border transition-all active:scale-95"
+                                                        style={{ 
+                                                            backgroundColor: ADMIN_COLORS.successBg, 
+                                                            borderColor: 'rgba(74, 222, 128, 0.3)', 
+                                                            color: ADMIN_COLORS.success 
+                                                        }}
                                                     >
                                                         Approve KYC
                                                     </button>
@@ -162,7 +215,12 @@ export default function Technicians() {
                                                 {tech.verification?.kycStatus === 'VERIFIED' && !tech.verification?.adminVerified && (
                                                     <button
                                                         onClick={() => handlePayoutVerify(tech.userId?._id, true)}
-                                                        className="text-[10px] font-black uppercase text-blue-600 hover:bg-blue-50 px-2 py-1 rounded-md border border-blue-200 text-center"
+                                                        className="px-3 py-1.5 rounded-xl text-xs font-extrabold border transition-all active:scale-95"
+                                                        style={{ 
+                                                            backgroundColor: ADMIN_COLORS.infoBg, 
+                                                            borderColor: 'rgba(96, 165, 250, 0.3)', 
+                                                            color: ADMIN_COLORS.info 
+                                                        }}
                                                     >
                                                         Unlock Payout
                                                     </button>
@@ -170,7 +228,12 @@ export default function Technicians() {
                                                 {tech.verification?.adminVerified && (
                                                     <button
                                                         onClick={() => handlePayoutVerify(tech.userId?._id, false)}
-                                                        className="text-[10px] font-black uppercase text-red-500 hover:bg-red-50 px-2 py-1 rounded-md border border-red-100 text-center"
+                                                        className="px-3 py-1.5 rounded-xl text-xs font-extrabold border transition-all active:scale-95"
+                                                        style={{ 
+                                                            backgroundColor: ADMIN_COLORS.errorBg, 
+                                                            borderColor: 'rgba(248, 113, 113, 0.3)', 
+                                                            color: ADMIN_COLORS.error 
+                                                        }}
                                                     >
                                                         Lock Payout
                                                     </button>

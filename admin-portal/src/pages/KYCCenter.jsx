@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import config from '../config';
-import { CheckCircle, XCircle, Eye, AlertCircle, Clock, ExternalLink } from 'lucide-react';
+import ADMIN_COLORS from '../theme/colors';
+import { CheckCircle, XCircle, Eye, AlertCircle, Clock, ExternalLink, ShieldCheck } from 'lucide-react';
 
 export default function KYCCenter() {
     const [technicians, setTechnicians] = useState([]);
@@ -9,7 +10,7 @@ export default function KYCCenter() {
     const [selectedTech, setSelectedTech] = useState(null);
     const [rejectionReason, setRejectionReason] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
-    const [viewMode, setViewMode] = useState('PENDING'); // 'PENDING' for KYC, 'VERIFIED' for Payouts
+    const [viewMode, setViewMode] = useState('PENDING');
 
     useEffect(() => {
         fetchTechnicians();
@@ -18,12 +19,10 @@ export default function KYCCenter() {
     const fetchTechnicians = async () => {
         setLoading(true);
         try {
-            // If viewMode is VERIFIED, we actually want people who are KYC verified but Payout NOT verified
             const response = await axios.get(`${config.API_URL}/admin/technicians/verification-list`, {
                 params: { status: viewMode }
             });
             if (response.data.success) {
-                // For payout mode, filter for those with adminVerified false
                 if (viewMode === 'VERIFIED') {
                     setTechnicians(response.data.technicians.filter(t => !t.verification?.adminVerified));
                 } else {
@@ -84,161 +83,211 @@ export default function KYCCenter() {
         }
     };
 
-    if (loading) return <div className="flex items-center justify-center h-full"><Clock className="animate-spin text-blue-600 mr-2" /> Loading pending reviews...</div>;
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-96 text-sm font-semibold" style={{ color: ADMIN_COLORS.textSecondary }}>
+                <Clock className="animate-spin mr-2" style={{ color: ADMIN_COLORS.primary }} size={20} />
+                Loading trust & safety requests...
+            </div>
+        );
+    }
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-black text-slate-800">TRUST & SAFETY CENTER</h1>
-                <div className="flex gap-2 bg-slate-100 p-1.5 rounded-2xl">
+        <div className="space-y-6 max-w-7xl mx-auto pb-10 font-sans">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 className="text-3xl font-extrabold tracking-tight" style={{ color: ADMIN_COLORS.textPrimary }}>
+                        Trust & Safety Center
+                    </h2>
+                    <p className="text-sm font-medium mt-1" style={{ color: ADMIN_COLORS.textSecondary }}>
+                        Review government ID documents, bank verification & enable payouts
+                    </p>
+                </div>
+
+                <div 
+                    className="flex gap-1.5 p-1.5 rounded-2xl border self-start md:self-auto"
+                    style={{ backgroundColor: ADMIN_COLORS.surface, borderColor: ADMIN_COLORS.border }}
+                >
                     <button
                         onClick={() => setViewMode('PENDING')}
-                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${viewMode === 'PENDING' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        className="px-4 py-2 rounded-xl text-xs font-extrabold transition-all"
+                        style={{ 
+                            backgroundColor: viewMode === 'PENDING' ? ADMIN_COLORS.primary : 'transparent',
+                            color: viewMode === 'PENDING' ? '#432B1E' : ADMIN_COLORS.textSecondary
+                        }}
                     >
                         KYC Pending ({viewMode === 'PENDING' ? technicians.length : '...'})
                     </button>
                     <button
                         onClick={() => setViewMode('VERIFIED')}
-                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${viewMode === 'VERIFIED' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        className="px-4 py-2 rounded-xl text-xs font-extrabold transition-all"
+                        style={{ 
+                            backgroundColor: viewMode === 'VERIFIED' ? ADMIN_COLORS.primary : 'transparent',
+                            color: viewMode === 'VERIFIED' ? '#432B1E' : ADMIN_COLORS.textSecondary
+                        }}
                     >
-                        Payout Verification ({viewMode === 'VERIFIED' ? technicians.length : '...'})
+                        Payout Authorization ({viewMode === 'VERIFIED' ? technicians.length : '...'})
                     </button>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 {/* List of Pending Technicians */}
-                <div className="lg:col-span-4 space-y-4">
+                <div className="lg:col-span-4 space-y-3">
                     {technicians.length === 0 ? (
-                        <div className="bg-white p-8 rounded-3xl text-center border-2 border-dashed border-slate-200">
-                            <CheckCircle size={40} className="mx-auto text-emerald-500 mb-3" />
-                            <p className="font-bold text-slate-600">All caught up!</p>
-                            <p className="text-sm text-slate-400">No pending KYC requests at the moment.</p>
+                        <div 
+                            className="p-8 rounded-3xl text-center border"
+                            style={{ backgroundColor: ADMIN_COLORS.surface, borderColor: ADMIN_COLORS.border }}
+                        >
+                            <CheckCircle size={36} className="mx-auto mb-3" style={{ color: ADMIN_COLORS.success }} />
+                            <p className="font-bold text-white">All Clear!</p>
+                            <p className="text-xs mt-1" style={{ color: ADMIN_COLORS.textMuted }}>
+                                No pending requests for review.
+                            </p>
                         </div>
                     ) : (
-                        technicians.map(tech => (
-                            <button
-                                key={tech._id}
-                                onClick={() => setSelectedTech(tech)}
-                                className={`w-full text-left p-4 rounded-3xl border-2 transition-all ${selectedTech?._id === tech._id
-                                    ? 'border-blue-600 bg-blue-50'
-                                    : 'border-white bg-white hover:border-slate-200 shadow-sm'
-                                    }`}
-                            >
-                                <div className="flex justify-between items-start mb-2">
-                                    <h3 className="font-black text-slate-900 uppercase">{tech.userId?.name || 'Unknown Tech'}</h3>
-                                    <span className="text-xs bg-slate-200 px-2 py-1 rounded-md font-bold text-slate-600">
-                                        ID: {tech._id.slice(-6)}
-                                    </span>
-                                </div>
-                                <p className="text-sm text-slate-500 mb-2">{tech.userId?.mobile}</p>
-                                <div className="text-xs text-blue-600 font-bold flex items-center gap-1">
-                                    <Clock size={12} />
-                                    Submitted {new Date(tech.verification?.submittedAt).toLocaleDateString()}
-                                </div>
-                            </button>
-                        ))
+                        technicians.map(tech => {
+                            const isSelected = selectedTech?._id === tech._id;
+                            return (
+                                <button
+                                    key={tech._id}
+                                    onClick={() => setSelectedTech(tech)}
+                                    className="w-full text-left p-4 rounded-3xl border transition-all duration-200"
+                                    style={{ 
+                                        backgroundColor: isSelected ? '#1F1A17' : ADMIN_COLORS.surface,
+                                        borderColor: isSelected ? ADMIN_COLORS.primary : ADMIN_COLORS.border,
+                                    }}
+                                >
+                                    <div className="flex justify-between items-start mb-1.5">
+                                        <h3 className="font-bold text-sm text-white uppercase">{tech.userId?.name || 'Unknown Tech'}</h3>
+                                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-md border" style={{ backgroundColor: '#222', borderColor: '#333', color: ADMIN_COLORS.textSecondary }}>
+                                            ID: {tech._id.slice(-6)}
+                                        </span>
+                                    </div>
+                                    <p className="text-xs font-medium mb-2" style={{ color: ADMIN_COLORS.textSecondary }}>{tech.userId?.mobile}</p>
+                                    <div className="text-[11px] font-bold flex items-center gap-1" style={{ color: ADMIN_COLORS.primary }}>
+                                        <Clock size={12} />
+                                        Submitted {new Date(tech.verification?.submittedAt || Date.now()).toLocaleDateString()}
+                                    </div>
+                                </button>
+                            );
+                        })
                     )}
                 </div>
 
                 {/* Document Viewer */}
                 <div className="lg:col-span-8">
                     {selectedTech ? (
-                        <div className="bg-white rounded-[2rem] border-2 border-slate-100 shadow-xl overflow-hidden flex flex-col h-[calc(100vh-200px)]">
-                            <div className="p-6 border-bottom bg-slate-50 flex justify-between items-center">
+                        <div 
+                            className="rounded-3xl border shadow-2xl overflow-hidden flex flex-col min-h-[500px]"
+                            style={{ backgroundColor: ADMIN_COLORS.surface, borderColor: ADMIN_COLORS.border }}
+                        >
+                            <div className="p-6 border-b flex justify-between items-center" style={{ backgroundColor: '#1A1A1A', borderColor: ADMIN_COLORS.border }}>
                                 <div>
-                                    <h2 className="text-xl font-black text-slate-900">{selectedTech.userId?.name}</h2>
-                                    <p className="text-sm text-slate-500">Reviewing documentation for approval</p>
+                                    <h3 className="text-lg font-extrabold text-white">{selectedTech.userId?.name}</h3>
+                                    <p className="text-xs font-medium" style={{ color: ADMIN_COLORS.textSecondary }}>
+                                        Mobile: {selectedTech.userId?.mobile}
+                                    </p>
                                 </div>
-                                <div className="flex gap-2">
-                                    {viewMode === 'PENDING' ? (
-                                        <button
-                                            onClick={() => handleVerify(selectedTech.userId._id, 'VERIFIED')}
-                                            disabled={isProcessing}
-                                            className="bg-emerald-600 text-white px-6 py-2.5 rounded-2xl font-bold hover:bg-emerald-700 flex items-center gap-2"
-                                        >
-                                            <CheckCircle size={18} /> Approve KYC
-                                        </button>
-                                    ) : (
-                                        <button
-                                            onClick={() => handlePayoutVerify(selectedTech.userId._id, true)}
-                                            disabled={isProcessing}
-                                            className="bg-blue-600 text-white px-6 py-2.5 rounded-2xl font-bold hover:bg-blue-700 flex items-center gap-2"
-                                        >
-                                            <CheckCircle size={18} /> Approve Payouts
-                                        </button>
-                                    )}
-                                </div>
+                                <span className="text-xs font-mono px-3 py-1 rounded-full border" style={{ backgroundColor: '#222', borderColor: '#333', color: ADMIN_COLORS.primary }}>
+                                    {selectedTech.verification?.kycStatus}
+                                </span>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto p-6 space-y-8">
-                                <div className="grid grid-cols-2 gap-6">
-                                    <DocPreview label="Aadhaar Front" url={selectedTech.verification?.documents?.aadhaarFront?.url} />
-                                    <DocPreview label="Aadhaar Back" url={selectedTech.verification?.documents?.aadhaarBack?.url} />
-                                    <DocPreview label="PAN Card" url={selectedTech.verification?.documents?.panCard?.url} />
-                                    <DocPreview label="Bank Proof" url={selectedTech.verification?.documents?.bankProof?.url} />
-                                    <DocPreview label="Face Selfie" url={selectedTech.verification?.documents?.selfie?.url} />
+                            <div className="p-6 space-y-6 flex-1 overflow-y-auto">
+                                {/* Documents list */}
+                                <div>
+                                    <h4 className="text-xs font-black uppercase tracking-wider mb-3" style={{ color: ADMIN_COLORS.textSecondary }}>
+                                        Submitted Identity Proof Documents
+                                    </h4>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {selectedTech.verification?.documents?.map((doc, idx) => (
+                                            <div key={idx} className="p-4 rounded-2xl border" style={{ backgroundColor: '#1A1A1A', borderColor: ADMIN_COLORS.border }}>
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <span className="text-xs font-bold uppercase text-white">{doc.type || 'ID Card'}</span>
+                                                    <a 
+                                                        href={doc.url} 
+                                                        target="_blank" 
+                                                        rel="noreferrer"
+                                                        className="text-xs font-bold flex items-center gap-1"
+                                                        style={{ color: ADMIN_COLORS.primary }}
+                                                    >
+                                                        <span>Open File</span>
+                                                        <ExternalLink size={12} />
+                                                    </a>
+                                                </div>
+                                                <p className="text-xs font-mono" style={{ color: ADMIN_COLORS.textMuted }}>{doc.number || 'No ID Number provided'}</p>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
 
-                                <div className="bg-slate-50 p-6 rounded-3xl space-y-4">
-                                    <h4 className="font-black text-slate-800 flex items-center gap-2">
-                                        <AlertCircle size={18} className="text-red-500" />
-                                        Rejection Actions
-                                    </h4>
-                                    <textarea
-                                        placeholder="Reason for rejection (e.g. Blurred image, Name mismatch)..."
-                                        className="w-full h-24 p-4 rounded-2xl border-2 border-slate-200 focus:border-red-500 outline-none text-sm"
-                                        value={rejectionReason}
-                                        onChange={(e) => setRejectionReason(e.target.value)}
-                                    />
+                                {/* Rejection reason input */}
+                                {viewMode === 'PENDING' && (
+                                    <div>
+                                        <label className="block text-xs font-bold uppercase tracking-wider mb-2" style={{ color: ADMIN_COLORS.textSecondary }}>
+                                            Rejection Reason (If denying request)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={rejectionReason}
+                                            onChange={(e) => setRejectionReason(e.target.value)}
+                                            placeholder="Specify document issues (e.g. Blurry Aadhaar card)..."
+                                            className="w-full px-4 py-3 rounded-2xl border text-sm font-medium outline-none"
+                                            style={{ backgroundColor: '#1A1A1A', borderColor: ADMIN_COLORS.border, color: ADMIN_COLORS.textPrimary }}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="p-6 border-t flex items-center justify-end gap-3" style={{ backgroundColor: '#161616', borderColor: ADMIN_COLORS.border }}>
+                                {viewMode === 'PENDING' ? (
+                                    <>
+                                        <button
+                                            onClick={() => handleVerify(selectedTech.userId?._id, 'REJECTED')}
+                                            disabled={isProcessing}
+                                            className="px-5 py-3 rounded-2xl text-xs font-extrabold border transition-all active:scale-95"
+                                            style={{ backgroundColor: ADMIN_COLORS.errorBg, borderColor: 'rgba(248, 113, 113, 0.3)', color: ADMIN_COLORS.error }}
+                                        >
+                                            Reject KYC
+                                        </button>
+                                        <button
+                                            onClick={() => handleVerify(selectedTech.userId?._id, 'VERIFIED')}
+                                            disabled={isProcessing}
+                                            className="px-5 py-3 rounded-2xl text-xs font-extrabold border transition-all active:scale-95 shadow-lg"
+                                            style={{ backgroundColor: ADMIN_COLORS.primary, borderColor: ADMIN_COLORS.borderGold, color: '#432B1E' }}
+                                        >
+                                            Approve KYC
+                                        </button>
+                                    </>
+                                ) : (
                                     <button
-                                        onClick={() => handleVerify(selectedTech.userId._id, 'REJECTED')}
-                                        disabled={isProcessing || !rejectionReason}
-                                        className="w-full bg-red-100 text-red-700 py-3 rounded-2xl font-bold hover:bg-red-200 disabled:opacity-50"
+                                        onClick={() => handlePayoutVerify(selectedTech.userId?._id, true)}
+                                        disabled={isProcessing}
+                                        className="px-5 py-3 rounded-2xl text-xs font-extrabold border transition-all active:scale-95 shadow-lg"
+                                        style={{ backgroundColor: ADMIN_COLORS.primary, borderColor: ADMIN_COLORS.borderGold, color: '#432B1E' }}
                                     >
-                                        Reject Submission
+                                        Enable Payout Accounts
                                     </button>
-                                </div>
+                                )}
                             </div>
                         </div>
                     ) : (
-                        <div className="bg-slate-50 h-full rounded-[2rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center p-12 text-center text-slate-400">
-                            <Eye size={48} className="mb-4 opacity-20" />
-                            <p className="font-bold">Select a technician from the left to start review</p>
+                        <div 
+                            className="p-16 rounded-3xl border text-center flex flex-col items-center justify-center min-h-[500px]"
+                            style={{ backgroundColor: ADMIN_COLORS.surface, borderColor: ADMIN_COLORS.border }}
+                        >
+                            <ShieldCheck size={48} style={{ color: ADMIN_COLORS.primary }} className="mb-4" />
+                            <h3 className="text-lg font-bold text-white">Select a Technician Request</h3>
+                            <p className="text-xs font-medium mt-1 max-w-sm" style={{ color: ADMIN_COLORS.textSecondary }}>
+                                Choose any technician from the left queue to inspect verification documents and approve access.
+                            </p>
                         </div>
                     )}
                 </div>
-            </div>
-        </div>
-    );
-}
-
-function DocPreview({ label, url }) {
-    if (!url) return (
-        <div className="space-y-2">
-            <label className="text-xs font-black text-slate-400 uppercase tracking-wider">{label}</label>
-            <div className="aspect-video bg-slate-100 rounded-2xl flex items-center justify-center text-slate-300">
-                Not Provided
-            </div>
-        </div>
-    );
-
-    return (
-        <div className="space-y-2 group">
-            <div className="flex justify-between items-center">
-                <label className="text-xs font-black text-slate-500 uppercase tracking-wider">{label}</label>
-                <a href={url} target="_blank" rel="noreferrer" className="text-blue-600 hover:text-blue-800">
-                    <ExternalLink size={14} />
-                </a>
-            </div>
-            <div className="aspect-video bg-slate-200 rounded-2xl overflow-hidden border-2 border-slate-100 shadow-sm relative">
-                <img src={url} alt={label} className="w-full h-full object-cover" />
-                <button
-                    onClick={() => window.open(url, '_blank')}
-                    className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                >
-                    <Eye className="text-white" />
-                </button>
             </div>
         </div>
     );

@@ -35,6 +35,27 @@ const UserSchema = new mongoose.Schema({
         type: String,
         default: null
     },
+    gender: {
+        type: String,
+        enum: ['Male', 'Female', 'Other', 'Unspecified'],
+        default: 'Unspecified'
+    },
+    alternateMobile: {
+        type: String,
+        default: ''
+    },
+    city: {
+        type: String,
+        default: ''
+    },
+    pincode: {
+        type: String,
+        default: ''
+    },
+    landmark: {
+        type: String,
+        default: ''
+    },
     addresses: [{
         label: String, // Home, Work, etc.
         address: String,
@@ -44,7 +65,13 @@ const UserSchema = new mongoose.Schema({
             type: Boolean,
             default: false
         }
-    }]
+    }],
+    lastLocation: {
+        lat: { type: Number, default: null },
+        lng: { type: Number, default: null },
+        address: { type: String, default: '' },
+        lastUpdated: { type: Date, default: null }
+    }
 }, {
     timestamps: true
 });

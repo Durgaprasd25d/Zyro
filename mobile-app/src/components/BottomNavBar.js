@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { DESIGN_COLORS as C } from '../../constants/designSystem';
+import { DESIGN_COLORS as C } from '../constants/designSystem';
 
 /**
  * Shared BottomNavBar component for all customer screens.

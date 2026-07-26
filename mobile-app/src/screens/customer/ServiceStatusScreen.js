@@ -147,13 +147,18 @@ export default function ServiceStatusScreen({ route, navigation }) {
   }, [rideId]);
 
   const handleTechnicianLocationUpdate = (location) => {
-    const { lat, lng, bearing } = location;
-    setTechnicianLocation({ latitude: lat, longitude: lng });
-    setTechnicianHeading(bearing || 0);
+    if (!location) return;
+    const lat = location.lat || location.latitude;
+    const lng = location.lng || location.longitude;
+    const bearing = location.bearing || 0;
 
-    // Fetch route whenever technician location updates
-    if (liveStatus?.pickup) {
-      fetchRoute(lng, lat, liveStatus.pickup);
+    if (lat && lng) {
+      setTechnicianLocation({ latitude: lat, longitude: lng, lat, lng });
+      setTechnicianHeading(bearing);
+
+      if (liveStatus?.pickup) {
+        fetchRoute(lng, lat, liveStatus.pickup);
+      }
     }
   };
 

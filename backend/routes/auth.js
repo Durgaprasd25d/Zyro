@@ -164,15 +164,20 @@ router.post('/fcm-token', async (req, res) => {
 // Update Profile
 router.put('/update-profile', async (req, res) => {
     try {
-        const { userId, name, email } = req.body;
+        const { userId, name, email, gender, alternateMobile, city, pincode, landmark } = req.body;
 
         if (!userId) {
             return res.status(400).json({ success: false, message: 'User ID is required' });
         }
 
         const updateData = {};
-        if (name) updateData.name = name;
-        if (email) updateData.email = email;
+        if (name !== undefined) updateData.name = name;
+        if (email !== undefined) updateData.email = email;
+        if (gender !== undefined) updateData.gender = gender;
+        if (alternateMobile !== undefined) updateData.alternateMobile = alternateMobile;
+        if (city !== undefined) updateData.city = city;
+        if (pincode !== undefined) updateData.pincode = pincode;
+        if (landmark !== undefined) updateData.landmark = landmark;
 
         const user = await User.findByIdAndUpdate(
             userId,
@@ -189,10 +194,16 @@ router.put('/update-profile', async (req, res) => {
             message: 'Profile updated successfully',
             user: {
                 id: user._id,
+                _id: user._id,
                 mobile: user.mobile,
                 name: user.name,
                 email: user.email,
-                role: user.role
+                role: user.role,
+                gender: user.gender,
+                alternateMobile: user.alternateMobile,
+                city: user.city,
+                pincode: user.pincode,
+                landmark: user.landmark
             }
         });
     } catch (err) {

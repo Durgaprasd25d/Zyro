@@ -13,6 +13,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 import config from './src/constants/config';
+import { NotificationProvider } from './src/components/InAppNotification';
 import AuthScreen from './src/screens/AuthScreen';
 import SplashScreen from './src/screens/SplashScreen';
 import SplashScreen2 from './src/screens/SplashScreen2';
@@ -37,7 +38,6 @@ import ReceiptScreen from './src/screens/customer/ReceiptScreen';
 import TechnicianWaitingScreen from './src/screens/customer/TechnicianWaitingScreen';
 import ServiceProgressScreen from './src/screens/customer/ServiceProgressScreen';
 
-
 // Technician Screens
 import TechnicianDashboardScreen from './src/screens/technician/TechnicianDashboardScreen';
 import JobRequestScreen from './src/screens/technician/JobRequestScreen';
@@ -56,7 +56,7 @@ import TechnicianProfileScreen from './src/screens/technician/TechnicianProfileS
 import TechnicianNavigationScreen from './src/screens/technician/TechnicianNavigationScreen';
 import WithdrawalRequestScreen from './src/screens/technician/WithdrawalRequestScreen';
 import TechnicianFinanceScreen from './src/screens/technician/TechnicianFinanceScreen';
-import DriverScreen from './src/screens/technician/DriverScreen'; // Legacy - keep for existing tracking
+import DriverScreen from './src/screens/technician/DriverScreen';
 import RazorpayCheckoutScreen from './src/screens/technician/RazorpayCheckoutScreen';
 import KYCScreen from './src/screens/technician/KYCScreen';
 import VerificationPendingScreen from './src/screens/technician/VerificationPendingScreen';
@@ -66,7 +66,6 @@ import SupportScreen from './src/screens/technician/SupportScreen';
 
 import authService from './src/services/authService';
 import technicianService from './src/services/technicianService';
-// import { fcmService } from './src/services/fcmService';
 import { expoNotificationService } from './src/services/expoNotificationService';
 import { COLORS } from './src/constants/theme';
 
@@ -80,15 +79,12 @@ export default function App() {
     const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false);
 
     useEffect(() => {
-        // Silent OTA Update Check
         async function onFetchUpdateAsync() {
             try {
-                if (__DEV__) return; // Skip in development
+                if (__DEV__) return;
                 const update = await Updates.checkForUpdateAsync();
                 if (update.isAvailable) {
                     await Updates.fetchUpdateAsync();
-                    // Alert the user only if you want them to restart now
-                    // Otherwise it will apply on next launch silently
                     Alert.alert(
                         'Update Available',
                         'A new version of Zyro AC is ready. Restart now to apply?',
@@ -113,12 +109,9 @@ export default function App() {
             let token;
             let role = null;
             try {
-                // FOR TESTING: Clear onboarding status to see it again
                 await AsyncStorage.removeItem('hasSeenOnboarding');
-
                 token = await authService.isLoggedIn();
                 const seenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
-                console.log('Onboarding Seen Status:', seenOnboarding);
                 setHasSeenOnboarding(seenOnboarding === 'true');
 
                 if (token) {
@@ -132,10 +125,7 @@ export default function App() {
                         }
                     }
 
-
-                    // Register Expo Push Notifications for logged in user
                     expoNotificationService.register(user.id || user._id);
-                    // fcmService.register(user.id || user._id);
                 }
             } catch (e) {
                 console.error('Check login error:', e);
@@ -156,7 +146,6 @@ export default function App() {
         );
     }
 
-    // Dark nav theme — prevents white flash between screens
     const NavTheme = {
         ...DarkTheme,
         colors: {
@@ -168,281 +157,276 @@ export default function App() {
 
     return (
         <SafeAreaProvider>
-            <GestureHandlerRootView style={{ flex: 1 }}>
-                <NavigationContainer theme={NavTheme}>
-                    <Stack.Navigator
-                        initialRouteName={
-                            !userToken ? (hasSeenOnboarding ? "Auth" : "Splash") :
-                                userRole === 'technician' ? "TechnicianDashboard" : "Home"
-                        }
-                        screenOptions={{
-                            // Dark card background globally — no white flash on any transition
-                            cardStyle: { backgroundColor: '#131313' },
-                            headerStyle: {
-                                backgroundColor: COLORS.surface || '#131313',
-                                elevation: 0,
-                                shadowOpacity: 0,
-                                borderBottomWidth: 1,
-                                borderBottomColor: COLORS.outlineVariant || '#50443f',
-                            },
-                            headerTintColor: COLORS.onSurface || '#e5e2e1',
-                            headerTitleStyle: {
-                                fontWeight: 'bold',
-                                fontSize: 16,
-                                letterSpacing: 1,
-                                color: COLORS.onSurface || '#e5e2e1',
-                            },
-                            headerBackTitleVisible: false,
-                            headerTitleAlign: 'center',
-                        }}
-                    >
-                        <Stack.Screen
-                            name="Splash"
-                            component={SplashScreen}
-                            options={{
-                                headerShown: false,
-                                animationEnabled: false,  // our own crossfade handles it
+            <NotificationProvider>
+                <GestureHandlerRootView style={{ flex: 1 }}>
+                    <NavigationContainer theme={NavTheme}>
+                        <Stack.Navigator
+                            initialRouteName={
+                                !userToken ? (hasSeenOnboarding ? "Auth" : "Splash") :
+                                    userRole === 'technician' ? "TechnicianDashboard" : "Home"
+                            }
+                            screenOptions={{
                                 cardStyle: { backgroundColor: '#131313' },
+                                headerStyle: {
+                                    backgroundColor: COLORS.surface || '#131313',
+                                    elevation: 0,
+                                    shadowOpacity: 0,
+                                    borderBottomWidth: 1,
+                                    borderBottomColor: COLORS.outlineVariant || '#50443f',
+                                },
+                                headerTintColor: COLORS.onSurface || '#e5e2e1',
+                                headerTitleStyle: {
+                                    fontWeight: 'bold',
+                                    fontSize: 16,
+                                    letterSpacing: 1,
+                                    color: COLORS.onSurface || '#e5e2e1',
+                                },
+                                headerBackTitleVisible: false,
+                                headerTitleAlign: 'center',
                             }}
-                        />
-                        <Stack.Screen
-                            name="Splash2"
-                            component={SplashScreen2}
-                            options={{
-                                headerShown: false,
-                                animationEnabled: false,
-                                cardStyle: { backgroundColor: '#131313' },
-                            }}
-                        />
-                        <Stack.Screen
-                            name="Splash3"
-                            component={SplashScreen3}
-                            options={{
-                                headerShown: false,
-                                animationEnabled: false,
-                                cardStyle: { backgroundColor: '#131313' },
-                            }}
-                        />
-                        <Stack.Screen
-                            name="Onboarding"
-                            component={OnboardingScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="Auth"
-                            component={AuthScreen}
-                            options={{
-                                headerShown: false,
-                            }}
-                        />
-                        <Stack.Screen
-                            name="Home"
-                            component={HomeScreen}
-                            options={{
-                                headerShown: false,
-                            }}
-                        />
-                        <Stack.Screen
-                            name="Customer"
-                            component={CustomerScreen}
-                            options={{
-                                title: 'SERVICE TRACKING',
-                                headerStyle: { backgroundColor: COLORS.white },
-                                headerTintColor: COLORS.black,
-                            }}
-                        />
-                        <Stack.Screen
-                            name="History"
-                            component={HistoryScreen}
-                            options={{
-                                headerShown: false,
-                            }}
-                        />
-                        <Stack.Screen
-                            name="ServiceList"
-                            component={ServiceListScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="ServiceDetail"
-                            component={ServiceDetailScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="Schedule"
-                            component={ScheduleScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="MapPicker"
-                            component={MapPickerScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="BookingSummary"
-                            component={BookingSummaryScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="PaymentMethod"
-                            component={PaymentMethodScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="PaymentStatus"
-                            component={PaymentStatusScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="ServiceStatus"
-                            component={ServiceStatusScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="CustomerRazorpayCheckout"
-                            component={CustomerRazorpayCheckoutScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="Profile"
-                            component={ProfileScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="Receipt"
-                            component={ReceiptScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="TechnicianWaiting"
-                            component={TechnicianWaitingScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="ServiceProgress"
-                            component={ServiceProgressScreen}
-                            options={{ headerShown: false }}
-                        />
+                        >
+                            <Stack.Screen
+                                name="Splash"
+                                component={SplashScreen}
+                                options={{
+                                    headerShown: false,
+                                    animationEnabled: false,
+                                    cardStyle: { backgroundColor: '#131313' },
+                                }}
+                            />
+                            <Stack.Screen
+                                name="Splash2"
+                                component={SplashScreen2}
+                                options={{
+                                    headerShown: false,
+                                    animationEnabled: false,
+                                    cardStyle: { backgroundColor: '#131313' },
+                                }}
+                            />
+                            <Stack.Screen
+                                name="Splash3"
+                                component={SplashScreen3}
+                                options={{
+                                    headerShown: false,
+                                    animationEnabled: false,
+                                    cardStyle: { backgroundColor: '#131313' },
+                                }}
+                            />
+                            <Stack.Screen
+                                name="Onboarding"
+                                component={OnboardingScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="Auth"
+                                component={AuthScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="Home"
+                                component={HomeScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="Customer"
+                                component={CustomerScreen}
+                                options={{
+                                    title: 'SERVICE TRACKING',
+                                    headerStyle: { backgroundColor: COLORS.white },
+                                    headerTintColor: COLORS.black,
+                                }}
+                            />
+                            <Stack.Screen
+                                name="History"
+                                component={HistoryScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="ServiceList"
+                                component={ServiceListScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="ServiceDetail"
+                                component={ServiceDetailScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="Schedule"
+                                component={ScheduleScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="MapPicker"
+                                component={MapPickerScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="BookingSummary"
+                                component={BookingSummaryScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="PaymentMethod"
+                                component={PaymentMethodScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="PaymentStatus"
+                                component={PaymentStatusScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="ServiceStatus"
+                                component={ServiceStatusScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="CustomerRazorpayCheckout"
+                                component={CustomerRazorpayCheckoutScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="Profile"
+                                component={ProfileScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="Receipt"
+                                component={ReceiptScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="TechnicianWaiting"
+                                component={TechnicianWaitingScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="ServiceProgress"
+                                component={ServiceProgressScreen}
+                                options={{ headerShown: false }}
+                            />
 
-                        {/* Technician Screens */}
-                        <Stack.Screen
-                            name="TechnicianDashboard"
-                            component={TechnicianDashboardScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="JobRequest"
-                            component={JobRequestScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="JobDetails"
-                            component={JobDetailsScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="Arrival"
-                            component={ArrivalScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="TechnicianServiceProgress"
-                            component={TechnicianServiceProgressScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="CODCollection"
-                            component={CODCollectionScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="TechnicianOTP"
-                            component={TechnicianOTPScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="WalletUpdate"
-                            component={WalletUpdateScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="TechnicianWallet"
-                            component={TechnicianFinanceScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="CommissionPayment"
-                            component={CommissionPaymentScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="PayCommission"
-                            component={PayCommissionScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="CommissionPaid"
-                            component={CommissionPaidScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="TechnicianHistory"
-                            component={TechnicianHistoryScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="WithdrawalRequest"
-                            component={TechnicianFinanceScreen} // Using the new unified screen
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="TechnicianProfile"
-                            component={TechnicianProfileScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="TechnicianNavigation"
-                            component={TechnicianNavigationScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="Driver"
-                            component={DriverScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="RazorpayCheckout"
-                            component={RazorpayCheckoutScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="KYC"
-                            component={KYCScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="VerificationPending"
-                            component={VerificationPendingScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="PersonalDetails"
-                            component={PersonalDetailsScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="ChangePassword"
-                            component={ChangePasswordScreen}
-                            options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                            name="Support"
-                            component={SupportScreen}
-                            options={{ headerShown: false }}
-                        />
-                    </Stack.Navigator>
-                </NavigationContainer>
-            </GestureHandlerRootView>
+                            {/* Technician Screens */}
+                            <Stack.Screen
+                                name="TechnicianDashboard"
+                                component={TechnicianDashboardScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="JobRequest"
+                                component={JobRequestScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="JobDetails"
+                                component={JobDetailsScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="Arrival"
+                                component={ArrivalScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="TechnicianServiceProgress"
+                                component={TechnicianServiceProgressScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="CODCollection"
+                                component={CODCollectionScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="TechnicianOTP"
+                                component={TechnicianOTPScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="WalletUpdate"
+                                component={WalletUpdateScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="TechnicianWallet"
+                                component={TechnicianFinanceScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="CommissionPayment"
+                                component={CommissionPaymentScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="PayCommission"
+                                component={PayCommissionScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="CommissionPaid"
+                                component={CommissionPaidScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="TechnicianHistory"
+                                component={TechnicianHistoryScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="WithdrawalRequest"
+                                component={TechnicianFinanceScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="TechnicianProfile"
+                                component={TechnicianProfileScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="TechnicianNavigation"
+                                component={TechnicianNavigationScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="Driver"
+                                component={DriverScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="RazorpayCheckout"
+                                component={RazorpayCheckoutScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="KYC"
+                                component={KYCScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="VerificationPending"
+                                component={VerificationPendingScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="PersonalDetails"
+                                component={PersonalDetailsScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="ChangePassword"
+                                component={ChangePasswordScreen}
+                                options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                                name="Support"
+                                component={SupportScreen}
+                                options={{ headerShown: false }}
+                            />
+                        </Stack.Navigator>
+                    </NavigationContainer>
+                </GestureHandlerRootView>
+            </NotificationProvider>
         </SafeAreaProvider>
     );
 }

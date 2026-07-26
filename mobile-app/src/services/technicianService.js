@@ -51,8 +51,8 @@ export const updateOnlineStatus = async (isOnline) => {
 
         let location = null;
 
-        // Get current location when going online
-        if (isOnline) {
+        // Fetch current device GPS location for both Online AND Offline status
+        try {
             const { status } = await Location.requestForegroundPermissionsAsync();
             if (status === 'granted') {
                 const currentLocation = await Location.getCurrentPositionAsync({
@@ -61,10 +61,12 @@ export const updateOnlineStatus = async (isOnline) => {
                 location = {
                     lat: currentLocation.coords.latitude,
                     lng: currentLocation.coords.longitude,
-                    address: 'Current Location'
+                    address: isOnline ? 'Online Location' : 'Last Offline Location'
                 };
-                console.log('Sending location with online status:', location);
+                console.log('Sending location with online-status toggle:', { isOnline, location });
             }
+        } catch (locErr) {
+            console.warn('Could not fetch location for online status update:', locErr.message);
         }
 
         const response = await axios.put(`${API_URL}/api/technician/online-status?userId=${userId}`, {

@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 const Category = require('../models/Category');
 const Service = require('../models/Service');
+const User = require('../models/User');
+const Technician = require('../models/Technician');
 
 const initialData = [
     {
@@ -78,9 +80,6 @@ const initialData = [
 const seedDatabase = async () => {
     // 1. Seed Categories & Services
     try {
-        const Category = require('../models/Category');
-        const Service = require('../models/Service');
-
         const categoryCount = await Category.countDocuments();
         if (categoryCount === 0) {
             console.log('🌱 Seeding services and categories...');
@@ -106,7 +105,6 @@ const seedDatabase = async () => {
 
     // 2. Seed Admin User
     try {
-        const User = require('../models/User');
         const adminFound = await User.findOne({ role: 'admin' });
         const mobileAdminFound = await User.findOne({ mobile: 'admin' });
 
@@ -121,13 +119,36 @@ const seedDatabase = async () => {
             });
             console.log('✅ Default Admin created: admin / admin');
         } else {
-            console.log('ℹ️ Admin user already exists:', {
-                roleAdmin: adminFound?.mobile,
-                mobileAdmin: mobileAdminFound?.mobile
-            });
+            console.log('ℹ️ Admin user already exists');
         }
     } catch (error) {
         console.error('❌ Error seeding admin:', error);
+    }
+
+    // 3. Ensure Technicians Have DLF Cyber City, Bhubaneswar Location
+    try {
+        const techs = await Technician.find({});
+        for (const t of techs) {
+            t.currentLocation = {
+                lat: 20.3533,
+                lng: 85.8185,
+                address: 'DLF Cyber City, Patia, Bhubaneswar, Odisha 751024',
+                lastUpdated: new Date()
+            };
+            await t.save();
+
+            if (t.userId) {
+                await User.findByIdAndUpdate(t.userId, {
+                    'lastLocation.lat': 20.3533,
+                    'lastLocation.lng': 85.8185,
+                    'lastLocation.address': 'DLF Cyber City, Patia, Bhubaneswar, Odisha 751024',
+                    'lastLocation.lastUpdated': new Date()
+                });
+            }
+        }
+        console.log('📍 Technician DLF Cyber City Bhubaneswar locations synced!');
+    } catch (error) {
+        console.error('❌ Error syncing technician DLF Cyber City location:', error);
     }
 };
 

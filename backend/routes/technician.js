@@ -68,16 +68,25 @@ router.put('/online-status', async (req, res) => {
         if (location && location.lat && location.lng) {
             updateData['currentLocation.lat'] = location.lat;
             updateData['currentLocation.lng'] = location.lng;
-            updateData['currentLocation.address'] = location.address || 'Current Location';
+            updateData['currentLocation.address'] = location.address || (isOnline ? 'Online Location' : 'Last Offline Location');
             updateData['currentLocation.lastUpdated'] = new Date();
-            console.log('✅ Location being saved:', { lat: location.lat, lng: location.lng });
+
+            // Update User model lastLocation
+            await User.findByIdAndUpdate(userId, {
+                'lastLocation.lat': location.lat,
+                'lastLocation.lng': location.lng,
+                'lastLocation.address': location.address || (isOnline ? 'Online Location' : 'Last Offline Location'),
+                'lastLocation.lastUpdated': new Date()
+            }).catch(e => console.error('Error updating user lastLocation:', e.message));
+
+            console.log('✅ Location saved to Technician and User:', { lat: location.lat, lng: location.lng });
         }
 
         const technician = await Technician.findOneAndUpdate(
             { userId },
             updateData,
             { new: true, upsert: true }
-        );
+        ).populate('userId', 'name mobile');
 
         console.log('👤 Technician updated:', {
             userId: technician.userId,
@@ -85,9 +94,24 @@ router.put('/online-status', async (req, res) => {
             hasLocation: !!(technician.currentLocation?.lat && technician.currentLocation?.lng)
         });
 
+        // Broadcast status change to Admin Live Map
+        const io = req.app.get('io');
+        if (io) {
+            io.to('admin:live_tracking').emit('admin:status:update', {
+                technicianId: technician._id,
+                userId: userId,
+                name: technician.userId?.name || 'Technician',
+                mobile: technician.userId?.mobile,
+                isOnline: technician.isOnline,
+                location: technician.currentLocation,
+                updatedAt: Date.now()
+            });
+        }
+
         res.json({
             success: true,
-            isOnline: technician.isOnline
+            isOnline: technician.isOnline,
+            technician
         });
     } catch (error) {
         console.error('Online status error:', error);

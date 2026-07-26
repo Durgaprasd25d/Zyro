@@ -1,18 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import config from '../config';
+import ADMIN_COLORS from '../theme/colors';
 import {
-    Settings as SettingsIcon,
-    Shield,
-    Bell,
-    Globe,
-    Database,
     Save,
-    Lock,
-    Percent,
-    AlertTriangle,
     CheckCircle2,
-    Loader2
 } from 'lucide-react';
 
 export default function Settings() {
@@ -23,7 +15,7 @@ export default function Settings() {
         gst: 0,
         maintenanceMode: false,
         autoApproval: false,
-        notificationEmails: 'admin@zyroac.com',
+        notificationEmails: 'admin@zyro.com',
         minWithdrawal: 500
     });
 
@@ -59,165 +51,87 @@ export default function Settings() {
                 setTimeout(() => setSaved(false), 3000);
             }
         } catch (error) {
-            alert('Error updating settings');
+            alert('Failed to save platform settings');
         }
     };
 
-    const SettingGroup = ({ title, description, children }) => (
-        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden mb-6">
-            <div className="p-6 border-b border-slate-50 flex items-center justify-between">
-                <div>
-                    <h3 className="text-lg font-bold text-slate-800">{title}</h3>
-                    <p className="text-sm text-slate-400 mt-1">{description}</p>
-                </div>
-            </div>
-            <div className="p-6 space-y-6">
-                {children}
-            </div>
-        </div>
-    );
-
-    const SettingItem = ({ icon: Icon, label, description, children, danger }) => (
-        <div className="flex items-start justify-between gap-8 py-2">
-            <div className="flex gap-4">
-                <div className={`p-3 rounded-2xl ${danger ? 'bg-rose-50 text-rose-600' : 'bg-blue-50 text-blue-600'}`}>
-                    <Icon size={20} />
-                </div>
-                <div>
-                    <h4 className={`font-bold ${danger ? 'text-rose-600' : 'text-slate-800'}`}>{label}</h4>
-                    <p className="text-sm text-slate-400 mt-0.5">{description}</p>
-                </div>
-            </div>
-            <div className="shrink-0">
-                {children}
-            </div>
-        </div>
-    );
-
     return (
-        <div className="max-w-4xl mx-auto py-4">
-            <div className="flex items-center justify-between mb-8">
-                <div>
-                    <h2 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
-                        <SettingsIcon className="text-slate-400" size={32} />
-                        System Settings
-                    </h2>
-                    <p className="text-slate-500 mt-1">Global configuration and platform controls</p>
-                </div>
-                <button
-                    onClick={handleSave}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all shadow-lg ${saved ? 'bg-emerald-500 text-white' : 'bg-slate-900 text-white hover:bg-slate-800'
-                        }`}
-                >
-                    {saved ? <CheckCircle2 size={18} /> : <Save size={18} />}
-                    {saved ? 'Saved Successfully' : 'Save Changes'}
-                </button>
+        <div className="space-y-6 max-w-4xl mx-auto pb-10 font-sans">
+            {/* Header */}
+            <div>
+                <h2 className="text-3xl font-extrabold tracking-tight" style={{ color: ADMIN_COLORS.textPrimary }}>
+                    System Settings
+                </h2>
+                <p className="text-sm font-medium mt-1" style={{ color: ADMIN_COLORS.textSecondary }}>
+                    Platform commission fee, GST tax rates & infrastructure parameters
+                </p>
             </div>
 
-            <SettingGroup title="Financial Controls" description="Manage platform fees and transaction limits">
-                <SettingItem
-                    icon={Percent}
-                    label="Platform Usage Fee"
-                    description="Fixed convenience fee charged per booking."
+            {saved && (
+                <div 
+                    className="p-4 rounded-2xl border text-xs font-extrabold flex items-center gap-2"
+                    style={{ backgroundColor: ADMIN_COLORS.successBg, borderColor: 'rgba(74, 222, 128, 0.3)', color: ADMIN_COLORS.success }}
                 >
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <span className="text-slate-400 font-bold">₹</span>
-                        </div>
+                    <CheckCircle2 size={16} />
+                    <span>System settings updated successfully!</span>
+                </div>
+            )}
+
+            <div 
+                className="p-8 rounded-3xl border space-y-6 shadow-xl"
+                style={{ backgroundColor: ADMIN_COLORS.surface, borderColor: ADMIN_COLORS.border }}
+            >
+                <h3 className="text-base font-extrabold uppercase tracking-wider text-white">
+                    Billing & Platform Fees
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label className="block text-xs font-bold uppercase mb-2" style={{ color: ADMIN_COLORS.textSecondary }}>
+                            Platform Commission Fee (₹)
+                        </label>
                         <input
                             type="number"
-                            className="w-28 pl-8 pr-4 py-2 bg-slate-50 border-none rounded-xl text-right font-bold text-slate-800 focus:ring-2 focus:ring-blue-500/20"
                             value={settings.platformFee}
-                            onChange={e => setSettings({ ...settings, platformFee: e.target.value })}
+                            onChange={(e) => setSettings({ ...settings, platformFee: e.target.value })}
+                            className="w-full px-4 py-3.5 rounded-2xl border text-sm font-bold outline-none"
+                            style={{ backgroundColor: '#1C1C1C', borderColor: ADMIN_COLORS.border, color: ADMIN_COLORS.textPrimary }}
+                            placeholder="0"
                         />
+                        <p className="text-[11px] mt-1.5" style={{ color: ADMIN_COLORS.textMuted }}>
+                            Added as platform convenience charge on customer bookings.
+                        </p>
                     </div>
-                </SettingItem>
 
-                <SettingItem
-                    icon={Percent}
-                    label="GST Percentage"
-                    description="Government tax applied to the base service price."
-                >
-                    <div className="relative">
+                    <div>
+                        <label className="block text-xs font-bold uppercase mb-2" style={{ color: ADMIN_COLORS.textSecondary }}>
+                            GST Tax Rate (%)
+                        </label>
                         <input
                             type="number"
-                            className="w-24 px-4 py-2 bg-slate-50 border-none rounded-xl text-right font-bold text-slate-800 focus:ring-2 focus:ring-blue-500/20"
                             value={settings.gst}
-                            onChange={e => setSettings({ ...settings, gst: e.target.value })}
+                            onChange={(e) => setSettings({ ...settings, gst: e.target.value })}
+                            className="w-full px-4 py-3.5 rounded-2xl border text-sm font-bold outline-none"
+                            style={{ backgroundColor: '#1C1C1C', borderColor: ADMIN_COLORS.border, color: ADMIN_COLORS.textPrimary }}
+                            placeholder="0"
                         />
-                        <span className="absolute right-3 top-2 text-slate-400 font-bold">%</span>
+                        <p className="text-[11px] mt-1.5" style={{ color: ADMIN_COLORS.textMuted }}>
+                            Applied to final bill total on completed service receipts.
+                        </p>
                     </div>
-                </SettingItem>
+                </div>
 
-                <SettingItem
-                    icon={Database}
-                    label="Minimum Withdrawal Limit"
-                    description="The threshold amount for technicians to request a payout."
-                >
-                    <div className="flex items-center gap-2">
-                        <span className="text-slate-400 font-bold">₹</span>
-                        <input
-                            type="number"
-                            className="w-28 px-4 py-2 bg-slate-50 border-none rounded-xl text-right font-bold text-slate-800 focus:ring-2 focus:ring-blue-500/20"
-                            value={settings.minWithdrawal}
-                            onChange={e => setSettings({ ...settings, minWithdrawal: e.target.value })}
-                        />
-                    </div>
-                </SettingItem>
-            </SettingGroup>
-
-            <SettingGroup title="Security & Approvals" description="Configure verification and access protocols">
-                <SettingItem
-                    icon={Shield}
-                    label="Auto-Approve Technicians"
-                    description="Automatically approve KYC if documents are uploaded."
-                >
+                <div className="pt-6 border-t flex justify-end" style={{ borderColor: ADMIN_COLORS.border }}>
                     <button
-                        onClick={() => setSettings({ ...settings, autoApproval: !settings.autoApproval })}
-                        className={`w-12 h-6 rounded-full transition-colors relative ${settings.autoApproval ? 'bg-blue-600' : 'bg-gray-200'}`}
+                        onClick={handleSave}
+                        className="px-6 py-3.5 rounded-2xl text-xs font-extrabold uppercase tracking-wider transition-all flex items-center gap-2 shadow-lg active:scale-95"
+                        style={{ backgroundColor: ADMIN_COLORS.primary, borderColor: ADMIN_COLORS.borderGold, color: '#432B1E' }}
                     >
-                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${settings.autoApproval ? 'left-7' : 'left-1'}`} />
+                        <Save size={16} />
+                        <span>Save Configuration</span>
                     </button>
-                </SettingItem>
-
-                <SettingItem
-                    icon={Lock}
-                    label="Advanced Firewall"
-                    description="Enable strict IP monitoring for administrative operations."
-                >
-                    <button className="w-12 h-6 rounded-full bg-blue-600 relative">
-                        <div className="absolute top-1 w-4 h-4 bg-white rounded-full left-7" />
-                    </button>
-                </SettingItem>
-            </SettingGroup>
-
-            <SettingGroup title="Infrastructure" description="Platform availability and system health">
-                <SettingItem
-                    icon={AlertTriangle}
-                    label="Maintenance Mode"
-                    description="Puts the customer app in read-only mode during updates."
-                    danger
-                >
-                    <button
-                        onClick={() => setSettings({ ...settings, maintenanceMode: !settings.maintenanceMode })}
-                        className={`w-12 h-6 rounded-full transition-colors relative ${settings.maintenanceMode ? 'bg-rose-500' : 'bg-gray-200'}`}
-                    >
-                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${settings.maintenanceMode ? 'left-7' : 'left-1'}`} />
-                    </button>
-                </SettingItem>
-
-                <SettingItem
-                    icon={Bell}
-                    label="System Alerts"
-                    description="Receive emails for failed transactions or server spikes."
-                >
-                    <input
-                        className="w-64 px-4 py-2 bg-slate-50 border-none rounded-xl text-slate-800 font-medium text-sm focus:ring-2 focus:ring-blue-500/20"
-                        value={settings.notificationEmails}
-                        onChange={e => setSettings({ ...settings, notificationEmails: e.target.value })}
-                    />
-                </SettingItem>
-            </SettingGroup>
+                </div>
+            </div>
         </div>
     );
 }

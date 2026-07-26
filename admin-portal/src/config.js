@@ -1,3 +1,5 @@
+import { ADMIN_COLORS } from './theme/colors';
+
 const isProd = import.meta.env.PROD;
 
 const config = {
@@ -13,6 +15,9 @@ const config = {
   }
 };
 
-const currentConfig = isProd ? config.production : config.development;
+const currentConfig = {
+  ...(isProd ? config.production : config.development),
+  COLORS: ADMIN_COLORS
+};
 
 export default currentConfig;

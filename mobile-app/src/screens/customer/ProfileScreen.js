@@ -20,12 +20,24 @@ import config from '../../constants/config';
 import { DESIGN_COLORS as C, DESIGN_TYPOGRAPHY as TY } from '../../constants/designSystem';
 import BottomNavBar from '../../components/BottomNavBar';
 
+import { useInAppNotification } from '../../components/InAppNotification';
+
 const { width } = Dimensions.get('window');
 
 export default function ProfileScreen({ navigation }) {
+    const { showNotification } = useInAppNotification();
     const [user, setUser] = useState(null);
     const [showEditModal, setShowEditModal] = useState(false);
-    const [editForm, setEditForm] = useState({ name: '', email: '', mobile: '' });
+    const [editForm, setEditForm] = useState({
+        name: '',
+        email: '',
+        mobile: '',
+        alternateMobile: '',
+        gender: 'Unspecified',
+        city: '',
+        pincode: '',
+        landmark: '',
+    });
     const [saving, setSaving] = useState(false);
 
     // Modals visibility state
@@ -50,6 +62,11 @@ export default function ProfileScreen({ navigation }) {
                 name: userData.name || '',
                 email: userData.email || '',
                 mobile: userData.mobile || '',
+                alternateMobile: userData.alternateMobile || '',
+                gender: userData.gender || 'Unspecified',
+                city: userData.city || '',
+                pincode: userData.pincode || '',
+                landmark: userData.landmark || '',
             });
         }
     };
@@ -58,8 +75,9 @@ export default function ProfileScreen({ navigation }) {
         try {
             const userData = await authService.getUser();
             const token = await authService.getToken();
-            if (!userData?._id) return;
-            const res = await fetch(`${config.BACKEND_URL}/api/auth/addresses/${userData._id}`, {
+            if (!userData?._id && !userData?.id) return;
+            const uid = userData._id || userData.id;
+            const res = await fetch(`${config.BACKEND_URL}/api/auth/addresses/${uid}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await res.json();
@@ -77,42 +95,71 @@ export default function ProfileScreen({ navigation }) {
 
     const handleSaveProfile = async () => {
         if (!editForm.name.trim()) {
-            Alert.alert('Required', 'Please enter your name');
+            showNotification({
+                title: 'Required Field',
+                message: 'Please enter your full name.',
+                type: 'warning',
+            });
             return;
         }
         setSaving(true);
         try {
             const token = await authService.getToken();
             const userData = await authService.getUser();
+            const uid = userData?._id || userData?.id;
+
             const res = await fetch(`${config.BACKEND_URL}/api/auth/update-profile`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`
                 },
-                body: JSON.stringify({ userId: userData?._id, name: editForm.name, email: editForm.email })
+                body: JSON.stringify({
+                    userId: uid,
+                    name: editForm.name,
+                    email: editForm.email,
+                    alternateMobile: editForm.alternateMobile,
+                    gender: editForm.gender,
+                    city: editForm.city,
+                    pincode: editForm.pincode,
+                    landmark: editForm.landmark,
+                })
             });
             const data = await res.json();
             if (data.success) {
                 await authService.setUser(data.user);
                 setUser(data.user);
                 setShowEditModal(false);
-                Alert.alert('Profile Updated', 'Your profile has been saved successfully!');
+                showNotification({
+                    title: 'Profile Saved',
+                    message: 'Your account details have been updated successfully!',
+                    type: 'success',
+                });
             } else {
-                Alert.alert('Error', data.message || 'Failed to update profile');
+                showNotification({
+                    title: 'Update Failed',
+                    message: data.message || 'Failed to update profile',
+                    type: 'error',
+                });
             }
         } catch (e) {
-            Alert.alert('Error', 'Update error: ' + e.message);
+            showNotification({
+                title: 'Network Error',
+                message: 'Update error: ' + e.message,
+                type: 'error',
+            });
         } finally {
             setSaving(false);
         }
     };
 
     const handleLogout = () => {
-        Alert.alert(
-            'Log Out',
-            'Are you sure you want to log out from Zyro?',
-            [
+        showNotification({
+            title: 'Log Out Account',
+            message: 'Are you sure you want to log out from Zyro?',
+            type: 'warning',
+            duration: 0,
+            buttons: [
                 { text: 'Cancel', style: 'cancel' },
                 {
                     text: 'Log Out',
@@ -123,8 +170,10 @@ export default function ProfileScreen({ navigation }) {
                     }
                 }
             ]
-        );
+        });
     };
+
+    const locationString = [user?.landmark, user?.city, user?.pincode].filter(Boolean).join(', ');
 
     return (
         <View style={styles.container}>
@@ -166,6 +215,50 @@ export default function ProfileScreen({ navigation }) {
                             <Ionicons name="pencil-outline" size={12} color={C.onPrimary} style={{ marginRight: 4 }} />
                             <Text style={styles.editBadgeText}>Edit Profile</Text>
                         </TouchableOpacity>
+                    </View>
+                </View>
+
+                {/* Personal Information Summary Card */}
+                <View style={styles.menuSection}>
+                    <Text style={styles.sectionLabel}>Personal Information</Text>
+                    <View style={styles.infoCard}>
+                        <View style={styles.infoRow}>
+                            <Ionicons name="mail-outline" size={16} color={C.primary} />
+                            <View style={styles.infoTextContainer}>
+                                <Text style={styles.infoLabel}>Email Address</Text>
+                                <Text style={styles.infoValue}>{user?.email || 'Not provided'}</Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.infoRowDivider} />
+
+                        <View style={styles.infoRow}>
+                            <Ionicons name="person-outline" size={16} color={C.primary} />
+                            <View style={styles.infoTextContainer}>
+                                <Text style={styles.infoLabel}>Gender</Text>
+                                <Text style={styles.infoValue}>{user?.gender || 'Not specified'}</Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.infoRowDivider} />
+
+                        <View style={styles.infoRow}>
+                            <Ionicons name="call-outline" size={16} color={C.primary} />
+                            <View style={styles.infoTextContainer}>
+                                <Text style={styles.infoLabel}>Alternate Phone</Text>
+                                <Text style={styles.infoValue}>{user?.alternateMobile || 'Not provided'}</Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.infoRowDivider} />
+
+                        <View style={styles.infoRow}>
+                            <Ionicons name="location-outline" size={16} color={C.primary} />
+                            <View style={styles.infoTextContainer}>
+                                <Text style={styles.infoLabel}>City & Area</Text>
+                                <Text style={styles.infoValue}>{locationString || 'Not specified'}</Text>
+                            </View>
+                        </View>
                     </View>
                 </View>
 
@@ -217,8 +310,6 @@ export default function ProfileScreen({ navigation }) {
                         <Ionicons name="chevron-forward" size={18} color={C.onSurfaceVariant} />
                     </TouchableOpacity>
 
-
-
                     <TouchableOpacity
                         style={styles.menuItem}
                         onPress={() => setShowSafetyModal(true)}
@@ -240,28 +331,28 @@ export default function ProfileScreen({ navigation }) {
                     >
                         <View style={styles.menuItemLeft}>
                             <View style={styles.menuIconBox}>
-                                <Ionicons name="information-circle-outline" size={20} color={C.primary} />
+                                <Ionicons name="document-text-outline" size={20} color={C.primary} />
                             </View>
-                            <Text style={styles.menuItemLabel}>Terms & Privacy Policies</Text>
+                            <Text style={styles.menuItemLabel}>Terms & Privacy Policy</Text>
                         </View>
                         <Ionicons name="chevron-forward" size={18} color={C.onSurfaceVariant} />
                     </TouchableOpacity>
                 </View>
 
-                {/* Logout Action */}
+                {/* Log Out */}
                 <TouchableOpacity
                     style={styles.logoutButton}
                     onPress={handleLogout}
                     activeOpacity={0.8}
                 >
-                    <Ionicons name="log-out-outline" size={20} color="#E57373" />
-                    <Text style={styles.logoutButtonText}>Log Out Account</Text>
+                    <Ionicons name="log-out-outline" size={20} color="#FF5252" />
+                    <Text style={styles.logoutText}>Log Out Account</Text>
                 </TouchableOpacity>
 
-                <Text style={styles.versionText}>Zyro v1.2.0 • Premium Climate Control</Text>
-                <View style={{ height: 110 }} />
+                <View style={{ height: 40 }} />
             </ScrollView>
 
+            {/* Shared Reusable BottomNavBar */}
             <BottomNavBar navigation={navigation} activeTab="profile" />
 
             {/* Saved Addresses Modal */}
@@ -269,7 +360,7 @@ export default function ProfileScreen({ navigation }) {
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Saved Addresses</Text>
+                            <Text style={styles.modalTitle}>Saved Delivery Addresses</Text>
                             <TouchableOpacity onPress={() => setShowAddressModal(false)} style={styles.closeBtn}>
                                 <Ionicons name="close" size={24} color={C.onSurface} />
                             </TouchableOpacity>
@@ -277,17 +368,17 @@ export default function ProfileScreen({ navigation }) {
                         <ScrollView style={styles.modalScroll}>
                             {addresses.length === 0 ? (
                                 <View style={styles.emptyState}>
-                                    <Ionicons name="location-outline" size={44} color={C.onSurfaceVariant} />
+                                    <Ionicons name="location-outline" size={48} color={C.onSurfaceVariant} />
                                     <Text style={styles.emptyText}>No saved addresses yet</Text>
-                                    <Text style={styles.emptySubtext}>Addresses saved during booking appear here</Text>
+                                    <Text style={styles.emptySubtext}>Your saved home/work locations will appear here.</Text>
                                 </View>
                             ) : (
-                                addresses.map((addr) => (
-                                    <View key={addr._id || addr.id} style={styles.addressItem}>
-                                        <Ionicons name="location" size={20} color={C.primary} />
-                                        <View style={{ flex: 1, marginHorizontal: 10 }}>
+                                addresses.map((addr, idx) => (
+                                    <View key={idx} style={styles.addressItem}>
+                                        <Ionicons name="home-outline" size={20} color={C.primary} style={{ marginRight: 12 }} />
+                                        <View style={{ flex: 1 }}>
                                             <Text style={styles.addressLabel}>{addr.label || 'Saved Location'}</Text>
-                                            <Text style={styles.addressText} numberOfLines={2}>{addr.address}</Text>
+                                            <Text style={styles.addressText}>{addr.address}</Text>
                                         </View>
                                     </View>
                                 ))
@@ -302,35 +393,31 @@ export default function ProfileScreen({ navigation }) {
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Help Center</Text>
+                            <Text style={styles.modalTitle}>Help & Support Center</Text>
                             <TouchableOpacity onPress={() => setShowHelpModal(false)} style={styles.closeBtn}>
                                 <Ionicons name="close" size={24} color={C.onSurface} />
                             </TouchableOpacity>
                         </View>
                         <ScrollView style={styles.modalScroll}>
                             <View style={styles.faqCard}>
-                                <Text style={styles.faqQ}>How do I book a technician?</Text>
-                                <Text style={styles.faqA}>Select any service on Home screen, pick location on MapPicker, and select instant booking or schedule timing.</Text>
+                                <Text style={styles.faqQ}>How do I track my active technician?</Text>
+                                <Text style={styles.faqA}>Open the active booking card from the home screen or history screen to see live GPS navigation.</Text>
                             </View>
                             <View style={styles.faqCard}>
-                                <Text style={styles.faqQ}>How do I track my technician live?</Text>
-                                <Text style={styles.faqA}>Once accepted, open Active Activity tab to view technician live MapBox location and arrival time.</Text>
+                                <Text style={styles.faqQ}>What if I need to cancel my service?</Text>
+                                <Text style={styles.faqA}>You can cancel anytime before the technician arrives directly from the active booking screen.</Text>
                             </View>
-
-
                         </ScrollView>
                     </View>
                 </View>
             </Modal>
 
-
-
-            {/* Safety & Protection Modal */}
+            {/* Safety Modal */}
             <Modal visible={showSafetyModal} animationType="slide" transparent={true} onRequestClose={() => setShowSafetyModal(false)}>
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Safety & Security</Text>
+                            <Text style={styles.modalTitle}>Safety & Protection</Text>
                             <TouchableOpacity onPress={() => setShowSafetyModal(false)} style={styles.closeBtn}>
                                 <Ionicons name="close" size={24} color={C.onSurface} />
                             </TouchableOpacity>
@@ -370,49 +457,154 @@ export default function ProfileScreen({ navigation }) {
                 </View>
             </Modal>
 
-            {/* Edit Profile Modal */}
+            {/* EXPANDED EDIT PROFILE MODAL */}
             <Modal visible={showEditModal} animationType="slide" transparent={true} onRequestClose={() => setShowEditModal(false)}>
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
+                    <View style={[styles.modalContent, { height: '88%' }]}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Edit Profile Details</Text>
+                            <Text style={styles.modalTitle}>Edit Profile Information</Text>
                             <TouchableOpacity onPress={() => setShowEditModal(false)} style={styles.closeBtn}>
                                 <Ionicons name="close" size={24} color={C.onSurface} />
                             </TouchableOpacity>
                         </View>
-                        <View style={styles.formContainer}>
-                            <Text style={styles.inputLabel}>Full Name</Text>
-                            <TextInput
-                                style={styles.formInput}
-                                value={editForm.name}
-                                onChangeText={(text) => setEditForm((prev) => ({ ...prev, name: text }))}
-                                placeholder="Enter full name"
-                                placeholderTextColor={C.onSurfaceVariant}
-                            />
+                        <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+                            <View style={styles.formContainer}>
+                                {/* Full Name */}
+                                <Text style={styles.inputLabel}>Full Name *</Text>
+                                <View style={styles.inputBox}>
+                                    <Ionicons name="person-outline" size={18} color={C.primary} style={{ marginRight: 10 }} />
+                                    <TextInput
+                                        style={styles.formInputText}
+                                        value={editForm.name}
+                                        onChangeText={(text) => setEditForm((prev) => ({ ...prev, name: text }))}
+                                        placeholder="Enter full name"
+                                        placeholderTextColor={C.onSurfaceVariant}
+                                    />
+                                </View>
 
-                            <Text style={styles.inputLabel}>Email Address</Text>
-                            <TextInput
-                                style={styles.formInput}
-                                value={editForm.email}
-                                onChangeText={(text) => setEditForm((prev) => ({ ...prev, email: text }))}
-                                placeholder="Enter email"
-                                placeholderTextColor={C.onSurfaceVariant}
-                                keyboardType="email-address"
-                            />
+                                {/* Email Address */}
+                                <Text style={styles.inputLabel}>Email Address</Text>
+                                <View style={styles.inputBox}>
+                                    <Ionicons name="mail-outline" size={18} color={C.primary} style={{ marginRight: 10 }} />
+                                    <TextInput
+                                        style={styles.formInputText}
+                                        value={editForm.email}
+                                        onChangeText={(text) => setEditForm((prev) => ({ ...prev, email: text }))}
+                                        placeholder="name@example.com"
+                                        placeholderTextColor={C.onSurfaceVariant}
+                                        keyboardType="email-address"
+                                        autoCapitalize="none"
+                                    />
+                                </View>
 
-                            <TouchableOpacity
-                                style={styles.primaryActionBtn}
-                                onPress={handleSaveProfile}
-                                disabled={saving}
-                                activeOpacity={0.8}
-                            >
-                                {saving ? (
-                                    <ActivityIndicator color={C.onPrimary} />
-                                ) : (
-                                    <Text style={styles.primaryActionBtnText}>Save Changes</Text>
-                                )}
-                            </TouchableOpacity>
-                        </View>
+                                {/* Gender Selection */}
+                                <Text style={styles.inputLabel}>Gender</Text>
+                                <View style={styles.genderRow}>
+                                    {['Male', 'Female', 'Other'].map((g) => (
+                                        <TouchableOpacity
+                                            key={g}
+                                            style={[
+                                                styles.genderPill,
+                                                editForm.gender === g && styles.genderPillActive
+                                            ]}
+                                            onPress={() => setEditForm((prev) => ({ ...prev, gender: g }))}
+                                            activeOpacity={0.8}
+                                        >
+                                            <Text
+                                                style={[
+                                                    styles.genderPillText,
+                                                    editForm.gender === g && styles.genderPillTextActive
+                                                ]}
+                                            >
+                                                {g}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+
+                                {/* Primary Mobile (Read Only) */}
+                                <Text style={styles.inputLabel}>Primary Mobile (Registered)</Text>
+                                <View style={[styles.inputBox, { opacity: 0.6 }]}>
+                                    <Ionicons name="phone-portrait-outline" size={18} color={C.onSurfaceVariant} style={{ marginRight: 10 }} />
+                                    <TextInput
+                                        style={styles.formInputText}
+                                        value={editForm.mobile}
+                                        editable={false}
+                                        placeholderTextColor={C.onSurfaceVariant}
+                                    />
+                                    <Ionicons name="lock-closed-outline" size={16} color={C.onSurfaceVariant} />
+                                </View>
+
+                                {/* Alternate Phone Number */}
+                                <Text style={styles.inputLabel}>Alternate Contact Number</Text>
+                                <View style={styles.inputBox}>
+                                    <Ionicons name="call-outline" size={18} color={C.primary} style={{ marginRight: 10 }} />
+                                    <TextInput
+                                        style={styles.formInputText}
+                                        value={editForm.alternateMobile}
+                                        onChangeText={(text) => setEditForm((prev) => ({ ...prev, alternateMobile: text }))}
+                                        placeholder="Secondary mobile number"
+                                        placeholderTextColor={C.onSurfaceVariant}
+                                        keyboardType="phone-pad"
+                                    />
+                                </View>
+
+                                {/* City / Town */}
+                                <Text style={styles.inputLabel}>City / Town</Text>
+                                <View style={styles.inputBox}>
+                                    <Ionicons name="business-outline" size={18} color={C.primary} style={{ marginRight: 10 }} />
+                                    <TextInput
+                                        style={styles.formInputText}
+                                        value={editForm.city}
+                                        onChangeText={(text) => setEditForm((prev) => ({ ...prev, city: text }))}
+                                        placeholder="e.g. Bhubaneswar, Delhi"
+                                        placeholderTextColor={C.onSurfaceVariant}
+                                    />
+                                </View>
+
+                                {/* Pincode */}
+                                <Text style={styles.inputLabel}>Pincode / Postal Code</Text>
+                                <View style={styles.inputBox}>
+                                    <Ionicons name="barcode-outline" size={18} color={C.primary} style={{ marginRight: 10 }} />
+                                    <TextInput
+                                        style={styles.formInputText}
+                                        value={editForm.pincode}
+                                        onChangeText={(text) => setEditForm((prev) => ({ ...prev, pincode: text }))}
+                                        placeholder="e.g. 751024"
+                                        placeholderTextColor={C.onSurfaceVariant}
+                                        keyboardType="number-pad"
+                                    />
+                                </View>
+
+                                {/* Landmark / Area */}
+                                <Text style={styles.inputLabel}>Landmark / Colony</Text>
+                                <View style={styles.inputBox}>
+                                    <Ionicons name="navigate-outline" size={18} color={C.primary} style={{ marginRight: 10 }} />
+                                    <TextInput
+                                        style={styles.formInputText}
+                                        value={editForm.landmark}
+                                        onChangeText={(text) => setEditForm((prev) => ({ ...prev, landmark: text }))}
+                                        placeholder="Near Cyber City, Infocity, etc."
+                                        placeholderTextColor={C.onSurfaceVariant}
+                                    />
+                                </View>
+
+                                <TouchableOpacity
+                                    style={styles.primaryActionBtn}
+                                    onPress={handleSaveProfile}
+                                    disabled={saving}
+                                    activeOpacity={0.8}
+                                >
+                                    {saving ? (
+                                        <ActivityIndicator color={C.onPrimary} />
+                                    ) : (
+                                        <Text style={styles.primaryActionBtnText}>Save Changes</Text>
+                                    )}
+                                </TouchableOpacity>
+
+                                <View style={{ height: 20 }} />
+                            </View>
+                        </ScrollView>
                     </View>
                 </View>
             </Modal>
@@ -519,12 +711,45 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: C.onSurfaceVariant,
         textTransform: 'uppercase',
-        letterSpacing: 1,
+        letterSpacing: 0.8,
         marginLeft: 4,
+    },
+    infoCard: {
+        backgroundColor: '#141414',
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: '#222222',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+    },
+    infoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 8,
+    },
+    infoRowDivider: {
+        height: 1,
+        backgroundColor: '#222222',
+        marginVertical: 2,
+    },
+    infoTextContainer: {
+        marginLeft: 12,
+        flex: 1,
+    },
+    infoLabel: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: C.onSurfaceVariant,
+    },
+    infoValue: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: C.onSurface,
+        marginTop: 1,
     },
     paymentCard: {
         backgroundColor: '#141414',
-        borderRadius: 16,
+        borderRadius: 18,
         borderWidth: 1,
         borderColor: '#222222',
         padding: 16,
@@ -537,8 +762,8 @@ const styles = StyleSheet.create({
     },
     paymentSecureText: {
         fontSize: 13,
-        fontWeight: '700',
-        color: C.onSurface,
+        fontWeight: '800',
+        color: C.primary,
     },
     paymentDesc: {
         fontSize: 12,
@@ -549,7 +774,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         backgroundColor: '#141414',
-        borderRadius: 16,
+        borderRadius: 18,
         borderWidth: 1,
         borderColor: '#222222',
         paddingHorizontal: 16,
@@ -563,14 +788,14 @@ const styles = StyleSheet.create({
     menuIconBox: {
         width: 36,
         height: 36,
-        borderRadius: 18,
+        borderRadius: 12,
         backgroundColor: '#1C1C1C',
         justifyContent: 'center',
         alignItems: 'center',
     },
     menuItemLabel: {
-        fontSize: 15,
-        fontWeight: '600',
+        fontSize: 14,
+        fontWeight: '700',
         color: C.onSurface,
     },
     logoutButton: {
@@ -578,62 +803,21 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
-        backgroundColor: '#1E1414',
-        borderRadius: 20,
+        backgroundColor: '#1F1414',
         borderWidth: 1,
-        borderColor: '#3D2020',
-        paddingVertical: 16,
+        borderColor: '#3D1C1C',
+        borderRadius: 18,
+        paddingVertical: 14,
         marginTop: 10,
     },
-    logoutButtonText: {
-        fontSize: 15,
+    logoutText: {
+        fontSize: 14,
         fontWeight: '800',
-        color: '#E57373',
-    },
-    versionText: {
-        fontSize: 11,
-        color: C.onSurfaceVariant,
-        textAlign: 'center',
-        marginTop: 8,
-    },
-    bottomNav: {
-        backgroundColor: C.surfaceContainerLow,
-        borderTopWidth: 1,
-        borderColor: C.outlineVariant,
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-    },
-    navContent: {
-        flexDirection: 'row',
-        paddingHorizontal: 20,
-        paddingTop: 10,
-        paddingBottom: Platform.OS === 'ios' ? 0 : 10,
-        justifyContent: 'space-between',
-    },
-    navItem: {
-        flex: 1,
-        alignItems: 'center',
-        paddingVertical: 6,
-    },
-    navTextActive: {
-        fontSize: 10,
-        fontWeight: '800',
-        color: C.primary,
-        marginTop: 4,
-        letterSpacing: 0.5,
-    },
-    navText: {
-        fontSize: 10,
-        fontWeight: '600',
-        color: C.outline,
-        marginTop: 4,
-        letterSpacing: 0.5,
+        color: '#FF5252',
     },
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.8)',
+        backgroundColor: 'rgba(0, 0, 0, 0.75)',
         justifyContent: 'flex-end',
     },
     modalContent: {
@@ -642,15 +826,7 @@ const styles = StyleSheet.create({
         borderTopRightRadius: 24,
         borderWidth: 1,
         borderColor: '#222222',
-        maxHeight: '80%',
         padding: 20,
-    },
-    chatModalContent: {
-        backgroundColor: '#141414',
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
-        borderWidth: 1,
-        borderColor: '#222222',
         height: '75%',
     },
     modalHeader: {
@@ -676,6 +852,58 @@ const styles = StyleSheet.create({
     },
     modalScroll: {
         paddingTop: 16,
+    },
+    formContainer: {
+        gap: 12,
+        paddingBottom: 20,
+    },
+    inputLabel: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: C.onSurfaceVariant,
+        marginTop: 6,
+    },
+    inputBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#1C1C1C',
+        borderWidth: 1,
+        borderColor: '#2E2E2E',
+        borderRadius: 14,
+        paddingHorizontal: 14,
+        height: 48,
+    },
+    formInputText: {
+        flex: 1,
+        color: C.onSurface,
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    genderRow: {
+        flexDirection: 'row',
+        gap: 10,
+    },
+    genderPill: {
+        flex: 1,
+        height: 42,
+        borderRadius: 12,
+        backgroundColor: '#1C1C1C',
+        borderWidth: 1,
+        borderColor: '#2E2E2E',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    genderPillActive: {
+        backgroundColor: C.primary,
+        borderColor: C.primary,
+    },
+    genderPillText: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: C.onSurfaceVariant,
+    },
+    genderPillTextActive: {
+        color: C.onPrimary,
     },
     emptyState: {
         alignItems: 'center',
@@ -729,102 +957,48 @@ const styles = StyleSheet.create({
     },
     primaryActionBtn: {
         backgroundColor: C.primary,
-        height: 48,
-        borderRadius: 24,
+        height: 50,
+        borderRadius: 25,
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
         gap: 8,
-        marginTop: 14,
+        marginTop: 16,
     },
     primaryActionBtnText: {
         color: C.onPrimary,
-        fontSize: 14,
+        fontSize: 15,
         fontWeight: '800',
-    },
-    onlineDot: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-        backgroundColor: '#4CAF50',
-    },
-    chatScroll: {
-        flex: 1,
-    },
-    chatBubble: {
-        maxWidth: '80%',
-        paddingVertical: 10,
-        paddingHorizontal: 14,
-        borderRadius: 16,
-        marginBottom: 4,
-    },
-    chatBubbleSupport: {
-        backgroundColor: '#222222',
-        alignSelf: 'flex-start',
-    },
-    chatBubbleUser: {
-        backgroundColor: C.primary,
-        alignSelf: 'flex-end',
-    },
-    chatText: {
-        fontSize: 13,
-        color: C.onSurface,
-        lineHeight: 18,
-    },
-    chatInputRow: {
-        flexDirection: 'row',
-        padding: 12,
-        gap: 10,
-        borderTopWidth: 1,
-        borderColor: '#222222',
-        backgroundColor: '#141414',
-    },
-    chatTextInput: {
-        flex: 1,
-        height: 44,
-        backgroundColor: '#1C1C1C',
-        borderRadius: 22,
-        paddingHorizontal: 16,
-        color: C.onSurface,
-        fontSize: 14,
-    },
-    sendBtn: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: C.primary,
-        justifyContent: 'center',
-        alignItems: 'center',
     },
     safetyCard: {
         backgroundColor: '#1C1C1C',
         padding: 20,
-        borderRadius: 16,
+        borderRadius: 18,
         alignItems: 'center',
-        marginBottom: 14,
+        textAlign: 'center',
     },
     safetyTitle: {
         fontSize: 16,
         fontWeight: '800',
         color: C.onSurface,
         marginTop: 10,
-        marginBottom: 4,
     },
     safetyDesc: {
         fontSize: 13,
         color: C.onSurfaceVariant,
         textAlign: 'center',
-        lineHeight: 18,
+        marginTop: 6,
+        lineHeight: 20,
     },
     legalItem: {
         backgroundColor: '#1C1C1C',
-        padding: 14,
+        padding: 16,
         borderRadius: 14,
-        marginBottom: 10,
+        marginBottom: 12,
     },
     legalTitle: {
         fontSize: 14,
-        fontWeight: '700',
+        fontWeight: '800',
         color: C.onSurface,
         marginBottom: 4,
     },
@@ -832,24 +1006,5 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: C.onSurfaceVariant,
         lineHeight: 18,
-    },
-    formContainer: {
-        paddingTop: 16,
-        gap: 10,
-    },
-    inputLabel: {
-        fontSize: 12,
-        fontWeight: '700',
-        color: C.onSurfaceVariant,
-    },
-    formInput: {
-        height: 46,
-        backgroundColor: '#1C1C1C',
-        borderRadius: 12,
-        paddingHorizontal: 14,
-        color: C.onSurface,
-        fontSize: 14,
-        borderWidth: 1,
-        borderColor: '#2D2D2D',
     },
 });
