@@ -1,0 +1,56 @@
+name: EAS Air Push (OTA Update)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'mobile-app/**'
+      - '.github/workflows/eas-update.yml'
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: 'EAS Channel to update (production / staging)'
+        required: true
+        default: 'production'
+      message:
+        description: 'Update message'
+        required: false
+        default: 'Manual OTA update triggered from GitHub'
+
+jobs:
+  publish-update:
+    name: Publish EAS OTA Update
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🏗 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: mobile-app/package-lock.json
+
+      - name: 📱 Setup Expo & EAS CLI
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: 📦 Install Dependencies
+        working-directory: mobile-app
+        run: npm install
+
+      - name: 🚀 Publish Air Push to Production
+        if: github.event_name == 'push'
+        working-directory: mobile-app
+        run: |
+          eas update --channel production --message "${{ github.event.head_commit.message }}" --non-interactive
+
+      - name: 🚀 Publish Air Push (Manual Dispatch)
+        if: github.event_name == 'workflow_dispatch'
+        working-directory: mobile-app
+        run: |
+          eas update --channel ${{ github.event.inputs.channel }} --message "${{ github.event.inputs.message }}" --non-interactive

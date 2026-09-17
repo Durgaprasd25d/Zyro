@@ -8,6 +8,8 @@
     "connect-wireless": "adb connect $(grep -E '^ADB_WIFI_IP=' .env | cut -d'=' -f2 | tr -d '\"' | tr -d \"'\")",
     "test": "jest",
     "wireless-debug": "npm run connect-wireless",
+    "update:staging": "eas update --channel staging",
+    "update:prod": "eas update --channel production",
     "postinstall": "npx patch-package"
   },
   "dependencies": {
