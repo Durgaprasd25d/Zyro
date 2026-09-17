@@ -4,8 +4,8 @@ const isProd = import.meta.env.PROD;
 
 const config = {
   development: {
-    API_URL: "http://localhost:4000/api",
-    SOCKET_URL: "http://localhost:4000",
+    API_URL: "http://192.168.1.45:4000/api",
+    SOCKET_URL: "http://192.168.1.45:4000",
     MAPBOX_TOKEN: "pk.eyJ1IjoiZHVyZ2EwNyIsImEiOiJjbW14bXo2ZWsyenRvMnJyMG5yOXBtczlrIn0.opLR_TbZiRjBsPfgIOu83g"
   },
   production: {

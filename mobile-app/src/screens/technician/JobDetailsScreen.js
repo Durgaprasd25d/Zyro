@@ -1,11 +1,20 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { COLORS, SPACING, SHADOWS } from '../../constants/theme';
 
 export default function JobDetailsScreen({ route, navigation }) {
     const { job } = route?.params || {};
+
+    const handleCallCustomer = () => {
+        const phone = job?.customerPhone || job?.phone;
+        if (phone) {
+            Linking.openURL(`tel:${phone}`);
+        } else {
+            Alert.alert('Customer Phone', 'Phone number not available');
+        }
+    };
 
     return (
         <SafeAreaView style={styles.container}>
@@ -53,7 +62,7 @@ export default function JobDetailsScreen({ route, navigation }) {
 
                 <View style={styles.customerCard}>
                     <Text style={styles.cardLabel}>CUSTOMER PHONE</Text>
-                    <TouchableOpacity style={styles.phoneRow}>
+                    <TouchableOpacity style={styles.phoneRow} onPress={handleCallCustomer}>
                         <Ionicons name="call" size={20} color={COLORS.technicianPrimary} />
                         <Text style={styles.phoneText}>{job?.customerPhone || '+91 XXXXXXXXXX'}</Text>
                     </TouchableOpacity>

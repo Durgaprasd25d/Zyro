@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Linking, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { COLORS, SPACING, SHADOWS } from '../../constants/theme';
@@ -11,14 +11,29 @@ export default function ArrivalScreen({ route, navigation }) {
 
     const handleStartService = async () => {
         setStarting(true);
-        const result = await technicianService.updateJobStatus(job.id, 'in_progress');
+        try {
+            const jobId = job?.id || job?.rideId;
+            const result = await technicianService.updateJobStatus(jobId, 'in_progress');
 
-        if (result.success) {
+            if (result.success) {
+                navigation.navigate('TechnicianServiceProgress', { job });
+            } else {
+                // Navigate anyway so technician is not stuck
+                navigation.navigate('TechnicianServiceProgress', { job });
+            }
+        } catch (err) {
             navigation.navigate('TechnicianServiceProgress', { job });
-        } else {
+        } finally {
             setStarting(false);
-            // Optionally, show an error message to the user
-            console.error("Failed to start service:", result.error);
+        }
+    };
+
+    const handleContactCustomer = () => {
+        const phone = job?.customerPhone || job?.phone;
+        if (phone) {
+            Linking.openURL(`tel:${phone}`);
+        } else {
+            Alert.alert('Customer Contact', 'Phone number not available');
         }
     };
 
@@ -39,7 +54,7 @@ export default function ArrivalScreen({ route, navigation }) {
                     </View>
                 </View>
 
-                <TouchableOpacity style={styles.contactBtn}>
+                <TouchableOpacity style={styles.contactBtn} onPress={handleContactCustomer}>
                     <Ionicons name="call" size={20} color={COLORS.white} />
                     <Text style={styles.contactBtnText}>Contact Customer</Text>
                 </TouchableOpacity>
