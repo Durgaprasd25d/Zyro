@@ -18,6 +18,10 @@ on:
         required: false
         default: 'Manual OTA update triggered from GitHub'
 
+env:
+  EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: 'true'
+
 jobs:
   publish-update:
     name: Publish EAS OTA Update
@@ -29,21 +33,16 @@ jobs:
       - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
-          cache-dependency-path: mobile-app/package-lock.json
+          node-version: 22
 
-      - name: 📱 Setup Expo & EAS CLI
-        uses: expo/expo-github-action@v8
-        with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
+      - name: 📱 Setup EAS CLI
+        run: npm install -g eas-cli
 
       - name: 📦 Install Dependencies
         working-directory: mobile-app
         run: npm install
 
-      - name: 🚀 Publish Air Push to Production
+      - name: 🚀 Publish Air Push (Push to main)
         if: github.event_name == 'push'
         working-directory: mobile-app
         run: |
