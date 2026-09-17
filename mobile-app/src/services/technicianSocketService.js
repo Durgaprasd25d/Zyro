@@ -31,6 +31,7 @@ class TechnicianSocketService {
             this.disconnect();
         }
 
+        this.userId = userId;
         this.onJobRequest = onJobRequest;
         this.onJobCancelled = onJobCancelled;
         this.onConnectionChange = onConnectionChange;
@@ -108,15 +109,20 @@ class TechnicianSocketService {
 
     /**
      * Emit technician location update
-     * @param {string} rideId - Ride ID
+     * @param {string|null} rideId - Ride ID (optional)
      * @param {object} location - { lat, lng, bearing, etc. }
+     * @param {string|null} explicitUserId - User ID (optional)
      */
-    sendLocation(rideId, location) {
-        if (this.socket && this.isConnected && rideId) {
-            this.socket.emit('driver:location:update', {
-                rideId,
+    sendLocation(rideId, location, explicitUserId) {
+        if (this.socket && this.isConnected) {
+            const payload = {
+                rideId: rideId || null,
+                userId: explicitUserId || this.userId,
+                technicianId: explicitUserId || this.userId,
                 ...location
-            });
+            };
+            this.socket.emit('technician:location:update', payload);
+            this.socket.emit('driver:location:update', payload);
         }
     }
 

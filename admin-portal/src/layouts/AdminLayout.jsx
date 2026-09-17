@@ -30,8 +30,8 @@ export default function AdminLayout() {
             label: 'Operations',
             items: [
                 { name: 'Dashboard', path: '/', icon: LayoutDashboard },
-                { name: 'Live Map', path: '/map', icon: MapPin },
-                { name: 'Live Support Desk', path: '/support-chat', icon: Headphones },
+                // { name: 'Live Map', path: '/map', icon: MapPin },
+                // { name: 'Live Support Desk', path: '/support-chat', icon: Headphones },
             ]
         },
         {
@@ -62,12 +62,12 @@ export default function AdminLayout() {
             {/* Sidebar */}
             <aside
                 className={`transition-all duration-300 ${isSidebarOpen ? 'w-64' : 'w-20'} hidden md:flex flex-col border-r shadow-2xl z-20`}
-                style={{ 
+                style={{
                     backgroundColor: ADMIN_COLORS.sidebarBg,
                     borderColor: ADMIN_COLORS.border
                 }}
             >
-                <div 
+                <div
                     className="h-16 flex items-center justify-between px-4 border-b"
                     style={{ borderColor: ADMIN_COLORS.border }}
                 >
@@ -87,7 +87,7 @@ export default function AdminLayout() {
                     {navSections.map((section) => (
                         <div key={section.label} className="space-y-2">
                             {isSidebarOpen && (
-                                <h3 
+                                <h3
                                     className="px-3 text-[10px] font-black uppercase tracking-[0.2em] mb-2"
                                     style={{ color: ADMIN_COLORS.textMuted }}
                                 >
@@ -100,10 +100,9 @@ export default function AdminLayout() {
                                         key={item.path}
                                         to={item.path}
                                         className={({ isActive }) =>
-                                            `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group ${
-                                                isActive
-                                                    ? 'font-bold shadow-lg'
-                                                    : 'hover:bg-[#1C1C1C]'
+                                            `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group ${isActive
+                                                ? 'font-bold shadow-lg'
+                                                : 'hover:bg-[#1C1C1C]'
                                             }`
                                         }
                                         style={({ isActive }) => ({
@@ -136,9 +135,9 @@ export default function AdminLayout() {
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col overflow-hidden" style={{ backgroundColor: ADMIN_COLORS.bg }}>
                 {/* Header */}
-                <header 
+                <header
                     className="h-16 flex items-center justify-between px-6 border-b z-10"
-                    style={{ 
+                    style={{
                         backgroundColor: ADMIN_COLORS.surface,
                         borderColor: ADMIN_COLORS.border
                     }}
@@ -146,7 +145,7 @@ export default function AdminLayout() {
                     <button
                         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                         className="p-2 rounded-xl border transition-colors hover:bg-[#1C1C1C]"
-                        style={{ 
+                        style={{
                             borderColor: ADMIN_COLORS.border,
                             color: ADMIN_COLORS.textPrimary
                         }}
@@ -163,9 +162,9 @@ export default function AdminLayout() {
                                 admin@zyro.com
                             </div>
                         </div>
-                        <div 
+                        <div
                             className="w-9 h-9 rounded-full flex items-center justify-center font-extrabold text-sm border shadow-sm"
-                            style={{ 
+                            style={{
                                 backgroundColor: ADMIN_COLORS.primary,
                                 color: '#432B1E',
                                 borderColor: ADMIN_COLORS.borderGold

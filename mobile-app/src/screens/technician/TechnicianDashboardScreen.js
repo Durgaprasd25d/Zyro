@@ -7,6 +7,7 @@ import JobRequestSheet from '../../components/JobRequestSheet';
 import technicianService from '../../services/technicianService';
 import authService from '../../services/authService';
 import technicianSocketService from '../../services/technicianSocketService';
+import driverLocationService from '../../services/driverLocationService';
 import rideService from '../../services/rideService';
 import ServicesListSheet from '../../components/ServicesListSheet';
 
@@ -43,8 +44,32 @@ export default function TechnicianDashboardScreen({ navigation }) {
         return () => {
             unsubscribe();
             technicianSocketService.disconnect();
+            driverLocationService.stopTracking();
         };
     }, [navigation]);
+
+    // Continuous location tracking & real-time broadcast when online
+    useEffect(() => {
+        let isSubscribed = true;
+        const userId = user?.id || user?._id;
+
+        if (isOnline && userId) {
+            driverLocationService.startTracking((loc) => {
+                if (isSubscribed) {
+                    technicianSocketService.sendLocation(null, loc, userId);
+                }
+            }).catch(err => {
+                console.log('Location tracking start notice:', err.message);
+            });
+        } else {
+            driverLocationService.stopTracking();
+        }
+
+        return () => {
+            isSubscribed = false;
+            driverLocationService.stopTracking();
+        };
+    }, [isOnline, user]);
 
     const handleJobRequest = (jobData) => {
         if (jobData.paymentMethod === 'COD' && wallet.commissionDue >= wallet.codLimit) return;

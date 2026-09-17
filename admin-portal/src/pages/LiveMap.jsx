@@ -73,6 +73,11 @@ export default function LiveMap() {
   useEffect(() => {
     fetchInitialData();
 
+    // Periodic sync interval to ensure freshest state from DB
+    const syncInterval = setInterval(() => {
+      fetchInitialData(true);
+    }, 8000);
+
     // Socket.io Real-time connection
     const socket = io(BACKEND_URL, {
       transports: ['websocket', 'polling']
@@ -80,60 +85,71 @@ export default function LiveMap() {
 
     socket.emit("admin:join");
 
-    // Real-time location updates
-    socket.on("admin:location:update", (data) => {
+    const updateTechInState = (data) => {
+      if (!data) return;
+      const incomingUserId = (data.userId || data.technicianId || '').toString();
+      const incomingTechId = (data.technicianId || '').toString();
+
+      if (!incomingUserId && !incomingTechId) return;
+
       setTechniciansMap((prev) => {
-        const id = data.technicianId || data.userId;
-        if (!id) return prev;
-        const existing = prev[id] || {};
+        // Find existing key by matching either userId, techDbId, or the key itself
+        let matchedKey = Object.keys(prev).find(key => 
+          key === incomingUserId || 
+          key === incomingTechId || 
+          prev[key]?.userId === incomingUserId || 
+          prev[key]?.techDbId === incomingTechId
+        );
+
+        const targetKey = matchedKey || incomingUserId || incomingTechId;
+        const existing = prev[targetKey] || {};
+
+        const rawLat = data.location?.lat !== undefined ? data.location.lat : existing.location?.lat;
+        const rawLng = data.location?.lng !== undefined ? data.location.lng : existing.location?.lng;
+
+        const parsedLat = rawLat !== undefined ? parseFloat(rawLat) : 20.3533;
+        const parsedLng = rawLng !== undefined ? parseFloat(rawLng) : 85.8185;
 
         return {
           ...prev,
-          [id]: {
+          [targetKey]: {
             ...existing,
-            isOnline: data.isOnline !== undefined ? data.isOnline : true,
+            id: targetKey,
+            userId: data.userId || existing.userId || incomingUserId,
+            techDbId: data.technicianId || existing.techDbId || incomingTechId,
+            name: data.name || existing.name || "Technician",
+            mobile: data.mobile || existing.mobile || "N/A",
+            isOnline: data.isOnline !== undefined ? !!data.isOnline : (existing.isOnline !== undefined ? existing.isOnline : true),
             location: {
-              lat: data.location?.lat || existing.location?.lat || 20.3533,
-              lng: data.location?.lng || existing.location?.lng || 85.8185,
+              lat: isNaN(parsedLat) ? 20.3533 : parsedLat,
+              lng: isNaN(parsedLng) ? 85.8185 : parsedLng,
               address: data.location?.address || existing.location?.address || 'Live Location',
-              lastUpdated: data.updatedAt || Date.now(),
+              lastUpdated: data.updatedAt || data.location?.lastUpdated || Date.now(),
             }
           }
         };
       });
+    };
+
+    // Real-time location updates
+    socket.on("admin:location:update", (data) => {
+      console.log("📍 [Admin LiveMap] Real-time location received:", data);
+      updateTechInState(data);
     });
 
     // Real-time Online / Offline status updates
     socket.on("admin:status:update", (data) => {
-      setTechniciansMap((prev) => {
-        const id = data.technicianId || data.userId;
-        if (!id) return prev;
-        const existing = prev[id] || {};
-
-        return {
-          ...prev,
-          [id]: {
-            ...existing,
-            name: data.name || existing.name,
-            mobile: data.mobile || existing.mobile,
-            isOnline: data.isOnline,
-            location: {
-              lat: data.location?.lat || existing.location?.lat || 20.3533,
-              lng: data.location?.lng || existing.location?.lng || 85.8185,
-              address: data.location?.address || existing.location?.address || 'Last Known Location',
-              lastUpdated: data.updatedAt || Date.now(),
-            }
-          }
-        };
-      });
+      console.log("⚡ [Admin LiveMap] Status update received:", data);
+      updateTechInState(data);
     });
 
     return () => {
+      clearInterval(syncInterval);
       socket.disconnect();
     };
   }, []);
 
-  const fetchInitialData = async () => {
+  const fetchInitialData = async (isBackgroundSync = false) => {
     try {
       const [techsRes, jobsRes] = await Promise.all([
         axios.get(`${API_URL}/admin/technicians`),
@@ -143,13 +159,14 @@ export default function LiveMap() {
       if (techsRes.data.success) {
         const map = {};
         techsRes.data.technicians.forEach((t) => {
-          const techId = t.userId?._id || t._id;
+          const techId = (t.userId?._id || t.userId || t._id).toString();
           const lat = t.currentLocation?.lat || (t.location?.coordinates ? t.location.coordinates[1] : null) || 20.3533;
           const lng = t.currentLocation?.lng || (t.location?.coordinates ? t.location.coordinates[0] : null) || 85.8185;
 
           map[techId] = {
             id: techId,
-            techDbId: t._id,
+            userId: (t.userId?._id || t.userId || techId).toString(),
+            techDbId: t._id?.toString(),
             name: t.userId?.name || "Technician",
             mobile: t.userId?.mobile || 'N/A',
             isOnline: !!t.isOnline,
@@ -161,17 +178,28 @@ export default function LiveMap() {
             }
           };
         });
-        setTechniciansMap(map);
+        setTechniciansMap((prev) => {
+          // Merge to preserve sub-second real-time websocket updates
+          const merged = { ...map };
+          Object.keys(prev).forEach((key) => {
+            if (merged[key] && prev[key].location?.lastUpdated > (merged[key].location?.lastUpdated || 0)) {
+              merged[key] = prev[key];
+            }
+          });
+          return merged;
+        });
 
-        // Center map to first technician with valid location
-        const firstTech = Object.values(map)[0];
-        if (firstTech?.location) {
-          setViewState(prev => ({
-            ...prev,
-            latitude: firstTech.location.lat,
-            longitude: firstTech.location.lng,
-            zoom: 11
-          }));
+        // Center map to first technician with valid location on first load only
+        if (!isBackgroundSync) {
+          const firstTech = Object.values(map)[0];
+          if (firstTech?.location) {
+            setViewState(prev => ({
+              ...prev,
+              latitude: firstTech.location.lat,
+              longitude: firstTech.location.lng,
+              zoom: 12
+            }));
+          }
         }
       }
 

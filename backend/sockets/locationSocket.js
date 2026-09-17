@@ -76,8 +76,9 @@ function initializeLocationSocket(io) {
          * Event: 'identify' or 'admin:join'
          */
         socket.on('identify', (data) => {
-            const { userId, role } = data;
+            const { userId, role } = data || {};
             if (userId) {
+                socket.userId = userId;
                 socket.join(`user:${userId}`);
                 console.log(`User ${userId} identified and joined room user:${userId}`);
             }
@@ -96,10 +97,13 @@ function initializeLocationSocket(io) {
          * Driver/Technician joins a ride room
          */
         socket.on('driver:join', (data) => {
-            const { rideId } = data;
+            const { rideId, driverId, userId } = data || {};
             if (!rideId) {
                 socket.emit('error', { message: 'Missing rideId' });
                 return;
+            }
+            if (driverId || userId) {
+                socket.userId = driverId || userId;
             }
             socket.join(`ride:${rideId}`);
             socket.rideId = rideId;
@@ -112,22 +116,23 @@ function initializeLocationSocket(io) {
          */
         const handleLocationUpdate = async (data) => {
             try {
-                const { rideId, technicianId, userId, lat, lng, bearing, speed, timestamp, address } = data;
-                const techUserId = userId || technicianId || data.driverId;
+                const { rideId, technicianId, userId, lat, lng, bearing, speed, timestamp, address } = data || {};
+                const techUserId = userId || technicianId || data?.driverId || socket.userId;
 
                 if (lat === undefined || lng === undefined) {
-                    socket.emit('error', { message: 'Invalid location data' });
                     return;
                 }
 
-                if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-                    socket.emit('error', { message: 'Invalid coordinates' });
+                const parsedLat = parseFloat(lat);
+                const parsedLng = parseFloat(lng);
+
+                if (isNaN(parsedLat) || isNaN(parsedLng) || parsedLat < -90 || parsedLat > 90 || parsedLng < -180 || parsedLng > 180) {
                     return;
                 }
 
                 const locationData = {
-                    lat: parseFloat(lat),
-                    lng: parseFloat(lng),
+                    lat: parsedLat,
+                    lng: parsedLng,
                     bearing: bearing !== undefined ? parseFloat(bearing) : 0,
                     speed: speed !== undefined ? parseFloat(speed) : 0,
                     address: address || 'Live Location',
@@ -139,26 +144,43 @@ function initializeLocationSocket(io) {
                     await locationStore.setLocation(rideId, locationData);
                 }
 
+                let techName = 'Technician';
+                let techMobile = 'N/A';
+                let isOnline = true;
+
                 // Persist latest location to MongoDB Technician & User documents
                 if (techUserId) {
                     try {
-                        await Technician.findOneAndUpdate(
+                        const updatedTech = await Technician.findOneAndUpdate(
                             { userId: techUserId },
                             {
-                                'currentLocation.lat': locationData.lat,
-                                'currentLocation.lng': locationData.lng,
-                                'currentLocation.address': locationData.address,
-                                'currentLocation.lastUpdated': new Date(locationData.timestamp)
+                                $set: {
+                                    isOnline: true,
+                                    'currentLocation.lat': locationData.lat,
+                                    'currentLocation.lng': locationData.lng,
+                                    'currentLocation.address': locationData.address,
+                                    'currentLocation.lastUpdated': new Date(locationData.timestamp)
+                                }
                             },
-                            { upsert: false }
-                        );
+                            { new: true, upsert: false }
+                        ).populate('userId', 'name mobile');
+
+                        if (updatedTech) {
+                            isOnline = updatedTech.isOnline;
+                            if (updatedTech.userId) {
+                                techName = updatedTech.userId.name || techName;
+                                techMobile = updatedTech.userId.mobile || techMobile;
+                            }
+                        }
 
                         await User.findByIdAndUpdate(techUserId, {
-                            'lastLocation.lat': locationData.lat,
-                            'lastLocation.lng': locationData.lng,
-                            'lastLocation.address': locationData.address,
-                            'lastLocation.lastUpdated': new Date(locationData.timestamp)
-                        });
+                            $set: {
+                                'lastLocation.lat': locationData.lat,
+                                'lastLocation.lng': locationData.lng,
+                                'lastLocation.address': locationData.address,
+                                'lastLocation.lastUpdated': new Date(locationData.timestamp)
+                            }
+                        }).catch(e => console.warn('User lastLocation update notice:', e.message));
                     } catch (e) {
                         console.error('Error saving technician location to DB:', e.message);
                     }
@@ -175,9 +197,12 @@ function initializeLocationSocket(io) {
                 // BROADCAST REALTIME TO ADMIN LIVE TRACKING MAP
                 io.to('admin:live_tracking').emit('admin:location:update', {
                     technicianId: techUserId,
+                    userId: techUserId,
+                    name: techName,
+                    mobile: techMobile,
                     rideId: rideId || null,
                     location: locationData,
-                    isOnline: true,
+                    isOnline: isOnline,
                     updatedAt: locationData.timestamp
                 });
 
