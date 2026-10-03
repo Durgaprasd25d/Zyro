@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as Updates from 'expo-updates';
-import { View, ActivityIndicator, Alert, Platform, UIManager } from 'react-native';
+import { View, ActivityIndicator, Alert, Platform, UIManager, AppState } from 'react-native';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -82,6 +82,10 @@ export default function App() {
         async function onFetchUpdateAsync() {
             try {
                 if (__DEV__) return; // Skip OTA in development
+                if (!Updates.isEnabled) {
+                    console.log('[OTA] expo-updates is not enabled.');
+                    return;
+                }
                 const update = await Updates.checkForUpdateAsync();
                 if (update.isAvailable) {
                     console.log('[OTA] Update available, downloading...');
@@ -96,6 +100,12 @@ export default function App() {
         }
 
         onFetchUpdateAsync();
+
+        const appStateSub = AppState.addEventListener('change', (nextAppState) => {
+            if (nextAppState === 'active') {
+                onFetchUpdateAsync();
+            }
+        });
 
 
         if (config.MAPBOX_ACCESS_TOKEN) {
@@ -133,6 +143,10 @@ export default function App() {
         };
 
         bootstrapAsync();
+
+        return () => {
+            appStateSub.remove();
+        };
     }, []);
 
     if (isLoading) {
