@@ -163,7 +163,7 @@ export default function AuthScreen({ navigation }) {
 
                         <View style={styles.welcomeContainer}>
                             <Text style={styles.title}>
-                                {isOtpSent ? 'Verify' : (isRegistering ? 'Create Account' : 'Welcome Back Anaz')}
+                                {isOtpSent ? 'Verify' : (isRegistering ? 'Create Account' : 'Welcome Back Durga')}
                             </Text>
                             <View style={styles.accentLine} />
                         </View>
