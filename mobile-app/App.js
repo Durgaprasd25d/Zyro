@@ -81,25 +81,22 @@ export default function App() {
     useEffect(() => {
         async function onFetchUpdateAsync() {
             try {
-                if (__DEV__) return;
+                if (__DEV__) return; // Skip OTA in development
                 const update = await Updates.checkForUpdateAsync();
                 if (update.isAvailable) {
+                    console.log('[OTA] Update available, downloading...');
                     await Updates.fetchUpdateAsync();
-                    Alert.alert(
-                        'Update Available',
-                        'A new version of Zyro AC is ready. Restart now to apply?',
-                        [
-                            { text: 'Later', style: 'cancel' },
-                            { text: 'Restart', onPress: () => Updates.reloadAsync() }
-                        ]
-                    );
+                    console.log('[OTA] Download complete. Reloading silently...');
+                    await Updates.reloadAsync(); // Silent reload — no user prompt
                 }
             } catch (error) {
-                console.log('Error fetching OTA update:', error);
+                // Fail silently — OTA errors should never crash the app
+                console.log('[OTA] Update check failed (non-critical):', error.message);
             }
         }
 
         onFetchUpdateAsync();
+
 
         if (config.MAPBOX_ACCESS_TOKEN) {
             MapboxGL.setAccessToken(config.MAPBOX_ACCESS_TOKEN);
