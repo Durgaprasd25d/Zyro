@@ -55,3 +55,6 @@
 # Auto-generated rules for missing classes (from R8 missing_rules.txt)
 -dontwarn expo.modules.kotlin.services.FilePermissionService$Permission
 -dontwarn expo.modules.kotlin.services.FilePermissionService
+-dontwarn com.google.gson.**
+-keep class com.google.gson.** { *; }
+

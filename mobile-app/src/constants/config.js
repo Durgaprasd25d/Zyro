@@ -7,7 +7,7 @@
 // Load from .env file (create .env from .env.example)
 // In Expo SDK 49+, use EXPO_PUBLIC_ prefix for automatic environment variable injection
 const BACKEND_URL =
-  process.env.EXPO_PUBLIC_BACKEND_URL || "http://192.168.1.45:4000";
+  process.env.EXPO_PUBLIC_BACKEND_URL || "https://zyro-s0gj.onrender.com";
 console.log(
   "📡 [Config] process.env.EXPO_PUBLIC_BACKEND_URL:",
   process.env.EXPO_PUBLIC_BACKEND_URL,

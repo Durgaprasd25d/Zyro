@@ -141,7 +141,7 @@ export default function AuthScreen({ navigation }) {
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="light-content" backgroundColor={C.background} />
-            
+
             {/* Subtle background glow */}
             <View style={styles.bgGlow} />
 
@@ -160,17 +160,17 @@ export default function AuthScreen({ navigation }) {
                             />
                         </View>
                         <Text style={styles.brandTitle}>ZYRO</Text>
-                        
+
                         <View style={styles.welcomeContainer}>
                             <Text style={styles.title}>
-                                {isOtpSent ? 'Verify' : (isRegistering ? 'Create Account' : 'Welcome Back')}
+                                {isOtpSent ? 'Verify' : (isRegistering ? 'Create Account' : 'Welcome Back Durga')}
                             </Text>
                             <View style={styles.accentLine} />
                         </View>
 
                         <Text style={styles.subtitle}>
-                            {isOtpSent 
-                                ? `Code sent to +91 ${phoneNumber}` 
+                            {isOtpSent
+                                ? `Code sent to +91 ${phoneNumber}`
                                 : `Experience premium service with Zyro`}
                         </Text>
                     </View>
@@ -234,15 +234,15 @@ export default function AuthScreen({ navigation }) {
                                         value={password}
                                         onChangeText={setPassword}
                                     />
-                                    <TouchableOpacity 
-                                        style={styles.eyeButton} 
+                                    <TouchableOpacity
+                                        style={styles.eyeButton}
                                         onPress={() => setShowPassword(!showPassword)}
                                         activeOpacity={0.7}
                                     >
-                                        <Ionicons 
-                                            name={showPassword ? "eye-off-outline" : "eye-outline"} 
-                                            size={18} 
-                                            color={C.outline} 
+                                        <Ionicons
+                                            name={showPassword ? "eye-off-outline" : "eye-outline"}
+                                            size={18}
+                                            color={C.outline}
                                         />
                                     </TouchableOpacity>
                                 </View>
