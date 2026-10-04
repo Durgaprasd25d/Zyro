@@ -7,12 +7,49 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:586224586992:android:d2566ff66b2c9d7d4f7235",
+        "android_client_info": {
+          "package_name": "com.realtime.track"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "586224586992-b6fd79ej5rime769oeij9nh4skl4gg4o.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBIv6Qpv7d72idUB0LyviKLhkMmYllQQU8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "586224586992-5k8ndr2e4fet4kn4i0f92p69imjeq0oh.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:586224586992:android:3bcd4d488ec5f7cc4f7235",
         "android_client_info": {
           "package_name": "com.zyroac.app"
         }
       },
       "oauth_client": [
+        {
+          "client_id": "586224586992-epl9j8ab7gqm4edh1s8g2dcgnjsn09aj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.zyroac.app",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
         {
           "client_id": "586224586992-b6fd79ej5rime769oeij9nh4skl4gg4o.apps.googleusercontent.com",
           "client_type": 3
