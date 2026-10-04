@@ -15,7 +15,7 @@ import {
   StatusBar
 } from 'react-native';
 import MapboxGL from '@rnmapbox/maps';
-import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import config from '../../constants/config';
 import driverLocationService from '../../services/driverLocationService';
 import technicianSocketService from '../../services/technicianSocketService';
@@ -218,7 +218,7 @@ const TechnicianNavigationScreen = ({ route, navigation }) => {
           coordinate={[destLng, destLat]}
         >
           <View style={styles.destMarkerContainer}>
-            <MaterialCommunityIcons name="map-marker-check" size={32} color={COLORS.roseGold} />
+            <Ionicons name="location" size={32} color={COLORS.roseGold} />
           </View>
         </MapboxGL.PointAnnotation>
       </MapboxGL.MapView>
@@ -296,7 +296,7 @@ const TechnicianNavigationScreen = ({ route, navigation }) => {
           style={styles.launchButton}
           onPress={handleLaunchGoogleMaps}
         >
-          <MaterialCommunityIcons name="google-maps" size={24} color="white" />
+          <Ionicons name="navigate" size={22} color="white" />
           <Text style={styles.launchButtonText}>Launch Google Maps</Text>
         </TouchableOpacity>
       </View>
