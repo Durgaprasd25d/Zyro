@@ -18,10 +18,16 @@ on:
         required: false
         default: 'Manual OTA update triggered from GitHub'
 
+# Cancel obsolete in-flight runs if a new commit is pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: 'true'
   EAS_SKIP_AUTO_FINGERPRINT: '1'
+  CI: 'true'
 
 jobs:
   publish-update:
@@ -31,17 +37,22 @@ jobs:
       - name: 🏗 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 🟢 Setup Node.js
+      - name: 🟢 Setup Node.js with Cache
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: 'npm'
+          cache-dependency-path: 'mobile-app/package-lock.json'
 
       - name: 📱 Setup EAS CLI
-        run: npm install -g eas-cli
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: 📦 Install Dependencies
+      - name: 📦 Fast Install Dependencies
         working-directory: mobile-app
-        run: npm install
+        run: npm ci --prefer-offline --no-audit --no-fund
 
       - name: 🚀 Publish Air Push (Push to main)
         if: github.event_name == 'push'
@@ -54,3 +65,4 @@ jobs:
         working-directory: mobile-app
         run: |
           eas update --channel ${{ github.event.inputs.channel }} --message "${{ github.event.inputs.message }}" --non-interactive
+
