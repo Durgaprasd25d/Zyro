@@ -21,6 +21,7 @@ on:
 env:
   EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: 'true'
+  EAS_SKIP_AUTO_FINGERPRINT: '1'
 
 jobs:
   publish-update:

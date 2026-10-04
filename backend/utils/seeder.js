@@ -80,7 +80,7 @@ const initialData = [
 const seedDatabase = async () => {
     // 1. Seed Categories & Services
     try {
-        const categoryCount = await Category.countDocuments();
+        const categoryCount = await Category.estimatedDocumentCount();
         if (categoryCount === 0) {
             console.log('🌱 Seeding services and categories...');
             for (const catData of initialData) {

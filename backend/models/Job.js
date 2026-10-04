@@ -109,5 +109,6 @@ jobSchema.methods.generateOTP = function () {
 jobSchema.index({ technician: 1, status: 1 });
 jobSchema.index({ customer: 1, createdAt: -1 });
 jobSchema.index({ status: 1, createdAt: -1 });
+jobSchema.index({ 'location.coordinates.lat': 1, 'location.coordinates.lng': 1 });
 
 module.exports = mongoose.model('Job', jobSchema);
