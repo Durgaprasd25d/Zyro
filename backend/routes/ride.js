@@ -87,7 +87,7 @@ router.post('/request', async (req, res) => {
                 serviceType: ride.serviceType,
                 paymentMethod: ride.paymentMethod,
                 paymentTiming: ride.paymentTiming,
-                price: ride.price || 1000,
+                price: ride.price || 0,
                 basePrice: ride.basePrice,
                 platformFee: ride.platformFee,
                 gst: ride.gst
@@ -166,7 +166,7 @@ router.get('/all-jobs', async (req, res) => {
                 rideId: r.rideId,
                 serviceType: r.serviceType,
                 pickup: r.pickup,
-                price: r.price || 1000,
+                price: r.price || 0,
                 basePrice: r.basePrice,
                 platformFee: r.platformFee,
                 gst: r.gst,
@@ -179,7 +179,7 @@ router.get('/all-jobs', async (req, res) => {
                 rideId: r.rideId,
                 serviceType: r.serviceType,
                 pickup: r.pickup,
-                price: r.price || 1000,
+                price: r.price || 0,
                 basePrice: r.basePrice,
                 platformFee: r.platformFee,
                 gst: r.gst,
@@ -190,7 +190,7 @@ router.get('/all-jobs', async (req, res) => {
                 rideId: r.rideId,
                 serviceType: r.serviceType,
                 pickup: r.pickup,
-                price: r.price || 1000,
+                price: r.price || 0,
                 basePrice: r.basePrice,
                 platformFee: r.platformFee,
                 gst: r.gst,
@@ -201,7 +201,7 @@ router.get('/all-jobs', async (req, res) => {
                 rideId: r.rideId,
                 serviceType: r.serviceType,
                 pickup: r.pickup,
-                price: r.price || 1000,
+                price: r.price || 0,
                 basePrice: r.basePrice,
                 platformFee: r.platformFee,
                 gst: r.gst,
@@ -431,7 +431,7 @@ router.post('/end-service', async (req, res) => {
             rideId,
             paymentMethod: ride.paymentMethod,
             paymentTiming: ride.paymentTiming,
-            price: ride.price || 1000
+            price: ride.price || 0
             // completionOtp: ride.completionOtp // REMOVED FOR SECURITY
         });
 
@@ -488,7 +488,7 @@ router.post('/payment-success', async (req, res) => {
                 serviceType: ride.serviceType,
                 paymentMethod: ride.paymentMethod,
                 paymentTiming: ride.paymentTiming,
-                price: ride.price || 1000,
+                price: ride.price || 0,
                 basePrice: ride.basePrice,
                 platformFee: ride.platformFee,
                 gst: ride.gst
@@ -816,7 +816,7 @@ router.post('/cancel-by-technician', async (req, res) => {
                 serviceType: ride.serviceType,
                 paymentMethod: ride.paymentMethod,
                 paymentTiming: ride.paymentTiming,
-                price: ride.price || 1000,
+                price: ride.price || 0,
                 basePrice: ride.basePrice,
                 platformFee: ride.platformFee,
                 gst: ride.gst

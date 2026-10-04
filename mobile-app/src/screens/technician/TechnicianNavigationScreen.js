@@ -17,7 +17,7 @@ import {
 import MapboxGL from '@rnmapbox/maps';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import config from '../../constants/config';
-import driverLocationService from '../../services/driverLocationService';
+import technicianLocationService from '../../services/technicianLocationService';
 import technicianSocketService from '../../services/technicianSocketService';
 import rideService from '../../services/rideService';
 import { COLORS } from '../../constants/theme';
@@ -67,7 +67,7 @@ const TechnicianNavigationScreen = ({ route, navigation }) => {
   useEffect(() => {
     const initTracking = async () => {
       try {
-        await driverLocationService.startTracking((loc) => {
+        await technicianLocationService.startTracking((loc) => {
           const newPos = { latitude: loc.lat, longitude: loc.lng };
           setCurrentLocation(newPos);
           
@@ -84,7 +84,7 @@ const TechnicianNavigationScreen = ({ route, navigation }) => {
     initTracking();
 
     return () => {
-      driverLocationService.stopTracking();
+      technicianLocationService.stopTracking();
     };
   }, [rideId]);
 

@@ -162,19 +162,22 @@ router.get('/technicians', async (req, res) => {
                 }
             }
 
-            // Default region fallback to DLF Cyber City, Patia, Bhubaneswar (20.3533, 85.8185)
-            if (!lat || !lng) {
-                lat = 20.3533;
-                lng = 85.8185;
-                address = 'DLF Cyber City, Patia, Bhubaneswar, Odisha 751024';
+            // Only assign coordinates if genuine coordinates exist
+            if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
+                doc.currentLocation = {
+                    lat: parseFloat(lat),
+                    lng: parseFloat(lng),
+                    address: address || 'Last Known Location',
+                    lastUpdated: lastUpdated || doc.updatedAt || new Date()
+                };
+            } else {
+                doc.currentLocation = {
+                    lat: null,
+                    lng: null,
+                    address: address || 'Location not reported',
+                    lastUpdated: lastUpdated || null
+                };
             }
-
-            doc.currentLocation = {
-                lat: parseFloat(lat),
-                lng: parseFloat(lng),
-                address: address || 'Last Known Location',
-                lastUpdated: lastUpdated || doc.updatedAt || new Date()
-            };
 
             return doc;
         });

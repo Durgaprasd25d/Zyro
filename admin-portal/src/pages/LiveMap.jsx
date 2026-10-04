@@ -107,8 +107,8 @@ export default function LiveMap() {
         const rawLat = data.location?.lat !== undefined ? data.location.lat : existing.location?.lat;
         const rawLng = data.location?.lng !== undefined ? data.location.lng : existing.location?.lng;
 
-        const parsedLat = rawLat !== undefined ? parseFloat(rawLat) : 20.3533;
-        const parsedLng = rawLng !== undefined ? parseFloat(rawLng) : 85.8185;
+        const parsedLat = rawLat !== undefined && rawLat !== null && !isNaN(rawLat) ? parseFloat(rawLat) : null;
+        const parsedLng = rawLng !== undefined && rawLng !== null && !isNaN(rawLng) ? parseFloat(rawLng) : null;
 
         return {
           ...prev,
@@ -121,9 +121,9 @@ export default function LiveMap() {
             mobile: data.mobile || existing.mobile || "N/A",
             isOnline: data.isOnline !== undefined ? !!data.isOnline : (existing.isOnline !== undefined ? existing.isOnline : true),
             location: {
-              lat: isNaN(parsedLat) ? 20.3533 : parsedLat,
-              lng: isNaN(parsedLng) ? 85.8185 : parsedLng,
-              address: data.location?.address || existing.location?.address || 'Live Location',
+              lat: parsedLat,
+              lng: parsedLng,
+              address: data.location?.address || existing.location?.address || (parsedLat ? 'Live Location' : 'Location unavailable'),
               lastUpdated: data.updatedAt || data.location?.lastUpdated || Date.now(),
             }
           }

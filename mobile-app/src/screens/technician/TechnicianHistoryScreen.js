@@ -6,12 +6,6 @@ import JobCard from '../../components/JobCard';
 import { COLORS, SPACING, SHADOWS } from '../../constants/theme';
 import technicianService from '../../services/technicianService';
 
-const MOCK_HISTORY = [
-    { id: '1', serviceType: 'AC Repair', location: 'Model Town', status: 'completed', earnings: 960, date: '25 Dec' },
-    { id: '2', serviceType: 'AC Service', location: 'Civil Lines', status: 'completed', earnings: 1200, date: '24 Dec' },
-    { id: '3', serviceType: 'Installation', location: 'Saket', status: 'completed', earnings: 2400, date: '23 Dec' },
-];
-
 export default function TechnicianHistoryScreen({ navigation }) {
     const [jobs, setJobs] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -23,7 +17,7 @@ export default function TechnicianHistoryScreen({ navigation }) {
     const loadHistory = async () => {
         const result = await technicianService.getJobHistory();
         if (result.success) {
-            setJobs(result.jobs || MOCK_HISTORY);
+            setJobs(result.jobs || []);
         }
         setLoading(false);
     };

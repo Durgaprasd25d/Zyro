@@ -30,7 +30,6 @@ const payoutRoutes = require('./routes/payout');
 const kycRoutes = require('./routes/kyc');
 const chatRoutes = require('./routes/chat');
 const initializeLocationSocket = require('./sockets/locationSocket');
-const seedDatabase = require('./utils/seeder');
 
 // Initialize Express app
 const app = express();
@@ -52,9 +51,8 @@ app.set('io', io);
 // MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/uber_tracking';
 mongoose.connect(MONGODB_URI)
-    .then(async () => {
+    .then(() => {
         console.log('✅ Connected to MongoDB');
-        await seedDatabase();
     })
     .catch(err => console.error('❌ MongoDB connection error:', err));
 

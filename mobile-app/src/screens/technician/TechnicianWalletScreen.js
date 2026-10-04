@@ -5,13 +5,6 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { COLORS, SPACING, SHADOWS } from '../../constants/theme';
 import technicianService from '../../services/technicianService';
 
-const MOCK_TRANSACTIONS = [
-    { id: '1', type: 'credit', amount: 960, description: 'Job #271254 (New)', date: '25 Dec', status: 'completed' },
-    { id: '2', type: 'debit', amount: 240, description: 'Commission Pending #271254', date: '25 Dec', status: 'pending' },
-    { id: '3', type: 'credit', amount: 1200, description: 'Job #271253 (Malvai)', date: '24 Dec', status: 'completed' },
-    { id: '4', type: 'debit', amount: 240, description: 'Commission Paid', date: '23 Dec', status: 'completed' },
-];
-
 export default function TechnicianWalletScreen({ navigation }) {
     const [balance, setBalance] = useState(0);
     const [commissionDue, setCommissionDue] = useState(0);
@@ -31,7 +24,7 @@ export default function TechnicianWalletScreen({ navigation }) {
         if (result.success) {
             setBalance(result.balance);
             setCommissionDue(result.commissionDue);
-            setTransactions(result.transactions || MOCK_TRANSACTIONS);
+            setTransactions(result.transactions || []);
         }
 
         if (withdrawalResult.success) {
@@ -197,6 +190,12 @@ export default function TechnicianWalletScreen({ navigation }) {
                 renderItem={renderTransaction}
                 keyExtractor={(item, index) => item._id || item.id || index.toString()}
                 ListHeaderComponent={renderHeader}
+                ListEmptyComponent={
+                    <View style={{ paddingVertical: 40, alignItems: 'center', justifyContent: 'center' }}>
+                        <Ionicons name="receipt-outline" size={48} color={COLORS.grey} style={{ opacity: 0.5, marginBottom: 8 }} />
+                        <Text style={{ color: COLORS.grey, fontSize: 14 }}>No transactions yet</Text>
+                    </View>
+                }
                 contentContainerStyle={styles.scrollContent}
                 stickyHeaderIndices={[0]}
                 refreshing={refreshing}

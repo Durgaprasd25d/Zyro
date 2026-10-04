@@ -7,7 +7,7 @@ import JobRequestSheet from '../../components/JobRequestSheet';
 import technicianService from '../../services/technicianService';
 import authService from '../../services/authService';
 import technicianSocketService from '../../services/technicianSocketService';
-import driverLocationService from '../../services/driverLocationService';
+import technicianLocationService from '../../services/technicianLocationService';
 import rideService from '../../services/rideService';
 import ServicesListSheet from '../../components/ServicesListSheet';
 
@@ -44,7 +44,7 @@ export default function TechnicianDashboardScreen({ navigation }) {
         return () => {
             unsubscribe();
             technicianSocketService.disconnect();
-            driverLocationService.stopTracking();
+            technicianLocationService.stopTracking();
         };
     }, [navigation]);
 
@@ -54,7 +54,7 @@ export default function TechnicianDashboardScreen({ navigation }) {
         const userId = user?.id || user?._id;
 
         if (isOnline && userId) {
-            driverLocationService.startTracking((loc) => {
+            technicianLocationService.startTracking((loc) => {
                 if (isSubscribed) {
                     technicianSocketService.sendLocation(null, loc, userId);
                 }
@@ -62,12 +62,12 @@ export default function TechnicianDashboardScreen({ navigation }) {
                 console.log('Location tracking start notice:', err.message);
             });
         } else {
-            driverLocationService.stopTracking();
+            technicianLocationService.stopTracking();
         }
 
         return () => {
             isSubscribed = false;
-            driverLocationService.stopTracking();
+            technicianLocationService.stopTracking();
         };
     }, [isOnline, user]);
 

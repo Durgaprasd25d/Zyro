@@ -125,18 +125,11 @@ router.post('/create-order', async (req, res) => {
         try {
             order = await razorpay.orders.create(options);
         } catch (rzpErr) {
-            console.warn('⚠️ Razorpay live API failed (using mock order for dev/test mode):', rzpErr.message);
-            order = {
-                id: `order_mock_${Date.now()}`,
-                entity: 'order',
-                amount: options.amount,
-                amount_paid: 0,
-                amount_due: options.amount,
-                currency: 'INR',
-                receipt: options.receipt,
-                status: 'created',
-                created_at: Math.floor(Date.now() / 1000)
-            };
+            console.error('❌ Razorpay order creation failed:', rzpErr);
+            return res.status(502).json({
+                success: false,
+                error: 'Payment gateway error: ' + (rzpErr.error?.description || rzpErr.message || 'Failed to create payment order')
+            });
         }
 
         // Store order ID in ride

@@ -337,8 +337,12 @@ export default function HomeScreen({ navigation }) {
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.horizontalScroll}
                 >
-                    {services.length === 0 ? (
+                    {loading ? (
                         <ActivityIndicator color={C.primary} style={{ marginHorizontal: 24, marginVertical: 20 }} />
+                    ) : services.length === 0 ? (
+                        <View style={{ paddingVertical: 20, paddingHorizontal: 16 }}>
+                            <Text style={{ color: C.onSurfaceVariant, fontSize: 13 }}>No services available</Text>
+                        </View>
                     ) : (
                         services.map((item, index) => (
                             <TouchableOpacity 
@@ -354,7 +358,7 @@ export default function HomeScreen({ navigation }) {
                                 />
                                 <View style={styles.cardBody}>
                                     <Text style={styles.cardTitle} numberOfLines={1}>{item.name}</Text>
-                                    <Text style={styles.cardPrice}>Starts at ₹{item.price || '499'}</Text>
+                                    <Text style={styles.cardPrice}>Starts at ₹{item.price ?? 0}</Text>
                                 </View>
                             </TouchableOpacity>
                         ))
