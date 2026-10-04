@@ -2,6 +2,7 @@
   "expo": {
     "name": "Zyro AC",
     "slug": "zyro-ac",
+    "scheme": "zyroac",
     "version": "1.1.1",
     "icon": "./assets/logo.png",
     "orientation": "portrait",
@@ -32,7 +33,7 @@
       "googleServicesFile": "./google-services.json"
     },
     "android": {
-      "package": "com.realtime.track",
+      "package": "com.zyroac.app",
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",

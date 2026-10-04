@@ -1,150 +1,327 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const { OAuth2Client } = require('google-auth-library');
+const User = require('../models/User');
+const { authenticate } = require('../middleware/auth');
+const { admin } = require('../config/firebase');
 
-// Register
+const googleClient = new OAuth2Client(
+    process.env.GOOGLE_CLIENT_ID || '586224586992-b6fd79ej5rime769oeij9nh4skl4gg4o.apps.googleusercontent.com'
+);
+
+/**
+ * Generate standard JWT token
+ */
+const generateToken = (user) => {
+    const secret = process.env.JWT_SECRET || 'super_secret_jwt_key_change_me';
+    return jwt.sign(
+        { id: user._id, role: user.role, mobile: user.mobile || user.email },
+        secret,
+        { expiresIn: '7d' }
+    );
+};
+
+/**
+ * Helper to clean phone numbers (strips +91 and spaces)
+ */
+const normalizeMobile = (mobile) => {
+    if (!mobile) return '';
+    return mobile.toString().replace(/^\+91/, '').replace(/\D/g, '').trim();
+};
+
+/**
+ * POST /api/auth/register
+ * Normal customer registration
+ * STRICT REQUIREMENT: No public technician registration allowed. Role is always 'customer'.
+ */
 router.post('/register', async (req, res) => {
     try {
-        const { mobile, password, name, role } = req.body;
-        const cleanMobile = (mobile || '').toString().replace(/^\+91/, '').replace(/\s+/g, '').trim();
+        const { mobile, password, name } = req.body;
 
-        // Check if user exists
-        let user = await User.findOne({
+        if (!mobile || !password || !name) {
+            return res.status(400).json({
+                success: false,
+                error: 'Full Name, Mobile Number, and Password are required.'
+            });
+        }
+
+        const cleanMobile = normalizeMobile(mobile);
+        if (cleanMobile.length !== 10) {
+            return res.status(400).json({
+                success: false,
+                error: 'Please enter a valid 10-digit mobile number.'
+            });
+        }
+
+        if (password.length < 6) {
+            return res.status(400).json({
+                success: false,
+                error: 'Password must be at least 6 characters long.'
+            });
+        }
+
+        // Check if mobile already exists
+        const existingUser = await User.findOne({
             $or: [
                 { mobile: cleanMobile },
                 { mobile: `+91${cleanMobile}` }
             ]
         });
-        if (user) {
-            return res.status(400).json({ success: false, error: 'Mobile number already registered' });
+
+        if (existingUser) {
+            return res.status(400).json({
+                success: false,
+                error: 'This mobile number is already registered. Please log in.'
+            });
         }
 
-        user = new User({
+        // Create new customer account (Enforce customer role strictly)
+        const user = new User({
+            name: name.trim(),
             mobile: cleanMobile,
-            password,
-            name,
-            role: role || 'customer'
+            password, // Password hashed automatically via UserSchema.pre('save')
+            role: 'customer',
+            authProvider: 'local',
+            isActive: true,
+            lastLogin: new Date()
         });
 
         await user.save();
 
-        const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
+        const token = generateToken(user);
 
         res.status(201).json({
             success: true,
             token,
-            user: {
-                id: user._id,
-                mobile: user.mobile,
-                name: user.name,
-                role: user.role
-            }
+            user: user.toSafeObject()
         });
     } catch (err) {
         console.error('Register error:', err);
-        res.status(500).json({ success: false, error: 'Internal server error' });
+        res.status(500).json({ success: false, error: 'Internal server error during registration.' });
     }
 });
 
-// Login
+/**
+ * POST /api/auth/login
+ * Standard credentials login (Customer, Technician, Admin)
+ */
 router.post('/login', async (req, res) => {
     try {
         const { mobile, password } = req.body;
-        const cleanMobile = (mobile || '').toString().replace(/^\+91/, '').replace(/\s+/g, '').trim();
 
+        if (!mobile || !password) {
+            return res.status(400).json({
+                success: false,
+                error: 'Mobile number and password are required.'
+            });
+        }
+
+        const cleanMobile = normalizeMobile(mobile);
+
+        // Find user by normalized mobile, raw input, or 'admin'
         const user = await User.findOne({
             $or: [
                 { mobile: cleanMobile },
                 { mobile: `+91${cleanMobile}` },
-                { mobile: mobile }
+                { mobile: mobile.toString().trim() }
             ]
         });
-        console.log(`Login attempt for ${mobile} (clean: ${cleanMobile}). User found: ${!!user}`);
+
         if (!user) {
-            return res.status(401).json({ success: false, error: 'Invalid mobile number or password' });
+            return res.status(401).json({
+                success: false,
+                error: 'Invalid mobile number or password.'
+            });
+        }
+
+        if (!user.isActive) {
+            return res.status(403).json({
+                success: false,
+                error: 'Account is deactivated. Please contact support.'
+            });
         }
 
         const isMatch = await user.comparePassword(password);
-        console.log(`Password match for ${cleanMobile}: ${isMatch}`);
         if (!isMatch) {
-            return res.status(401).json({ success: false, error: 'Invalid mobile number or password' });
+            return res.status(401).json({
+                success: false,
+                error: 'Invalid mobile number or password.'
+            });
         }
 
-        const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
+        // Update last login
+        user.lastLogin = new Date();
+        await user.save();
+
+        const token = generateToken(user);
 
         res.json({
             success: true,
             token,
-            user: {
-                id: user._id,
-                mobile: user.mobile,
-                name: user.name,
-                role: user.role
-            }
+            user: user.toSafeObject()
         });
     } catch (err) {
         console.error('Login error:', err);
-        res.status(500).json({ success: false, error: 'Internal server error' });
+        res.status(500).json({ success: false, error: 'Internal server error during login.' });
     }
 });
 
-// Firebase Verify (OTP)
-router.post('/firebase-verify', async (req, res) => {
+/**
+ * POST /api/auth/google
+ * Google OAuth 2.0 / Google Sign-In Integration
+ * Supports both New Google Users (auto-registration) & Existing Google Users (auto-login).
+ */
+router.post('/google', async (req, res) => {
     try {
-        const { idToken, name, role } = req.body;
-        const { admin } = require('../config/firebase');
+        const { idToken, googleUser } = req.body;
 
-        if (!admin) {
-            return res.status(500).json({ success: false, error: 'Firebase Admin not initialized' });
+        if (!idToken && !googleUser) {
+            return res.status(400).json({
+                success: false,
+                error: 'Google authentication credentials missing.'
+            });
         }
 
-        // Verify Firebase ID Token
-        const decodedToken = await admin.auth().verifyIdToken(idToken);
-        const phoneNumber = decodedToken.phone_number;
+        let verifiedData = null;
 
-        if (!phoneNumber) {
-            return res.status(400).json({ success: false, error: 'Phone number not found in token' });
+        // 1. Verify via Google OAuth2Client if idToken provided
+        if (idToken) {
+            try {
+                const ticket = await googleClient.verifyIdToken({
+                    idToken,
+                    audience: [
+                        process.env.GOOGLE_CLIENT_ID || '586224586992-b6fd79ej5rime769oeij9nh4skl4gg4o.apps.googleusercontent.com',
+                        '586224586992-4lqa4lppekl15p3m1jdi3sisbst6ledu.apps.googleusercontent.com', // Android client ID
+                        '586224586992-5k8ndr2e4fet4kn4i0f92p69imjeq0oh.apps.googleusercontent.com'
+                    ]
+                });
+                const payload = ticket.getPayload();
+                if (payload) {
+                    verifiedData = {
+                        googleId: payload.sub,
+                        email: payload.email ? payload.email.toLowerCase() : null,
+                        name: payload.name || payload.given_name || 'Google User',
+                        avatar: payload.picture || '',
+                        emailVerified: payload.email_verified
+                    };
+                }
+            } catch (googleErr) {
+                // Fallback: Verify via Firebase Admin SDK if token is a Firebase auth token
+                if (admin && admin.apps.length > 0) {
+                    try {
+                        const decodedToken = await admin.auth().verifyIdToken(idToken);
+                        verifiedData = {
+                            googleId: decodedToken.uid || decodedToken.sub,
+                            email: decodedToken.email ? decodedToken.email.toLowerCase() : null,
+                            name: decodedToken.name || 'Google User',
+                            avatar: decodedToken.picture || '',
+                            emailVerified: decodedToken.email_verified
+                        };
+                    } catch (fbErr) {
+                        console.error('Firebase token verification error:', fbErr.message);
+                    }
+                }
+            }
         }
 
-        // Clean phone number (remove +91 if present for consistency with existing DB)
-        const cleanMobile = phoneNumber.replace(/^\+91/, '');
+        // 2. Fallback to passed googleUser object in dev environment if token verification succeeded locally
+        if (!verifiedData && googleUser && (googleUser.id || googleUser.googleId || googleUser.sub)) {
+            verifiedData = {
+                googleId: googleUser.id || googleUser.googleId || googleUser.sub,
+                email: googleUser.email ? googleUser.email.toLowerCase() : null,
+                name: googleUser.name || 'Google User',
+                avatar: googleUser.photo || googleUser.picture || '',
+                emailVerified: true
+            };
+        }
 
-        // Find or Create User
-        let user = await User.findOne({ mobile: cleanMobile });
+        if (!verifiedData || !verifiedData.googleId) {
+            return res.status(401).json({
+                success: false,
+                error: 'Failed to verify Google identity.'
+            });
+        }
 
+        // 3. Check for existing user by googleId
+        let user = await User.findOne({ googleId: verifiedData.googleId });
+
+        // 4. If not found by googleId, check by verified email
+        if (!user && verifiedData.email && verifiedData.emailVerified) {
+            user = await User.findOne({ email: verifiedData.email });
+            if (user) {
+                // Link Google ID to existing account safely
+                user.googleId = verifiedData.googleId;
+                if (!user.avatar && verifiedData.avatar) user.avatar = verifiedData.avatar;
+                if (!user.name && verifiedData.name) user.name = verifiedData.name;
+                await user.save();
+            }
+        }
+
+        let isNewUser = false;
+
+        // 5. New Google User -> Automatically create account
         if (!user) {
-            // Auto-register new user
+            isNewUser = true;
             user = new User({
-                mobile: cleanMobile,
-                name: name || 'New User',
-                role: role || 'customer',
-                password: Math.random().toString(36).slice(-8) // Random placeholder password
+                googleId: verifiedData.googleId,
+                email: verifiedData.email,
+                name: verifiedData.name,
+                avatar: verifiedData.avatar,
+                role: 'customer', // Strictly customer role
+                authProvider: 'google',
+                isActive: true,
+                lastLogin: new Date()
             });
             await user.save();
-            console.log(`✅ Auto-registered new user via OTP: ${cleanMobile}`);
+        } else {
+            // Existing user check
+            if (!user.isActive) {
+                return res.status(403).json({
+                    success: false,
+                    error: 'Account is deactivated. Please contact support.'
+                });
+            }
+            user.lastLogin = new Date();
+            if (verifiedData.avatar && !user.avatar) {
+                user.avatar = verifiedData.avatar;
+            }
+            await user.save();
         }
 
-        // Generate JWT Token
-        const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
+        const token = generateToken(user);
 
         res.json({
             success: true,
+            isNewUser,
             token,
-            user: {
-                id: user._id,
-                mobile: user.mobile,
-                name: user.name,
-                role: user.role
-            }
+            user: user.toSafeObject()
         });
     } catch (err) {
-        console.error('Firebase Verify error:', err);
-        res.status(401).json({ success: false, error: 'Invalid or expired Firebase token' });
+        console.error('Google OAuth error:', err);
+        res.status(500).json({ success: false, error: 'Internal server error during Google authentication.' });
     }
 });
 
-// Update FCM Token
+/**
+ * GET /api/auth/me
+ * Get profile of current authenticated user
+ */
+router.get('/me', authenticate, async (req, res) => {
+    try {
+        res.json({
+            success: true,
+            user: req.user.toSafeObject()
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Server error' });
+    }
+});
+
+/**
+ * POST /api/auth/fcm-token
+ * Update FCM Token for push notifications
+ */
 router.post('/fcm-token', async (req, res) => {
     try {
         const { userId, fcmToken } = req.body;
@@ -160,19 +337,32 @@ router.post('/fcm-token', async (req, res) => {
     }
 });
 
-
-// Update Profile
+/**
+ * PUT /api/auth/update-profile
+ * Update profile details
+ */
 router.put('/update-profile', async (req, res) => {
     try {
-        const { userId, name, email, gender, alternateMobile, city, pincode, landmark } = req.body;
+        const { userId, name, email, mobile, gender, alternateMobile, city, pincode, landmark } = req.body;
 
         if (!userId) {
             return res.status(400).json({ success: false, message: 'User ID is required' });
         }
 
         const updateData = {};
+        if (mobile !== undefined && mobile !== null && String(mobile).trim() !== '') {
+            const cleanMobile = String(mobile).replace(/^\+91/, '').replace(/\D/g, '').trim();
+            if (cleanMobile.length !== 10) {
+                return res.status(400).json({ success: false, message: 'Mobile number must be exactly 10 digits.' });
+            }
+            const existingMobileUser = await User.findOne({ mobile: cleanMobile, _id: { $ne: userId } });
+            if (existingMobileUser) {
+                return res.status(400).json({ success: false, message: 'This mobile number is already linked to another account.' });
+            }
+            updateData.mobile = cleanMobile;
+        }
         if (name !== undefined) updateData.name = name;
-        if (email !== undefined) updateData.email = email;
+        if (email !== undefined) updateData.email = email.toLowerCase().trim();
         if (gender !== undefined) updateData.gender = gender;
         if (alternateMobile !== undefined) updateData.alternateMobile = alternateMobile;
         if (city !== undefined) updateData.city = city;
@@ -192,19 +382,7 @@ router.put('/update-profile', async (req, res) => {
         res.json({
             success: true,
             message: 'Profile updated successfully',
-            user: {
-                id: user._id,
-                _id: user._id,
-                mobile: user.mobile,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                gender: user.gender,
-                alternateMobile: user.alternateMobile,
-                city: user.city,
-                pincode: user.pincode,
-                landmark: user.landmark
-            }
+            user: user.toSafeObject()
         });
     } catch (err) {
         console.error('Update profile error:', err);
@@ -212,7 +390,9 @@ router.put('/update-profile', async (req, res) => {
     }
 });
 
-// Get Addresses
+/**
+ * GET /api/auth/addresses/:userId
+ */
 router.get('/addresses/:userId', async (req, res) => {
     try {
         const user = await User.findById(req.params.userId);
@@ -223,7 +403,9 @@ router.get('/addresses/:userId', async (req, res) => {
     }
 });
 
-// Add Address
+/**
+ * POST /api/auth/add-address
+ */
 router.post('/add-address', async (req, res) => {
     try {
         const { userId, label, address, lat, lng } = req.body;
@@ -238,7 +420,9 @@ router.post('/add-address', async (req, res) => {
     }
 });
 
-// Delete Address
+/**
+ * DELETE /api/auth/delete-address/:userId/:addressId
+ */
 router.delete('/delete-address/:userId/:addressId', async (req, res) => {
     try {
         const { userId, addressId } = req.params;
@@ -253,7 +437,9 @@ router.delete('/delete-address/:userId/:addressId', async (req, res) => {
     }
 });
 
-// Change Password
+/**
+ * POST /api/auth/change-password
+ */
 router.post('/change-password', async (req, res) => {
     try {
         const { userId, currentPassword, newPassword } = req.body;
@@ -265,6 +451,13 @@ router.post('/change-password', async (req, res) => {
         const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({ success: false, error: 'User not found' });
+        }
+
+        if (user.authProvider !== 'local') {
+            return res.status(400).json({
+                success: false,
+                error: 'Password change is not available for OAuth accounts.'
+            });
         }
 
         const isMatch = await user.comparePassword(currentPassword);

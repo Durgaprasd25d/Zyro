@@ -13,6 +13,7 @@ import {
     TextInput,
     ActivityIndicator,
     KeyboardAvoidingView,
+    Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -281,11 +282,19 @@ export default function ProfileScreen({ navigation }) {
                 {/* Profile User Info Header */}
                 <View style={styles.profileSection}>
                     <View style={styles.avatar}>
-                        <Text style={styles.avatarText}>{user?.name?.[0]?.toUpperCase() || 'U'}</Text>
+                        {user?.avatar ? (
+                            <Image
+                                source={{ uri: user.avatar }}
+                                style={styles.avatarImage}
+                                resizeMode="cover"
+                            />
+                        ) : (
+                            <Text style={styles.avatarText}>{user?.name?.[0]?.toUpperCase() || 'U'}</Text>
+                        )}
                     </View>
                     <View style={styles.userInfo}>
                         <Text style={styles.userName}>{user?.name || 'Customer'}</Text>
-                        <Text style={styles.userPhone}>{user?.mobile || '+91 98765 43210'}</Text>
+                        <Text style={styles.userPhone}>{user?.mobile ? `+91 ${user.mobile}` : 'Mobile not linked'}</Text>
                         <TouchableOpacity
                             style={styles.editBadge}
                             onPress={handleEditProfile}
@@ -807,6 +816,11 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 16,
+        overflow: 'hidden',
+    },
+    avatarImage: {
+        width: '100%',
+        height: '100%',
     },
     avatarText: {
         fontSize: 26,

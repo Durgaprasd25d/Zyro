@@ -7,20 +7,12 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:586224586992:android:b98af0c933db61b14f7235",
+        "mobilesdk_app_id": "1:586224586992:android:3bcd4d488ec5f7cc4f7235",
         "android_client_info": {
-          "package_name": "com.realtime.track"
+          "package_name": "com.zyroac.app"
         }
       },
       "oauth_client": [
-        {
-          "client_id": "586224586992-4lqa4lppekl15p3m1jdi3sisbst6ledu.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.realtime.track",
-            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
-          }
-        },
         {
           "client_id": "586224586992-b6fd79ej5rime769oeij9nh4skl4gg4o.apps.googleusercontent.com",
           "client_type": 3

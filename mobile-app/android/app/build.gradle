@@ -56,7 +56,7 @@ android {
 
     namespace 'com.realtime.track'
     defaultConfig {
-        applicationId 'com.realtime.track'
+        applicationId 'com.zyroac.app'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 6

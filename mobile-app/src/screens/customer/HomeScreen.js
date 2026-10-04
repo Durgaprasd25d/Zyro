@@ -249,7 +249,15 @@ export default function HomeScreen({ navigation }) {
                             activeOpacity={0.7}
                         >
                             <View style={styles.profileCircle}>
-                                <Text style={styles.profileInitial}>{user?.name?.[0] || 'U'}</Text>
+                                {user?.avatar ? (
+                                    <Image
+                                        source={{ uri: user.avatar }}
+                                        style={styles.profileAvatarImg}
+                                        resizeMode="cover"
+                                    />
+                                ) : (
+                                    <Text style={styles.profileInitial}>{user?.name?.[0] || 'U'}</Text>
+                                )}
                             </View>
                         </TouchableOpacity>
                     </View>
@@ -543,6 +551,11 @@ const styles = StyleSheet.create({
         borderColor: C.primary,
         justifyContent: 'center',
         alignItems: 'center',
+        overflow: 'hidden',
+    },
+    profileAvatarImg: {
+        width: '100%',
+        height: '100%',
     },
     profileInitial: {
         color: C.primary,

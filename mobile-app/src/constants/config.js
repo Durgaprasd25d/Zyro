@@ -7,7 +7,7 @@
 // Load from .env file (create .env from .env.example)
 // In Expo SDK 49+, use EXPO_PUBLIC_ prefix for automatic environment variable injection
 const BACKEND_URL =
-  process.env.EXPO_PUBLIC_BACKEND_URL || "https://zyro-s0gj.onrender.com";
+  process.env.EXPO_PUBLIC_BACKEND_URL || "http://192.168.1.45:4000";
 console.log(
   "📡 [Config] process.env.EXPO_PUBLIC_BACKEND_URL:",
   process.env.EXPO_PUBLIC_BACKEND_URL,
@@ -28,10 +28,19 @@ const CLOUDINARY_CLOUD_NAME =
 const CLOUDINARY_UPLOAD_PRESET =
   process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "zyro-ac";
 
+const GOOGLE_WEB_CLIENT_ID =
+  process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || "586224586992-b6fd79ej5rime769oeij9nh4skl4gg4o.apps.googleusercontent.com";
+const GOOGLE_REDIRECT_URI =
+  process.env.EXPO_PUBLIC_GOOGLE_REDIRECT_URI || "https://reactadmin-7ab4e.firebaseapp.com/__/auth/handler";
+
 export default {
   // Backend
   BACKEND_URL,
   SOCKET_URL: BACKEND_URL,
+
+  // Google OAuth
+  GOOGLE_WEB_CLIENT_ID,
+  GOOGLE_REDIRECT_URI,
 
   // Mapbox SDK
   MAPBOX_ACCESS_TOKEN,
