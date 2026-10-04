@@ -99,7 +99,9 @@ const RideSchema = new mongoose.Schema({
 });
 
 RideSchema.index({ driverId: 1, status: 1 });
+RideSchema.index({ driverId: 1, createdAt: -1 });
 RideSchema.index({ customerId: 1, createdAt: -1 });
 RideSchema.index({ status: 1, createdAt: -1 });
+RideSchema.index({ 'razorpayDetails.orderId': 1 }, { sparse: true });
 
 module.exports = mongoose.model('Ride', RideSchema);

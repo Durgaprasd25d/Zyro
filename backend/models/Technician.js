@@ -105,4 +105,8 @@ technicianSchema.methods.resetDailyStats = function () {
     return this.save();
 };
 
+// Indexes for performance
+technicianSchema.index({ isOnline: 1, 'currentLocation.lat': 1, 'currentLocation.lng': 1 });
+technicianSchema.index({ kycStatus: 1 });
+
 module.exports = mongoose.model('Technician', technicianSchema);
