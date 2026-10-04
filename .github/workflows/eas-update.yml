@@ -37,12 +37,10 @@ jobs:
       - name: 🏗 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 🟢 Setup Node.js with Cache
+      - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
-          cache-dependency-path: 'mobile-app/package-lock.json'
 
       - name: 📱 Setup EAS CLI
         uses: expo/expo-github-action@v8
@@ -50,9 +48,9 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: 📦 Fast Install Dependencies
+      - name: 📦 Install Dependencies
         working-directory: mobile-app
-        run: npm ci --prefer-offline --no-audit --no-fund
+        run: npm install --prefer-offline --no-audit --no-fund --legacy-peer-deps
 
       - name: 🚀 Publish Air Push (Push to main)
         if: github.event_name == 'push'
