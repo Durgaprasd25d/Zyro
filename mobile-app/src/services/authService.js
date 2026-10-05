@@ -2,6 +2,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import config from "../constants/config";
+import { expoNotificationService } from "./expoNotificationService";
 
 const API_URL = `${config.BACKEND_URL}/api/auth`;
 
@@ -53,6 +54,7 @@ const authService = {
         }
         if (response.data.user) {
           await AsyncStorage.setItem("userData", JSON.stringify(response.data.user));
+          expoNotificationService.register(response.data.user._id || response.data.user.id);
         }
       }
 
@@ -93,6 +95,7 @@ const authService = {
         }
         if (response.data.user) {
           await AsyncStorage.setItem("userData", JSON.stringify(response.data.user));
+          expoNotificationService.register(response.data.user._id || response.data.user.id);
         }
       }
       return response.data;
@@ -122,6 +125,7 @@ const authService = {
         }
         if (response.data.user) {
           await AsyncStorage.setItem("userData", JSON.stringify(response.data.user));
+          expoNotificationService.register(response.data.user._id || response.data.user.id);
         }
       }
       return response.data;

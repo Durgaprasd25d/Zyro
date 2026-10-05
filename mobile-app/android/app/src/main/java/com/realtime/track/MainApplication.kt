@@ -47,6 +47,23 @@ class MainApplication : Application(), ReactApplication {
     }
     loadReactNative(this)
     ApplicationLifecycleDispatcher.onApplicationCreate(this)
+
+    // Ensure native high-priority notification channel is created for FCM
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+      val channelId = "default"
+      val name = "Zyro AC Alerts"
+      val descriptionText = "Zyro AC real-time notifications"
+      val importance = android.app.NotificationManager.IMPORTANCE_HIGH
+      val channel = android.app.NotificationChannel(channelId, name, importance).apply {
+        description = descriptionText
+        enableLights(true)
+        enableVibration(true)
+        setShowBadge(true)
+        lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
+      }
+      val notificationManager = getSystemService(android.app.NotificationManager::class.java)
+      notificationManager?.createNotificationChannel(channel)
+    }
   }
 
   override fun onConfigurationChanged(newConfig: Configuration) {

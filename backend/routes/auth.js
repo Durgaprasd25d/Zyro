@@ -337,6 +337,90 @@ router.post('/fcm-token', async (req, res) => {
     }
 });
 
+const { sendToUser, sendPushNotification } = require('../services/notificationService');
+
+/**
+ * GET /api/auth/check-tokens
+ * Diagnostic: show all users who have push tokens stored (no auth required for debug)
+ */
+router.get('/check-tokens', async (req, res) => {
+    try {
+        const users = await User.find({ fcmToken: { $exists: true, $ne: null } })
+            .select('name mobile email fcmToken updatedAt')
+            .sort({ updatedAt: -1 })
+            .limit(10);
+
+        const { admin: fbAdmin } = require('../config/firebase');
+        const firebaseReady = fbAdmin && fbAdmin.apps && fbAdmin.apps.length > 0;
+
+        res.json({
+            success: true,
+            firebaseAdminInitialized: firebaseReady,
+            totalUsersWithTokens: users.length,
+            users: users.map(u => ({
+                name: u.name,
+                mobile: u.mobile,
+                email: u.email,
+                tokenType: u.fcmToken?.startsWith('ExponentPushToken') ? 'expo-push-token' : 'native-fcm-token',
+                tokenTail: `...${u.fcmToken?.slice(-20)}`,
+                updatedAt: u.updatedAt
+            }))
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+/**
+ * POST /api/auth/test-notification
+ * Trigger a push notification for testing via curl
+ */
+router.post('/test-notification', async (req, res) => {
+    try {
+        const { userId, title, body, data } = req.body;
+        
+        let targetUser;
+        if (userId) {
+            targetUser = await User.findById(userId);
+        } else {
+            // Find the most recently active user with a token
+            targetUser = await User.findOne({ fcmToken: { $exists: true, $ne: null } }).sort({ updatedAt: -1, lastLogin: -1 });
+        }
+
+        if (!targetUser || !targetUser.fcmToken) {
+            return res.status(404).json({ 
+                success: false, 
+                error: 'No user with an active push token was found in database. Open the mobile app and log in again to register a fresh token.' 
+            });
+        }
+
+        const tokenType = targetUser.fcmToken.startsWith('ExponentPushToken') ? 'expo-push-token' : 'native-fcm-token';
+        console.log(`\n\ud83d\udcf2 === TEST NOTIFICATION ===`);
+        console.log(`   User: ${targetUser.name} (${targetUser.mobile || targetUser.email})`);
+        console.log(`   Token type: ${tokenType}`);
+        console.log(`   Token tail: ...${targetUser.fcmToken.slice(-20)}`);
+
+        const payload = {
+            title: title || 'Zyro AC \u2022 Test Alert \u2744\ufe0f',
+            body: body || 'Real-time push notification test successful! Even when app is closed.',
+            data: data || { screen: 'Home', test: 'true' }
+        };
+
+        const result = await sendToUser(targetUser._id, payload);
+
+        res.json({
+            success: true,
+            message: `Push notification dispatched to ${targetUser.name} (${targetUser.mobile || targetUser.email})`,
+            tokenType,
+            targetTokenTail: `...${targetUser.fcmToken.slice(-20)}`,
+            result
+        });
+    } catch (err) {
+        console.error('Test notification error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 /**
  * PUT /api/auth/update-profile
  * Update profile details

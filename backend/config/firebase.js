@@ -1,14 +1,26 @@
 const admin = require('firebase-admin');
 
+const path = require('path');
+const fs = require('fs');
+
 /**
  * Initialize Firebase Admin SDK
  * 
  * Supports both JSON file and environment variables.
- * Environment variables are preferred for production.
  */
 const initializeFirebase = () => {
     try {
         if (admin.apps.length > 0) return admin.app();
+
+        const serviceAccountPath = path.join(__dirname, 'serviceAccountKey.json');
+        if (fs.existsSync(serviceAccountPath)) {
+            const serviceAccount = require(serviceAccountPath);
+            admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount)
+            });
+            console.log('✅ Firebase Admin SDK initialized via serviceAccountKey.json');
+            return admin.app();
+        }
 
         const projectId = process.env.FIREBASE_PROJECT_ID;
         const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
