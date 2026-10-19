@@ -1,5 +1,6 @@
 import { Platform, Alert } from 'react-native';
 import axios from 'axios';
+import * as Notifications from 'expo-notifications';
 import config from '../constants/config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
@@ -106,17 +107,24 @@ class FCMService {
 
         // 1. Foreground
         this.messageListener = msg().onMessage(async remoteMessage => {
-            console.log('📩 Foreground Notification:', remoteMessage.notification?.title);
-            Alert.alert(
-                remoteMessage.notification?.title || 'Notification',
-                remoteMessage.notification?.body || ''
-            );
+            console.log('📩 [FCM Foreground]:', remoteMessage.notification?.title || remoteMessage.data?.title);
+            const title = remoteMessage.notification?.title || remoteMessage.data?.title || 'Zyro AC Alert';
+            const body = remoteMessage.notification?.body || remoteMessage.data?.body || '';
+            await Notifications.scheduleNotificationAsync({
+                content: {
+                    title,
+                    body,
+                    data: remoteMessage.data || {},
+                    sound: 'default',
+                    channelId: 'default',
+                },
+                trigger: null,
+            });
         });
 
         // 2. Background/Quit state notification opened
         msg().onNotificationOpenedApp(remoteMessage => {
             console.log('📂 Opened from background:', remoteMessage.notification?.title);
-            // Handle navigation here if needed
         });
 
         // 3. App opened from quit state
@@ -128,19 +136,18 @@ class FCMService {
 
         // 4. Token Refresh
         this.onTokenRefreshListener = msg().onTokenRefresh(async fcmToken => {
-            console.log('🔄 Token Refreshed');
+            console.log('🔄 Token Refreshed:', fcmToken);
             const userId = await AsyncStorage.getItem('userId');
             if (userId) await this.updateTokenOnServer(userId, fcmToken);
         });
 
-        // 5. Register Background Handler (Android specific, must be non-blocking)
+        // 5. Register Background Handler
         try {
             msg().setBackgroundMessageHandler(async remoteMessage => {
-                console.log('🌙 Message handled in the background!', remoteMessage.notification?.title);
-                // Do not use Alert here, it will crash in the background
+                console.log('🌙 [FCM Background Message]:', remoteMessage.notification?.title || remoteMessage.data?.title);
             });
         } catch (e) {
-            console.log('⚠️ Background handler registration failed or not supported');
+            console.log('⚠️ Background handler notice:', e.message);
         }
     }
 

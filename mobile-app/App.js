@@ -113,7 +113,7 @@ export default function App() {
         colors: {
             ...DarkTheme.colors,
             background: '#131313',
-            card:       '#131313',
+            card: '#131313',
         },
     };
 

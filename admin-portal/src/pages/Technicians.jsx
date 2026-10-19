@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { UserCheck, UserX, Search, ShieldCheck, Lock, Unlock } from 'lucide-react';
+import { UserCheck, UserX, Search, ShieldCheck, Lock, Unlock, UserPlus, X, Phone, User, KeyRound, Wrench, MapPin, CheckCircle2, AlertCircle } from 'lucide-react';
 import config from '../config';
 import ADMIN_COLORS from '../theme/colors';
 
@@ -8,6 +8,21 @@ export default function Technicians() {
     const [technicians, setTechnicians] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+
+    // Modal State
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [createLoading, setCreateLoading] = useState(false);
+    const [createError, setCreateError] = useState('');
+    const [createSuccess, setCreateSuccess] = useState('');
+    const [formData, setFormData] = useState({
+        name: '',
+        mobile: '',
+        password: '',
+        specialization: 'General AC Specialist',
+        city: 'Bhubaneswar',
+        pincode: '',
+        preApproved: true,
+    });
 
     useEffect(() => {
         fetchTechnicians();
@@ -23,6 +38,60 @@ export default function Technicians() {
             console.error('Error fetching technicians:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleCreateTechnician = async (e) => {
+        e.preventDefault();
+        setCreateError('');
+        setCreateSuccess('');
+
+        if (!formData.name.trim()) {
+            setCreateError('Technician name is required.');
+            return;
+        }
+
+        const cleanPhone = formData.mobile.replace(/^\+91/, '').replace(/\D/g, '').trim();
+        if (cleanPhone.length !== 10) {
+            setCreateError('Please enter a valid 10-digit mobile number.');
+            return;
+        }
+
+        setCreateLoading(true);
+        try {
+            const response = await axios.post(`${config.API_URL}/admin/technicians`, {
+                name: formData.name.trim(),
+                mobile: cleanPhone,
+                password: formData.password.trim() || '123456',
+                specialization: formData.specialization,
+                city: formData.city.trim(),
+                pincode: formData.pincode.trim(),
+                preApproved: formData.preApproved,
+            });
+
+            if (response.data.success) {
+                setCreateSuccess('Technician created successfully!');
+                setFormData({
+                    name: '',
+                    mobile: '',
+                    password: '',
+                    specialization: 'General AC Specialist',
+                    city: 'Bhubaneswar',
+                    pincode: '',
+                    preApproved: true,
+                });
+                fetchTechnicians();
+                setTimeout(() => {
+                    setShowCreateModal(false);
+                    setCreateSuccess('');
+                }, 1200);
+            } else {
+                setCreateError(response.data.error || 'Failed to create technician.');
+            }
+        } catch (err) {
+            setCreateError(err.response?.data?.error || err.response?.data?.message || 'Failed to create technician.');
+        } finally {
+            setCreateLoading(false);
         }
     };
 
@@ -71,22 +140,231 @@ export default function Technicians() {
                     </p>
                 </div>
 
-                <div className="relative">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2" size={16} style={{ color: ADMIN_COLORS.textMuted }} />
-                    <input
-                        type="text"
-                        placeholder="Search by name or mobile..."
-                        className="pl-10 pr-4 py-2.5 rounded-2xl border text-sm font-medium outline-none transition-all w-72"
+                <div className="flex items-center gap-3">
+                    <div className="relative">
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2" size={16} style={{ color: ADMIN_COLORS.textMuted }} />
+                        <input
+                            type="text"
+                            placeholder="Search by name or mobile..."
+                            className="pl-10 pr-4 py-2.5 rounded-2xl border text-sm font-medium outline-none transition-all w-64 md:w-72"
+                            style={{ 
+                                backgroundColor: ADMIN_COLORS.surface,
+                                borderColor: ADMIN_COLORS.border,
+                                color: ADMIN_COLORS.textPrimary
+                            }}
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+
+                    <button
+                        onClick={() => {
+                            setCreateError('');
+                            setCreateSuccess('');
+                            setShowCreateModal(true);
+                        }}
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-sm tracking-wide shadow-lg transition-all active:scale-95 cursor-pointer"
+                        style={{
+                            backgroundColor: ADMIN_COLORS.primary,
+                            color: '#000000',
+                        }}
+                    >
+                        <UserPlus size={18} />
+                        Add Technician
+                    </button>
+                </div>
+            </div>
+
+            {/* Create Technician Modal */}
+            {showCreateModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+                    <div 
+                        className="w-full max-w-xl rounded-3xl border shadow-2xl overflow-hidden p-6 md:p-8 space-y-6"
                         style={{ 
                             backgroundColor: ADMIN_COLORS.surface,
                             borderColor: ADMIN_COLORS.border,
-                            color: ADMIN_COLORS.textPrimary
                         }}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+                    >
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between border-b pb-4" style={{ borderColor: ADMIN_COLORS.border }}>
+                            <div className="flex items-center gap-3">
+                                <div 
+                                    className="w-10 h-10 rounded-2xl flex items-center justify-center"
+                                    style={{ backgroundColor: ADMIN_COLORS.primaryGlow, color: ADMIN_COLORS.primary }}
+                                >
+                                    <UserPlus size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-extrabold text-white">Create Technician Account</h3>
+                                    <p className="text-xs font-medium" style={{ color: ADMIN_COLORS.textSecondary }}>
+                                        Provision a new technician partner with instant login credentials
+                                    </p>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => setShowCreateModal(false)}
+                                className="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Error / Success Feedback */}
+                        {createError && (
+                            <div className="flex items-center gap-2.5 p-3.5 rounded-2xl text-xs font-bold border" style={{ backgroundColor: ADMIN_COLORS.errorBg, borderColor: 'rgba(248, 113, 113, 0.3)', color: ADMIN_COLORS.error }}>
+                                <AlertCircle size={16} className="shrink-0" />
+                                <span>{createError}</span>
+                            </div>
+                        )}
+                        {createSuccess && (
+                            <div className="flex items-center gap-2.5 p-3.5 rounded-2xl text-xs font-bold border" style={{ backgroundColor: ADMIN_COLORS.successBg, borderColor: 'rgba(74, 222, 128, 0.3)', color: ADMIN_COLORS.success }}>
+                                <CheckCircle2 size={16} className="shrink-0" />
+                                <span>{createSuccess}</span>
+                            </div>
+                        )}
+
+                        {/* Form */}
+                        <form onSubmit={handleCreateTechnician} className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Name */}
+                                <div>
+                                    <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: ADMIN_COLORS.textSecondary }}>
+                                        Full Name *
+                                    </label>
+                                    <div className="relative">
+                                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2" size={16} style={{ color: ADMIN_COLORS.textMuted }} />
+                                        <input
+                                            type="text"
+                                            required
+                                            placeholder="e.g. Ramesh Kumar"
+                                            value={formData.name}
+                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                            className="w-full pl-10 pr-4 py-2.5 rounded-2xl border text-sm font-medium outline-none transition-all"
+                                            style={{ backgroundColor: ADMIN_COLORS.surfaceElevated, borderColor: ADMIN_COLORS.border, color: ADMIN_COLORS.textPrimary }}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Mobile */}
+                                <div>
+                                    <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: ADMIN_COLORS.textSecondary }}>
+                                        Mobile Number *
+                                    </label>
+                                    <div className="relative flex items-center">
+                                        <span className="absolute left-3.5 text-xs font-bold" style={{ color: ADMIN_COLORS.primary }}>+91</span>
+                                        <input
+                                            type="tel"
+                                            required
+                                            maxLength={10}
+                                            placeholder="10-digit mobile"
+                                            value={formData.mobile}
+                                            onChange={(e) => setFormData({ ...formData, mobile: e.target.value.replace(/\D/g, '') })}
+                                            className="w-full pl-12 pr-4 py-2.5 rounded-2xl border text-sm font-medium outline-none transition-all"
+                                            style={{ backgroundColor: ADMIN_COLORS.surfaceElevated, borderColor: ADMIN_COLORS.border, color: ADMIN_COLORS.textPrimary }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Password */}
+                                <div>
+                                    <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: ADMIN_COLORS.textSecondary }}>
+                                        Password <span className="text-gray-500 font-normal normal-case">(Default: 123456)</span>
+                                    </label>
+                                    <div className="relative">
+                                        <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2" size={16} style={{ color: ADMIN_COLORS.textMuted }} />
+                                        <input
+                                            type="text"
+                                            placeholder="123456"
+                                            value={formData.password}
+                                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                            className="w-full pl-10 pr-4 py-2.5 rounded-2xl border text-sm font-medium outline-none transition-all font-mono"
+                                            style={{ backgroundColor: ADMIN_COLORS.surfaceElevated, borderColor: ADMIN_COLORS.border, color: ADMIN_COLORS.textPrimary }}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Specialization */}
+                                <div>
+                                    <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: ADMIN_COLORS.textSecondary }}>
+                                        Specialization
+                                    </label>
+                                    <div className="relative">
+                                        <Wrench className="absolute left-3.5 top-1/2 -translate-y-1/2" size={16} style={{ color: ADMIN_COLORS.textMuted }} />
+                                        <select
+                                            value={formData.specialization}
+                                            onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
+                                            className="w-full pl-10 pr-4 py-2.5 rounded-2xl border text-sm font-medium outline-none transition-all appearance-none cursor-pointer"
+                                            style={{ backgroundColor: ADMIN_COLORS.surfaceElevated, borderColor: ADMIN_COLORS.border, color: ADMIN_COLORS.textPrimary }}
+                                        >
+                                            <option value="General AC Specialist">General AC Specialist</option>
+                                            <option value="AC Deep Cleaning">AC Deep Cleaning</option>
+                                            <option value="AC Installation & Repair">AC Installation & Repair</option>
+                                            <option value="Gas Leak & Refill">Gas Leak & Refill</option>
+                                            <option value="Compressor & Electrical Specialist">Compressor & Electrical Specialist</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* City */}
+                                <div>
+                                    <label className="block text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: ADMIN_COLORS.textSecondary }}>
+                                        City / Operating Area
+                                    </label>
+                                    <div className="relative">
+                                        <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2" size={16} style={{ color: ADMIN_COLORS.textMuted }} />
+                                        <input
+                                            type="text"
+                                            placeholder="e.g. Bhubaneswar"
+                                            value={formData.city}
+                                            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                                            className="w-full pl-10 pr-4 py-2.5 rounded-2xl border text-sm font-medium outline-none transition-all"
+                                            style={{ backgroundColor: ADMIN_COLORS.surfaceElevated, borderColor: ADMIN_COLORS.border, color: ADMIN_COLORS.textPrimary }}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Pre-approval switch */}
+                                <div className="flex items-center justify-between p-3 rounded-2xl border mt-auto" style={{ backgroundColor: ADMIN_COLORS.surfaceElevated, borderColor: ADMIN_COLORS.border }}>
+                                    <div>
+                                        <p className="text-xs font-bold text-white">Pre-Approve KYC & Payout</p>
+                                        <p className="text-[11px]" style={{ color: ADMIN_COLORS.textMuted }}>Allow immediate job acceptance</p>
+                                    </div>
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.preApproved}
+                                        onChange={(e) => setFormData({ ...formData, preApproved: e.target.checked })}
+                                        className="w-5 h-5 accent-[#E6BEAB] rounded cursor-pointer"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Buttons */}
+                            <div className="flex items-center justify-end gap-3 pt-4 border-t" style={{ borderColor: ADMIN_COLORS.border }}>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowCreateModal(false)}
+                                    className="px-5 py-2.5 rounded-2xl border text-sm font-bold transition-all hover:bg-white/5 cursor-pointer"
+                                    style={{ borderColor: ADMIN_COLORS.border, color: ADMIN_COLORS.textSecondary }}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={createLoading}
+                                    className="px-6 py-2.5 rounded-2xl text-sm font-extrabold tracking-wide shadow-lg transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                                    style={{ backgroundColor: ADMIN_COLORS.primary, color: '#000000' }}
+                                >
+                                    {createLoading ? 'Creating...' : 'Create Technician'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Table Container */}
             <div 

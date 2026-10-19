@@ -135,6 +135,103 @@ router.get('/stats', async (req, res) => {
 });
 
 /**
+ * ADMIN: Create new technician account
+ * Strict requirement: Technicians are created ONLY by Admins.
+ */
+router.post('/technicians', async (req, res) => {
+    try {
+        const { name, mobile, password, specialization = 'AC Specialist', city = '', pincode = '', preApproved = true } = req.body;
+
+        if (!name || !name.trim()) {
+            return res.status(400).json({
+                success: false,
+                error: 'Technician Name is required.'
+            });
+        }
+
+        const cleanMobile = (mobile || '').toString().replace(/^\+91/, '').replace(/\D/g, '').trim();
+        if (cleanMobile.length !== 10) {
+            return res.status(400).json({
+                success: false,
+                error: 'Please enter a valid 10-digit mobile number for technician.'
+            });
+        }
+
+        const finalPassword = (password && password.trim().length >= 6) ? password.trim() : '123456';
+
+        const existingUser = await User.findOne({
+            $or: [
+                { mobile: cleanMobile },
+                { mobile: `+91${cleanMobile}` }
+            ]
+        });
+
+        if (existingUser) {
+            return res.status(400).json({
+                success: false,
+                error: 'A user with this mobile number already exists.'
+            });
+        }
+
+        // Create User document with technician role
+        const user = new User({
+            name: name.trim(),
+            mobile: cleanMobile,
+            password: finalPassword, // Password hashed automatically via pre-save hook
+            role: 'technician',
+            specialization: specialization || 'AC Specialist',
+            city: city || '',
+            pincode: pincode || '',
+            authProvider: 'local',
+            isActive: true
+        });
+
+        await user.save();
+
+        // Create associated Technician profile
+        const technician = await Technician.create({
+            userId: user._id,
+            isOnline: false,
+            stats: {
+                todayEarnings: 0,
+                completedJobs: 0,
+                rating: 5.0,
+                totalJobs: 0
+            },
+            wallet: {
+                balance: 0,
+                lockedAmount: 0,
+                commissionDue: 0,
+                codLimit: 500
+            },
+            verification: {
+                kycVerified: preApproved === true,
+                adminVerified: preApproved === true,
+                kycStatus: preApproved === true ? 'VERIFIED' : 'PENDING',
+                reviewedAt: preApproved === true ? new Date() : null
+            }
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'Technician account created successfully.',
+            technician: {
+                id: technician._id,
+                userId: user._id,
+                name: user.name,
+                mobile: user.mobile,
+                role: user.role,
+                specialization: user.specialization,
+                kycStatus: technician.verification.kycStatus
+            }
+        });
+    } catch (error) {
+        console.error('Create technician error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
  * ADMIN: List all technicians with details
  */
 router.get('/technicians', async (req, res) => {
