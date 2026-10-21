@@ -44,6 +44,8 @@ subprojects {
                 substitute module('com.mapbox.maps:base') using module('com.mapbox.maps:base-ndk27:11.23.1')
                 substitute module('com.mapbox.common:common') using module('com.mapbox.common:common-ndk27:24.23.1')
                 substitute module('com.mapbox.module:maps-telemetry') using module('com.mapbox.module:maps-telemetry-ndk27:11.23.1')
+                substitute module('com.mapbox.navigationcore:navigation') using module('com.mapbox.navigationcore:navigation-ndk27:3.11.0')
+                substitute module('com.mapbox.navigationcore:ui-components') using module('com.mapbox.navigationcore:ui-components-ndk27:3.11.0')
             }
             eachDependency { details ->
                 if (details.requested.group == 'org.jetbrains.kotlinx' && details.requested.name == 'kotlinx-coroutines-play-services') {
