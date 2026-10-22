@@ -12,6 +12,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
     UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
+import * as Font from 'expo-font';
 import config from './src/constants/config';
 import { NotificationProvider } from './src/components/InAppNotification';
 import { renderAuthScreens, renderCustomerScreens, renderTechnicianScreens } from './src/navigation';
@@ -67,6 +68,15 @@ export default function App() {
             let token;
             let role = null;
             try {
+                try {
+                    await Font.loadAsync({
+                        Ionicons: require('react-native-vector-icons/Fonts/Ionicons.ttf'),
+                        ionicons: require('react-native-vector-icons/Fonts/Ionicons.ttf'),
+                    });
+                } catch (fontErr) {
+                    console.log('[Font] Ionicons load notice:', fontErr.message);
+                }
+
                 await AsyncStorage.removeItem('hasSeenOnboarding');
                 token = await authService.isLoggedIn();
                 const seenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
